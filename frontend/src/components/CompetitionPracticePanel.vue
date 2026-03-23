@@ -147,19 +147,19 @@
         </thead>
         <tbody>
           <tr v-for="row in rows" :key="`practice-${row.id}`">
-            <td>{{ row.year }}</td>
-            <td>{{ labelOf(seriesOptions, row.series) }}</td>
-            <td>{{ labelOf(stageOptions, row.stage) }}</td>
-            <td>{{ row.short_name || "-" }}</td>
-            <td class="practice-official-cell">
+            <td data-label="年份">{{ row.year }}</td>
+            <td data-label="赛事体系">{{ labelOf(seriesOptions, row.series) }}</td>
+            <td data-label="赛事类型">{{ labelOf(stageOptions, row.stage) }}</td>
+            <td data-label="简称">{{ row.short_name || "-" }}</td>
+            <td class="practice-official-cell" data-label="官方名称">
               <a v-if="row.official_url" :href="row.official_url" target="_blank" rel="noopener noreferrer" class="table-link">
                 {{ row.official_name || row.official_url }}
               </a>
               <span v-else>{{ row.official_name || "-" }}</span>
             </td>
-            <td>{{ row.event_date_text || formatDate(row.event_date) }}</td>
-            <td>{{ row.organizer || "-" }}</td>
-            <td>
+            <td data-label="举办时间">{{ row.event_date_text || formatDate(row.event_date) }}</td>
+            <td data-label="承办">{{ row.organizer || "-" }}</td>
+            <td data-label="补题链接">
               <div v-if="Array.isArray(row.practice_links) && row.practice_links.length" class="practice-links">
                 <a
                   v-for="(link, index) in row.practice_links"
@@ -174,9 +174,9 @@
               </div>
               <span v-else>-</span>
             </td>
-            <td>{{ row.practice_links_note || "-" }}</td>
-            <td>{{ formatSource(row) }}</td>
-            <td v-if="auth.isAuthenticated">
+            <td data-label="备注">{{ row.practice_links_note || "-" }}</td>
+            <td data-label="来源">{{ formatSource(row) }}</td>
+            <td v-if="auth.isAuthenticated" data-label="操作">
               <button type="button" class="btn btn-mini" @click="startProposal(row)">提交修改</button>
             </td>
           </tr>
@@ -561,6 +561,19 @@ onMounted(async () => {
 }
 
 @media (max-width: 640px) {
+  .practice-toolbar,
+  .practice-meta {
+    padding: 12px;
+  }
+
+  .practice-actions {
+    width: 100%;
+  }
+
+  .practice-actions .btn {
+    flex: 1 1 100%;
+  }
+
   .practice-editor-grid {
     grid-template-columns: 1fr;
   }
@@ -572,6 +585,52 @@ onMounted(async () => {
   .practice-editor-head,
   .review-head {
     flex-direction: column;
+  }
+
+  .practice-table {
+    min-width: 0;
+  }
+
+  .practice-table thead {
+    display: none;
+  }
+
+  .practice-table,
+  .practice-table tbody {
+    display: grid;
+    gap: 10px;
+  }
+
+  .practice-table tr {
+    display: grid;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid rgba(17, 24, 39, 0.08);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.72);
+  }
+
+  .practice-table td {
+    display: grid;
+    grid-template-columns: minmax(82px, 96px) minmax(0, 1fr);
+    gap: 10px;
+    border: 0;
+    padding: 0;
+  }
+
+  .practice-table td::before {
+    content: attr(data-label);
+    font-size: 12px;
+    font-weight: 600;
+    color: #6a7486;
+  }
+
+  .practice-official-cell {
+    min-width: 0;
+  }
+
+  .review-row {
+    padding: 10px;
   }
 }
 </style>

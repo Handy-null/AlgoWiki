@@ -899,16 +899,56 @@ onMounted(async () => {
 }
 
 @media (max-width: 600px) {
+  .home-inner {
+    padding: 6px 10px 20px;
+  }
+
+  .hero-block {
+    padding-top: 18px;
+  }
+
   .hero-kicker {
     font-size: 11px;
   }
 
+  .team-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .team-member-card {
+    padding: 12px 8px 10px;
+    border-radius: 16px;
+  }
+
+  .team-avatar {
+    width: 56px;
+    height: 56px;
+  }
+
+  .team-id {
+    font-size: 13px;
+  }
+
+  .announcement-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
   .announcement-item {
     border-radius: 18px;
+    padding: 12px;
+  }
+
+  .item-side {
+    grid-template-columns: 1fr;
+    gap: 6px;
   }
 
   .item-meta {
     font-size: 13px;
+    flex-wrap: wrap;
   }
 }
 </style>

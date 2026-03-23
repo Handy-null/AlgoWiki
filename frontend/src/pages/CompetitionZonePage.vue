@@ -97,11 +97,11 @@
               :key="`schedule-${row.id}`"
               :class="{ 'row-past': isPast(row) }"
             >
-              <td>{{ formatDate(row.event_date) }}</td>
-              <td>{{ row.competition_time_range || "-" }}</td>
-              <td>{{ row.competition_type || "-" }}</td>
-              <td>{{ row.location || "-" }}</td>
-              <td>
+              <td data-label="时间">{{ formatDate(row.event_date) }}</td>
+              <td data-label="比赛时间">{{ row.competition_time_range || "-" }}</td>
+              <td data-label="比赛类型">{{ row.competition_type || "-" }}</td>
+              <td data-label="地点">{{ row.location || "-" }}</td>
+              <td data-label="QQ群">
                 <a
                   v-if="isHttpUrl(row.qq_group)"
                   :href="row.qq_group"
@@ -113,7 +113,7 @@
                 </a>
                 <span v-else>{{ row.qq_group || "-" }}</span>
               </td>
-              <td>
+              <td data-label="公告">
                 <button
                   v-if="row.announcement"
                   type="button"
@@ -124,7 +124,7 @@
                 </button>
                 <span v-else>-</span>
               </td>
-              <td v-if="canManageCompetition">
+              <td v-if="canManageCompetition" data-label="操作">
                 <div class="table-actions">
                   <button type="button" class="btn btn-mini" @click="startEditSchedule(row)">编辑</button>
                   <button type="button" class="btn btn-mini" @click="removeSchedule(row)">删除</button>
@@ -873,6 +873,11 @@ onMounted(async () => {
   gap: 14px;
 }
 
+.zone-header {
+  display: grid;
+  gap: 6px;
+}
+
 .zone-header h1 {
   font-size: clamp(32px, 3vw, 44px);
 }
@@ -884,6 +889,7 @@ onMounted(async () => {
 
 .zone-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
@@ -953,6 +959,7 @@ onMounted(async () => {
 
 .schedule-table-wrap {
   padding: 8px 12px 12px;
+  overflow-x: auto;
 }
 
 .state-line {
@@ -1173,9 +1180,19 @@ onMounted(async () => {
 
 @media (max-width: 640px) {
   .zone-tabs {
-    width: 100%;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+
+  .zone-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab-btn {
+    flex: 0 0 auto;
+    min-width: 108px;
   }
 
   .editor-grid,
@@ -1188,8 +1205,68 @@ onMounted(async () => {
     align-items: flex-start;
   }
 
+  .schedule-toolbar > .btn,
+  .notice-list-head > .btn {
+    width: 100%;
+  }
+
   .notice-row {
     display: grid;
+  }
+
+  .notice-list-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .notice-row-tools {
+    flex-wrap: wrap;
+  }
+
+  .notice-detail {
+    padding: 14px;
+  }
+
+  .schedule-table {
+    min-width: 0;
+  }
+
+  .schedule-table thead {
+    display: none;
+  }
+
+  .schedule-table,
+  .schedule-table tbody {
+    display: grid;
+    gap: 10px;
+  }
+
+  .schedule-table tr {
+    display: grid;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid rgba(17, 24, 39, 0.08);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.72);
+  }
+
+  .schedule-table td {
+    display: grid;
+    grid-template-columns: minmax(82px, 96px) minmax(0, 1fr);
+    gap: 10px;
+    border: 0;
+    padding: 0;
+  }
+
+  .schedule-table td::before {
+    content: attr(data-label);
+    font-size: 12px;
+    font-weight: 600;
+    color: #6a7486;
+  }
+
+  .table-actions {
+    flex-wrap: wrap;
   }
 }
 </style>

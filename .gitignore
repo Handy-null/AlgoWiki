@@ -41,4 +41,7 @@ Thumbs.db
 # Local scratch
 __attachments/
 __tmp_cn_test.txt
+.tmp/
+.tmp_md_paths.json
+.codex-handoff.local.md
 开发进度.md

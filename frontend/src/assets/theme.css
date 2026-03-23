@@ -179,6 +179,7 @@ a {
 
 .markdown {
   line-height: 1.72;
+  overflow-wrap: anywhere;
 }
 
 .markdown a {
@@ -321,5 +322,21 @@ a {
 
   .meta {
     font-size: 14px;
+  }
+
+  .section-title {
+    font-size: 22px;
+    margin-bottom: 12px;
+  }
+
+  .markdown table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .markdown th,
+  .markdown td {
+    min-width: 120px;
   }
 }

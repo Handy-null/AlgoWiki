@@ -914,9 +914,16 @@ watch(
 }
 
 @media (max-width: 1260px) {
-  .article-layout {
+  .article-layout,
+  .article-layout.embedded-mode {
     grid-template-columns: 1fr;
     gap: 14px;
+  }
+
+  .article-layout.embedded-mode .article-main,
+  .article-layout.embedded-mode .side-panel--right {
+    grid-column: auto;
+    grid-row: auto;
   }
 
   .editor-layout {
@@ -964,6 +971,11 @@ watch(
 }
 
 @media (max-width: 960px) {
+  .article-layout,
+  .article-layout.embedded-mode {
+    gap: 12px;
+  }
+
   .toc-item {
     font-size: 15px;
   }
@@ -975,6 +987,60 @@ watch(
 
   .article-markdown {
     font-size: 17px;
+  }
+
+  .article-header h1 {
+    font-size: clamp(26px, 8.4vw, 34px);
+    line-height: 1.14;
+  }
+
+  .article-actions {
+    width: 100%;
+  }
+
+  .side-panel--right {
+    border-left: 0;
+    padding-left: 0;
+  }
+
+  .comment-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .comment-tools {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 620px) {
+  .article-layout,
+  .article-layout.embedded-mode {
+    gap: 10px;
+  }
+
+  .article-header {
+    gap: 10px;
+  }
+
+  .article-header h1 {
+    font-size: clamp(24px, 9vw, 30px);
+  }
+
+  .article-actions {
+    gap: 6px;
+  }
+
+  .panel-block {
+    padding: 10px;
+  }
+
+  .panel-block h3 {
+    font-size: 20px;
+  }
+
+  .comment p {
+    font-size: 15px;
   }
 }
 

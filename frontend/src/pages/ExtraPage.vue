@@ -58,10 +58,39 @@
       </section>
     </article>
 
-    <article class="extra-main" v-else>
-      <div class="section-title">{{ page?.title || "关于 AlgoWiki" }}</div>
-      <p class="meta">{{ page?.description || "项目介绍与路线图。" }}</p>
-      <section class="markdown" v-html="htmlContent"></section>
+    <article class="extra-main extra-main--about" v-else>
+      <header class="extra-head">
+        <div class="extra-head-copy">
+          <div class="section-title">{{ page?.title || "关于 AlgoWiki" }}</div>
+          <p class="meta">{{ page?.description || "项目介绍与路线图。" }}</p>
+        </div>
+        <div v-if="canEditAbout" class="extra-head-actions">
+          <button type="button" class="btn" @click="toggleAboutEditor">
+            {{ showAboutEditor ? "收起编辑" : "编辑页面" }}
+          </button>
+        </div>
+      </header>
+
+      <section v-if="canEditAbout && showAboutEditor" class="about-editor card">
+        <div class="about-editor-grid">
+          <input v-model.trim="aboutForm.title" class="input" placeholder="页面标题" />
+          <input v-model.trim="aboutForm.description" class="input" placeholder="页面简介" />
+        </div>
+        <ImageUploadHelper label="上传图片并插入 Markdown" @uploaded="onAboutImageUploaded" />
+        <textarea
+          v-model="aboutForm.content_md"
+          class="textarea"
+          placeholder="使用 Markdown 编写关于 AlgoWiki 页面的内容"
+        ></textarea>
+        <div class="trick-action-row">
+          <button type="button" class="btn btn-accent" :disabled="savingAbout" @click="saveAboutPage">
+            {{ savingAbout ? "保存中..." : "保存页面" }}
+          </button>
+          <button type="button" class="btn" :disabled="savingAbout" @click="resetAboutEditor">重置</button>
+        </div>
+      </section>
+
+      <section class="markdown about-markdown" v-html="htmlContent"></section>
     </article>
   </section>
 </template>
@@ -85,13 +114,22 @@ const page = ref(null);
 const tricks = ref([]);
 const submittingTrick = ref(false);
 const savingEdit = ref(false);
+const savingAbout = ref(false);
 const editingTrickId = ref(null);
+const showAboutEditor = ref(false);
+const aboutPageExists = ref(false);
 
 const trickForm = reactive({
   content_md: "",
 });
 
 const editForm = reactive({
+  content_md: "",
+});
+
+const aboutForm = reactive({
+  title: "",
+  description: "",
   content_md: "",
 });
 
@@ -102,6 +140,7 @@ const trickMeta = reactive({
 });
 
 const htmlContent = computed(() => renderMarkdown(page.value?.content_md || ""));
+const canEditAbout = computed(() => activePanel.value === "about" && auth.isManager);
 
 function appendMarkdown(target, snippet) {
   const next = String(snippet || "").trim();
@@ -116,6 +155,10 @@ function onTrickImageUploaded(payload) {
 
 function onEditTrickImageUploaded(payload) {
   editForm.content_md = appendMarkdown(editForm.content_md, payload?.markdown);
+}
+
+function onAboutImageUploaded(payload) {
+  aboutForm.content_md = appendMarkdown(aboutForm.content_md, payload?.markdown);
 }
 
 function formatTime(value) {
@@ -195,12 +238,73 @@ async function loadPage() {
   try {
     const { data } = await api.get("/pages/about/");
     page.value = data;
+    aboutPageExists.value = true;
+    applyPageToAboutForm(data);
   } catch {
+    aboutPageExists.value = false;
     page.value = {
       title: "关于 AlgoWiki",
       description: "项目介绍与路线图。",
       content_md: "当前扩展页未配置内容。",
     };
+    applyPageToAboutForm(page.value);
+  }
+}
+
+function applyPageToAboutForm(item) {
+  aboutForm.title = item?.title || "关于 AlgoWiki";
+  aboutForm.description = item?.description || "";
+  aboutForm.content_md = item?.content_md || "";
+}
+
+function resetAboutEditor() {
+  applyPageToAboutForm(page.value);
+}
+
+function toggleAboutEditor() {
+  showAboutEditor.value = !showAboutEditor.value;
+  if (showAboutEditor.value) {
+    resetAboutEditor();
+  }
+}
+
+async function saveAboutPage() {
+  if (!canEditAbout.value) return;
+  const title = String(aboutForm.title || "").trim();
+  const content = String(aboutForm.content_md || "").trim();
+  if (!title || !content) {
+    ui.info("请填写页面标题和正文内容");
+    return;
+  }
+
+  savingAbout.value = true;
+  try {
+    let data;
+    if (aboutPageExists.value) {
+      ({ data } = await api.patch("/pages/about/", {
+        title,
+        description: String(aboutForm.description || "").trim(),
+        content_md: aboutForm.content_md,
+      }));
+    } else {
+      ({ data } = await api.post("/pages/", {
+        title,
+        slug: "about",
+        description: String(aboutForm.description || "").trim(),
+        content_md: aboutForm.content_md,
+        access_level: "public",
+        is_enabled: true,
+      }));
+      aboutPageExists.value = true;
+    }
+    page.value = data;
+    applyPageToAboutForm(data);
+    showAboutEditor.value = false;
+    ui.success("关于页面已更新");
+  } catch (error) {
+    ui.error(getErrorText(error, "关于页面保存失败"));
+  } finally {
+    savingAbout.value = false;
   }
 }
 
@@ -327,13 +431,20 @@ watch(
     activePanel.value = resolvePanelFromRoute();
     if (activePanel.value === "about") {
       await loadPage();
+      return;
+    }
+    showAboutEditor.value = false;
+    if (!tricks.value.length) {
+      await loadTricks();
     }
   },
   { immediate: true }
 );
 
 onMounted(async () => {
-  await loadTricks();
+  if (activePanel.value === "tricks" && !tricks.value.length) {
+    await loadTricks();
+  }
 });
 </script>
 
@@ -348,6 +459,50 @@ onMounted(async () => {
   background: rgba(255, 255, 255, 0.6);
   padding: 18px;
   box-shadow: var(--shadow-sm);
+}
+
+.extra-main--about {
+  display: grid;
+  gap: 14px;
+}
+
+.extra-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.extra-head-copy {
+  min-width: 0;
+}
+
+.extra-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.about-editor {
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.about-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.about-markdown {
+  min-width: 0;
+}
+
+.about-markdown :deep(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
 }
 
 .trick-submit {
@@ -423,5 +578,44 @@ onMounted(async () => {
 
 .table-foot {
   margin-top: 6px;
+}
+
+@media (max-width: 720px) {
+  .extra-main {
+    padding: 14px;
+  }
+
+  .extra-head {
+    flex-direction: column;
+  }
+
+  .extra-head-actions,
+  .extra-head-actions .btn {
+    width: 100%;
+  }
+
+  .about-editor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .trick-submit,
+  .trick-list {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 560px) {
+  .trick-meta-row {
+    display: grid;
+    gap: 4px;
+  }
+
+  .trick-action-row {
+    gap: 6px;
+  }
+
+  .trick-action-row .btn {
+    flex: 1 1 calc(50% - 6px);
+  }
 }
 </style>

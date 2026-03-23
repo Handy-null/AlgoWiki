@@ -872,6 +872,11 @@ watch(
     gap: 14px;
   }
 
+  .wiki-toc {
+    border-top: 1px solid var(--hairline);
+    padding-top: 10px;
+  }
+
   .toolbar {
     grid-template-columns: 1fr 1fr;
   }
@@ -892,11 +897,40 @@ watch(
     flex-direction: column;
     align-items: flex-start;
   }
+
+  .chapter-view :deep(.article-layout.embedded-mode) {
+    border: 1px solid var(--hairline);
+    border-radius: 14px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.6);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .chapter-view :deep(.article-layout.embedded-mode .article-main) {
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .chapter-view :deep(.article-layout.embedded-mode .side-panel--right) {
+    border-top: 1px solid var(--hairline);
+    padding-top: 12px;
+  }
 }
 
 @media (max-width: 620px) {
   .toolbar {
     grid-template-columns: 1fr;
+  }
+
+  .chapter-view :deep(.article-layout.embedded-mode) {
+    padding: 10px;
+  }
+
+  .chapter-view :deep(.article-layout.embedded-mode .side-panel--right) {
+    padding-top: 10px;
   }
 }
 

@@ -89,6 +89,22 @@
         >
           管理台
         </RouterLink>
+        <RouterLink
+          v-if="auth.isAuthenticated"
+          class="mobile-link mobile-link--accent"
+          :to="{ name: 'profile' }"
+          @click="showMobileMenu = false"
+        >
+          个人中心
+        </RouterLink>
+        <RouterLink
+          v-else
+          class="mobile-link mobile-link--accent"
+          :to="{ name: 'auth' }"
+          @click="showMobileMenu = false"
+        >
+          登录 / 注册
+        </RouterLink>
       </div>
     </Transition>
   </header>
@@ -337,6 +353,7 @@ onBeforeUnmount(() => {
   grid-template-columns: auto auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: clamp(10px, 1.2vw, 16px);
+  min-width: 0;
 }
 
 .menu-toggle {
@@ -362,6 +379,7 @@ onBeforeUnmount(() => {
   font-size: clamp(38px, 2.7vw, 46px);
   line-height: 1;
   white-space: nowrap;
+  min-width: 0;
 }
 
 .desktop-nav {
@@ -413,6 +431,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 10px;
   position: relative;
+  min-width: 0;
 }
 
 .auth-pill {
@@ -427,6 +446,9 @@ onBeforeUnmount(() => {
 
 .user-trigger {
   cursor: pointer;
+  max-width: 132px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .notify-toggle {
@@ -596,8 +618,20 @@ onBeforeUnmount(() => {
   }
 
   .notify-panel {
-    right: 0;
-    top: 42px;
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    top: 72px;
+    width: auto;
+    max-height: min(58vh, 420px);
+  }
+
+  .user-panel {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    top: 72px;
+    width: auto;
   }
 
   .mobile-panel {
@@ -606,6 +640,9 @@ onBeforeUnmount(() => {
     padding: 10px 12px 12px;
     background: rgba(255, 255, 255, 0.95);
     box-shadow: var(--shadow-sm);
+    border-top: 1px solid var(--hairline);
+    max-height: calc(100vh - 62px);
+    overflow: auto;
   }
 
   .mobile-search {
@@ -615,7 +652,9 @@ onBeforeUnmount(() => {
   .mobile-link {
     font-size: 14px;
     color: #252a33;
-    padding: 8px 4px;
+    padding: 12px 10px;
+    border-radius: 12px;
+    background: rgba(244, 248, 255, 0.85);
   }
 
   .mobile-link--section {
@@ -623,20 +662,48 @@ onBeforeUnmount(() => {
     padding-top: 4px;
     padding-bottom: 4px;
   }
+
+  .mobile-link--accent {
+    color: var(--accent);
+    background: rgba(124, 92, 255, 0.12);
+    font-weight: 600;
+  }
 }
 
 @media (max-width: 620px) {
+  .topbar-inner {
+    height: 58px;
+    padding: 0 10px;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
   .auth-pill {
-    padding: 7px 13px;
+    padding: 7px 11px;
     font-size: 13px;
   }
 
   .notify-toggle {
-    padding: 7px 10px;
+    min-width: 42px;
+    padding: 7px 9px;
+    justify-content: center;
   }
 
   .brand {
-    font-size: 28px;
+    font-size: 24px;
+  }
+
+  .actions {
+    gap: 6px;
+  }
+
+  .user-trigger {
+    max-width: 88px;
+  }
+
+  .notify-panel,
+  .user-panel {
+    top: 64px;
   }
 }
 

@@ -11,6 +11,9 @@ backend/*/__pycache__/
 backend/staticfiles/
 backend/media/
 storage/
+.tmp/
+.tmp*
+.codex-handoff.local.md
 *.sqlite3
 *.pyc
 .git/
