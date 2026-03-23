@@ -2,6 +2,10 @@
 
 本文档说明如何使用 GitHub Container Registry (`ghcr.io`) 作为 AlgoWiki 的镜像仓库，并让服务器通过一条命令更新到最新版本。
 
+如果你要执行日常发布、更新、回滚，请优先看：
+
+- [发布与更新操作手册](./发布与更新操作手册.md)
+
 ## 方案概览
 
 - 代码仓库：`https://github.com/NullResot/AlgoWiki`
