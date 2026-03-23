@@ -22,6 +22,14 @@
       >
         赛事公告
       </button>
+      <button
+        type="button"
+        class="tab-btn"
+        :class="{ 'tab-btn--active': activeTab === 'practice' }"
+        @click="activeTab = 'practice'"
+      >
+        补题链接
+      </button>
     </nav>
 
     <section v-if="activeTab === 'schedule'" class="schedule-page">
@@ -128,7 +136,7 @@
       </section>
     </section>
 
-    <section v-else class="notice-page">
+    <section v-else-if="activeTab === 'notice'" class="notice-page">
       <aside class="card notice-filter">
         <h3>赛事分类</h3>
         <div class="series-tabs">
@@ -270,6 +278,8 @@
         </article>
       </div>
     </section>
+
+    <CompetitionPracticePanel v-else />
   </section>
 </template>
 
@@ -278,6 +288,7 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 
 import { renderMarkdown } from "../services/markdown";
 import api from "../services/api";
+import CompetitionPracticePanel from "../components/CompetitionPracticePanel.vue";
 import ImageUploadHelper from "../components/ImageUploadHelper.vue";
 import { useAuthStore } from "../stores/auth";
 import { useUiStore } from "../stores/ui";
@@ -1164,7 +1175,7 @@ onMounted(async () => {
   .zone-tabs {
     width: 100%;
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .editor-grid,

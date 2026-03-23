@@ -10,6 +10,8 @@ from .models import (
     ArticleStar,
     Category,
     CompetitionNotice,
+    CompetitionPracticeLink,
+    CompetitionPracticeLinkProposal,
     CompetitionScheduleEntry,
     ContributionEvent,
     ExtensionPage,
@@ -99,8 +101,8 @@ class RevisionProposalAdmin(admin.ModelAdmin):
 
 @admin.register(IssueTicket)
 class IssueTicketAdmin(admin.ModelAdmin):
-    list_display = ("id", "kind", "title", "author", "status", "updated_at")
-    list_filter = ("kind", "status")
+    list_display = ("id", "kind", "title", "author", "visibility", "status", "updated_at")
+    list_filter = ("kind", "visibility", "status")
     search_fields = ("title", "content")
 
 
@@ -170,6 +172,39 @@ class CompetitionScheduleEntryAdmin(admin.ModelAdmin):
         "announcement__title",
         "created_by__username",
     )
+
+
+@admin.register(CompetitionPracticeLink)
+class CompetitionPracticeLinkAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "year",
+        "series",
+        "stage",
+        "short_name",
+        "source_file",
+        "display_order",
+        "updated_at",
+    )
+    list_filter = ("series", "stage", "year", "source_file")
+    search_fields = ("short_name", "official_name", "organizer", "practice_links_note", "source_section")
+
+
+@admin.register(CompetitionPracticeLinkProposal)
+class CompetitionPracticeLinkProposalAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "proposed_year",
+        "proposed_series",
+        "proposed_stage",
+        "proposed_short_name",
+        "proposer",
+        "status",
+        "reviewer",
+        "updated_at",
+    )
+    list_filter = ("proposed_series", "proposed_stage", "proposed_year", "status")
+    search_fields = ("proposed_short_name", "proposed_official_name", "reason", "review_note", "proposer__username")
 
 
 @admin.register(Answer)

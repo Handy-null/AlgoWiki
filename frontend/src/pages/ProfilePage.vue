@@ -342,16 +342,29 @@
               <option value="issue">Issue</option>
               <option value="request">Request</option>
             </select>
+            <select class="select" v-model="issueForm.visibility">
+              <option value="public">公开</option>
+              <option value="private">个人</option>
+            </select>
             <input class="input" v-model="issueForm.title" placeholder="Title" />
             <textarea class="textarea" v-model="issueForm.content" placeholder="Description"></textarea>
             <button class="btn" @click="submitIssue">Submit</button>
           </div>
 
           <div class="issue-filters">
+            <select class="select" v-model="issueFilters.scope" @change="loadIssues()">
+              <option value="mine">我的</option>
+              <option value="all">全部</option>
+            </select>
             <select class="select" v-model="issueFilters.kind" @change="loadIssues()">
               <option value="">All Types</option>
               <option value="issue">Issue</option>
               <option value="request">Request</option>
+            </select>
+            <select class="select" v-model="issueFilters.visibility" @change="loadIssues()">
+              <option value="">全部可见性</option>
+              <option value="private">个人</option>
+              <option value="public">公开</option>
             </select>
             <select class="select" v-model="issueFilters.status" @change="loadIssues()">
               <option value="">All Status</option>
@@ -368,7 +381,12 @@
 
           <article class="issue-row" v-for="item in issues" :key="item.id">
             <strong>{{ item.title }}</strong>
-            <div class="meta">{{ item.kind }} | {{ formatModerationStatus(item.status) }} | {{ formatTime(item.created_at) }}</div>
+            <div class="meta">
+              {{ item.kind }} | {{ formatIssueVisibility(item.visibility) }} | {{ formatModerationStatus(item.status) }} | {{ formatTime(item.created_at) }}
+            </div>
+            <p class="meta" v-if="issueFilters.scope === 'all' && item.author">
+              Author: {{ item.author.username }}
+            </p>
             <p class="meta" v-if="item.related_article_title">Related Article: {{ item.related_article_title }}</p>
             <p class="issue-note" v-if="item.resolution_note">Note: {{ item.resolution_note }}</p>
           </article>
@@ -468,12 +486,15 @@ const starredMeta = reactive({
 
 const issueForm = reactive({
   kind: "issue",
+  visibility: "public",
   title: "",
   content: "",
 });
 
 const issueFilters = reactive({
+  scope: "mine",
   kind: "",
+  visibility: "",
   status: "",
   search: "",
 });
@@ -535,6 +556,14 @@ function formatModerationStatus(value) {
     open: "open",
     in_progress: "in_progress",
     resolved: "resolved",
+  };
+  return map[value] || value || "-";
+}
+
+function formatIssueVisibility(value) {
+  const map = {
+    private: "个人",
+    public: "公开",
   };
   return map[value] || value || "-";
 }
@@ -631,8 +660,10 @@ async function loadProfile() {
 }
 
 async function loadIssues(page = 1, append = false) {
-  const params = { page, mine: 1 };
+  const params = { page };
+  if (issueFilters.scope !== "all") params.mine = 1;
   if (issueFilters.kind) params.kind = issueFilters.kind;
+  if (issueFilters.visibility) params.visibility = issueFilters.visibility;
   if (issueFilters.status) params.status = issueFilters.status;
   if (issueFilters.search.trim()) params.search = issueFilters.search.trim();
   const { data } = await api.get("/issues/", { params });
@@ -835,7 +866,9 @@ async function loadMoreStarredArticles() {
 }
 
 function resetIssueFilters() {
+  issueFilters.scope = "mine";
   issueFilters.kind = "";
+  issueFilters.visibility = "";
   issueFilters.status = "";
   issueFilters.search = "";
   loadIssues(1, false);
@@ -930,6 +963,7 @@ async function submitIssue() {
   try {
     const { data } = await api.post("/issues/", {
       kind: issueForm.kind,
+      visibility: issueForm.visibility,
       title: issueForm.title.trim(),
       content: issueForm.content.trim(),
     });

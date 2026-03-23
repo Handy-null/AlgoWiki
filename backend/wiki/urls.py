@@ -9,6 +9,8 @@ from .views import (
     ArticleViewSet,
     CategoryViewSet,
     CompetitionNoticeViewSet,
+    CompetitionPracticeLinkProposalViewSet,
+    CompetitionPracticeLinkViewSet,
     CompetitionScheduleEntryViewSet,
     ContributionEventViewSet,
     ExtensionPageViewSet,
@@ -53,6 +55,8 @@ router.register(r"team-members", TeamMemberViewSet, basename="team-member")
 router.register(r"friendly-links", FriendlyLinkViewSet, basename="friendly-link")
 router.register(r"competition-notices", CompetitionNoticeViewSet, basename="competition-notice")
 router.register(r"competition-schedules", CompetitionScheduleEntryViewSet, basename="competition-schedule")
+router.register(r"competition-practice-links", CompetitionPracticeLinkViewSet, basename="competition-practice-link")
+router.register(r"competition-practice-proposals", CompetitionPracticeLinkProposalViewSet, basename="competition-practice-proposal")
 
 urlpatterns = [
     path("health/", HealthCheckView.as_view(), name="health"),

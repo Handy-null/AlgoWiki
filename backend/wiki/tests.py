@@ -1,3 +1,4 @@
+import json
 import tempfile
 from datetime import timedelta
 from pathlib import Path
@@ -16,6 +17,8 @@ from .models import (
     ArticleComment,
     Category,
     CompetitionNotice,
+    CompetitionPracticeLink,
+    CompetitionPracticeLinkProposal,
     CompetitionScheduleEntry,
     ContributionEvent,
     FriendlyLink,
@@ -1770,6 +1773,231 @@ class IssueTicketAdminTests(APITestCase):
 
         self.ticket_assigned.refresh_from_db()
         self.assertNotEqual(self.ticket_assigned.status, IssueTicket.Status.RESOLVED)
+
+    def test_private_ticket_only_visible_to_author_and_admin(self):
+        private_ticket = IssueTicket.objects.create(
+            kind=IssueTicket.Kind.ISSUE,
+            title="Private ticket",
+            content="secret",
+            author=self.author_a,
+            visibility=IssueTicket.Visibility.PRIVATE,
+            status=IssueTicket.Status.OPEN,
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.author_a_token.key}")
+        own_response = self.client.get("/api/issues/", {"mine": 1})
+        own_ids = {item["id"] for item in own_response.data.get("results", own_response.data)}
+        self.assertIn(private_ticket.id, own_ids)
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.author_b_token.key}")
+        other_response = self.client.get("/api/issues/", {"scope": "all"})
+        other_ids = {item["id"] for item in other_response.data.get("results", other_response.data)}
+        self.assertNotIn(private_ticket.id, other_ids)
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
+        admin_response = self.client.get("/api/issues/", {"visibility": IssueTicket.Visibility.PRIVATE})
+        admin_ids = {item["id"] for item in admin_response.data.get("results", admin_response.data)}
+        self.assertIn(private_ticket.id, admin_ids)
+
+    def test_visibility_filter_returns_expected_subset(self):
+        IssueTicket.objects.create(
+            kind=IssueTicket.Kind.REQUEST,
+            title="Private mine",
+            content="mine only",
+            author=self.author_a,
+            visibility=IssueTicket.Visibility.PRIVATE,
+            status=IssueTicket.Status.OPEN,
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.author_a_token.key}")
+        response = self.client.get(
+            "/api/issues/",
+            {"mine": 1, "visibility": IssueTicket.Visibility.PRIVATE},
+        )
+        items = response.data.get("results", response.data)
+        self.assertTrue(items)
+        self.assertTrue(all(item["visibility"] == IssueTicket.Visibility.PRIVATE for item in items))
+
+    def test_private_ticket_cannot_be_assigned_to_school_user(self):
+        private_ticket = IssueTicket.objects.create(
+            kind=IssueTicket.Kind.ISSUE,
+            title="Private assign",
+            content="secret assignment",
+            author=self.author_a,
+            visibility=IssueTicket.Visibility.PRIVATE,
+            status=IssueTicket.Status.OPEN,
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
+        response = self.client.post(
+            f"/api/issues/{private_ticket.id}/set_status/",
+            {"status": IssueTicket.Status.IN_PROGRESS, "assign_to": self.school_assignee.id},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Private tickets can only be handled by admins.", str(response.data))
+
+    def test_author_cannot_switch_assigned_school_ticket_to_private(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.author_a_token.key}")
+        response = self.client.patch(
+            f"/api/issues/{self.ticket_assigned.id}/",
+            {"visibility": IssueTicket.Visibility.PRIVATE},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Private tickets cannot stay assigned to school reviewers.", str(response.data))
+
+
+class CompetitionPracticeLinkApiTests(APITestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(username="practice_admin", password="Password123", role=User.Role.ADMIN)
+        self.proposer = User.objects.create_user(username="practice_user", password="Password123", role=User.Role.NORMAL)
+        self.admin_token = Token.objects.create(user=self.admin)
+        self.proposer_token = Token.objects.create(user=self.proposer)
+
+        self.entry = CompetitionPracticeLink.objects.create(
+            source_key="seed-icpc-2024-online",
+            year=2024,
+            series=CompetitionPracticeLink.Series.ICPC,
+            stage=CompetitionPracticeLink.Stage.NETWORK,
+            short_name="网络预选赛",
+            official_name="2024 ICPC Online Contest",
+            official_url="https://example.com/icpc-online",
+            event_date_text="2024-09-15",
+            organizer="在线-PTA",
+            practice_links=[{"label": "QOJ", "url": "https://qoj.ac/contest/1797"}],
+            practice_links_note="",
+            source_file="02 - ICPC.md",
+            source_section="2024.9-2025 赛季 49th",
+            display_order=1,
+        )
+        self.other_entry = CompetitionPracticeLink.objects.create(
+            source_key="seed-ccpc-2023-onsite",
+            year=2023,
+            series=CompetitionPracticeLink.Series.CCPC,
+            stage=CompetitionPracticeLink.Stage.REGIONAL,
+            short_name="秦皇岛",
+            official_name="2023 CCPC Qinhuangdao Onsite",
+            official_url="https://example.com/ccpc-qhd",
+            event_date_text="2023-10-15",
+            organizer="东北大学秦皇岛分校",
+            practice_links=[{"label": "GYM", "url": "https://codeforces.com/gym/104787"}],
+            source_file="03 - CCPC.md",
+            source_section="2023.9-2024 赛季 9th",
+            display_order=2,
+        )
+
+    def test_public_list_and_taxonomy_support_filters(self):
+        response = self.client.get(
+            "/api/competition-practice-links/",
+            {
+                "year": 2024,
+                "series": CompetitionPracticeLink.Series.ICPC,
+                "stage": CompetitionPracticeLink.Stage.NETWORK,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        items = response.data.get("results", response.data)
+        ids = {item["id"] for item in items}
+        self.assertEqual(ids, {self.entry.id})
+        self.assertEqual(items[0]["practice_links_text"], "QOJ https://qoj.ac/contest/1797")
+
+        taxonomy = self.client.get("/api/competition-practice-links/taxonomy/")
+        self.assertEqual(taxonomy.status_code, 200)
+        self.assertIn(2024, taxonomy.data["years"])
+        self.assertIn("02 - ICPC.md", taxonomy.data["sources"])
+
+    def test_authenticated_user_can_submit_proposal(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.proposer_token.key}")
+        response = self.client.post(
+            "/api/competition-practice-proposals/",
+            {
+                "target_entry": self.entry.id,
+                "proposed_year": 2024,
+                "proposed_series": CompetitionPracticeLink.Series.ICPC,
+                "proposed_stage": CompetitionPracticeLink.Stage.NETWORK,
+                "proposed_short_name": "网络预选赛(I)",
+                "proposed_official_name": "2024 ICPC Asia EC 网络预选赛",
+                "proposed_official_url": "https://example.com/icpc-ec",
+                "proposed_event_date_text": "2024-09-15",
+                "proposed_organizer": "在线-PTA",
+                "proposed_practice_links_text": "QOJ https://qoj.ac/contest/1797\nPTA https://pintia.cn/market/item/1",
+                "reason": "补充了 PTA 链接",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["status"], CompetitionPracticeLinkProposal.Status.PENDING)
+        self.assertEqual(len(response.data["proposed_practice_links"]), 2)
+
+    def test_admin_can_approve_proposal_and_update_entry(self):
+        proposal = CompetitionPracticeLinkProposal.objects.create(
+            target_entry=self.entry,
+            proposer=self.proposer,
+            proposed_year=2024,
+            proposed_series=CompetitionPracticeLink.Series.ICPC,
+            proposed_stage=CompetitionPracticeLink.Stage.NETWORK,
+            proposed_short_name="网络预选赛(I)",
+            proposed_official_name="2024 ICPC Asia EC 网络预选赛",
+            proposed_official_url="https://example.com/icpc-ec",
+            proposed_event_date_text="2024-09-15",
+            proposed_organizer="在线-PTA",
+            proposed_practice_links=[
+                {"label": "QOJ", "url": "https://qoj.ac/contest/1797"},
+                {"label": "PTA", "url": "https://pintia.cn/market/item/1"},
+            ],
+            proposed_practice_links_note="",
+            reason="补充新链接",
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
+        response = self.client.post(
+            f"/api/competition-practice-proposals/{proposal.id}/approve/",
+            {"review_note": "已核对"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        proposal.refresh_from_db()
+        self.entry.refresh_from_db()
+        self.assertEqual(proposal.status, CompetitionPracticeLinkProposal.Status.APPROVED)
+        self.assertEqual(self.entry.short_name, "网络预选赛(I)")
+        self.assertEqual(len(self.entry.practice_links), 2)
+        self.assertTrue(
+            UserNotification.objects.filter(
+                user=self.proposer,
+                target_type="CompetitionPracticeLinkProposal",
+                target_id=proposal.id,
+            ).exists()
+        )
+
+    def test_import_command_loads_snapshot_json(self):
+        snapshot = [
+            {
+                "source_key": "manual-import-1",
+                "year": 2025,
+                "series": CompetitionPracticeLink.Series.CCPC,
+                "stage": CompetitionPracticeLink.Stage.INVITATIONAL,
+                "short_name": "测试邀请赛",
+                "official_name": "测试邀请赛 Official",
+                "official_url": "https://example.com/invite",
+                "event_date": "2025-05-01",
+                "event_date_text": "2025-05-01",
+                "organizer": "Test Org",
+                "practice_links": [{"label": "GYM", "url": "https://codeforces.com/gym/123456"}],
+                "practice_links_note": "",
+                "source_file": "01 - 省赛与邀请赛.md",
+                "source_section": "测试赛季",
+                "display_order": 9,
+            }
+        ]
+        tmp_file = tempfile.NamedTemporaryFile("w", suffix=".json", encoding="utf-8", delete=False)
+        try:
+            json.dump(snapshot, tmp_file, ensure_ascii=False)
+            tmp_file.close()
+            call_command("import_competition_practice_links", snapshot=tmp_file.name, replace_missing=True)
+            self.assertTrue(CompetitionPracticeLink.objects.filter(source_key="manual-import-1").exists())
+        finally:
+            Path(tmp_file.name).unlink(missing_ok=True)
 
 
 class UserManagementRecoveryTests(APITestCase):

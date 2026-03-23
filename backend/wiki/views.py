@@ -34,6 +34,8 @@ from .models import (
     ArticleStar,
     Category,
     CompetitionNotice,
+    CompetitionPracticeLink,
+    CompetitionPracticeLinkProposal,
     CompetitionScheduleEntry,
     ContributionEvent,
     ExtensionPage,
@@ -57,6 +59,8 @@ from .serializers import (
     ArticleSerializer,
     CategorySerializer,
     CompetitionNoticeSerializer,
+    CompetitionPracticeLinkProposalSerializer,
+    CompetitionPracticeLinkSerializer,
     CompetitionScheduleEntrySerializer,
     ContributionEventSerializer,
     ExtensionPageSerializer,
@@ -2273,20 +2277,37 @@ class IssueTicketViewSet(viewsets.ModelViewSet):
         elif user.role == User.Role.SCHOOL:
             queryset = queryset.filter(
                 Q(author=user)
-                | Q(assignee=user)
-                | ~Q(status=IssueTicket.Status.PENDING)
+                | (
+                    Q(visibility=IssueTicket.Visibility.PUBLIC)
+                    & (Q(assignee=user) | ~Q(status=IssueTicket.Status.PENDING))
+                )
             )
         else:
-            queryset = queryset.filter(Q(author=user) | ~Q(status=IssueTicket.Status.PENDING))
+            queryset = queryset.filter(
+                Q(author=user)
+                | (
+                    Q(visibility=IssueTicket.Visibility.PUBLIC)
+                    & ~Q(status=IssueTicket.Status.PENDING)
+                )
+            )
 
         if user.role == User.Role.SCHOOL and not manager:
             scope = self.request.query_params.get("scope")
             if scope == "assigned":
-                queryset = queryset.filter(assignee=user)
+                queryset = queryset.filter(
+                    assignee=user,
+                    visibility=IssueTicket.Visibility.PUBLIC,
+                )
             elif scope in {"created", "mine"}:
                 queryset = queryset.filter(author=user)
             elif scope == "public":
-                queryset = queryset.exclude(status=IssueTicket.Status.PENDING)
+                queryset = queryset.filter(
+                    visibility=IssueTicket.Visibility.PUBLIC,
+                ).filter(Q(assignee=user) | ~Q(status=IssueTicket.Status.PENDING))
+
+        visibility_filter = self.request.query_params.get("visibility")
+        if visibility_filter in dict(IssueTicket.Visibility.choices):
+            queryset = queryset.filter(visibility=visibility_filter)
 
         status_filter = self.request.query_params.get("status")
         if status_filter in dict(IssueTicket.Status.choices):
@@ -2334,7 +2355,11 @@ class IssueTicketViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        initial_status = IssueTicket.Status.OPEN if request.user.role in {User.Role.SCHOOL, User.Role.ADMIN, User.Role.SUPERADMIN} else IssueTicket.Status.PENDING
+        initial_status = (
+            IssueTicket.Status.OPEN
+            if request.user.role in {User.Role.SCHOOL, User.Role.ADMIN, User.Role.SUPERADMIN}
+            else IssueTicket.Status.PENDING
+        )
         ticket = serializer.save(author=request.user, status=initial_status)
         log_event(request.user, ContributionEvent.EventType.ISSUE, ticket)
         return Response(self.get_serializer(ticket).data, status=status.HTTP_201_CREATED)
@@ -2380,6 +2405,15 @@ class IssueTicketViewSet(viewsets.ModelViewSet):
                 ).first()
                 if not assignee:
                     return False, status.HTTP_400_BAD_REQUEST, "Assignee is not available."
+                if (
+                    ticket.visibility == IssueTicket.Visibility.PRIVATE
+                    and assignee.role == User.Role.SCHOOL
+                ):
+                    return (
+                        False,
+                        status.HTTP_400_BAD_REQUEST,
+                        "Private tickets can only be handled by admins.",
+                    )
                 ticket.assignee = assignee
                 assignee_id_for_event = assignee.id
 
@@ -2434,6 +2468,17 @@ class IssueTicketViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(ticket, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
+        next_visibility = serializer.validated_data.get("visibility", ticket.visibility)
+        if (
+            next_visibility == IssueTicket.Visibility.PRIVATE
+            and ticket.assignee_id
+            and ticket.assignee
+            and ticket.assignee.role == User.Role.SCHOOL
+        ):
+            return Response(
+                {"detail": "Private tickets cannot stay assigned to school reviewers."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         serializer.save()
         event_type = ContributionEvent.EventType.ADMIN if is_manager(request.user) else ContributionEvent.EventType.ISSUE
         log_event(request.user, event_type, ticket, {"action": "update_issue"})
@@ -3461,6 +3506,326 @@ class CompetitionScheduleEntryViewSet(viewsets.ModelViewSet):
             if not years:
                 years = [2026]
             return Response({"years": years})
+        except DatabaseError as exc:
+            return schema_outdated_response(exc)
+
+
+class CompetitionPracticeLinkViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = CompetitionPracticeLinkSerializer
+    queryset = CompetitionPracticeLink.objects.select_related("created_by", "updated_by").all()
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        year = self.request.query_params.get("year")
+        if isinstance(year, str) and year.strip():
+            try:
+                queryset = queryset.filter(year=int(year))
+            except (TypeError, ValueError):
+                queryset = queryset.none()
+
+        series = self.request.query_params.get("series")
+        if series in dict(CompetitionPracticeLink.Series.choices):
+            queryset = queryset.filter(series=series)
+
+        stage = self.request.query_params.get("stage")
+        if stage in dict(CompetitionPracticeLink.Stage.choices):
+            queryset = queryset.filter(stage=stage)
+
+        search = self.request.query_params.get("search")
+        if search:
+            token = search.strip()
+            queryset = queryset.filter(
+                Q(short_name__icontains=token)
+                | Q(official_name__icontains=token)
+                | Q(organizer__icontains=token)
+                | Q(practice_links_note__icontains=token)
+                | Q(source_section__icontains=token)
+            )
+
+        order = self.request.query_params.get("order")
+        if order == "year_asc":
+            return queryset.order_by("year", "display_order", "id")
+        return queryset.order_by("-year", "display_order", "id")
+
+    def list(self, request, *args, **kwargs):
+        try:
+            return super().list(request, *args, **kwargs)
+        except DatabaseError as exc:
+            return schema_outdated_response(exc)
+
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            return super().retrieve(request, *args, **kwargs)
+        except DatabaseError as exc:
+            return schema_outdated_response(exc)
+
+    @action(detail=False, methods=["get"], permission_classes=[AllowAny])
+    def taxonomy(self, request):
+        try:
+            queryset = CompetitionPracticeLink.objects.all()
+            years = sorted(set(queryset.values_list("year", flat=True)), reverse=True)
+            return Response(
+                {
+                    "count": queryset.count(),
+                    "years": years,
+                    "series": [
+                        {
+                            "key": key,
+                            "name": label,
+                            "count": queryset.filter(series=key).count(),
+                        }
+                        for key, label in CompetitionPracticeLink.Series.choices
+                    ],
+                    "stages": [
+                        {
+                            "key": key,
+                            "name": label,
+                            "count": queryset.filter(stage=key).count(),
+                        }
+                        for key, label in CompetitionPracticeLink.Stage.choices
+                    ],
+                    "sources": sorted(
+                        {
+                            value
+                            for value in queryset.exclude(source_file="").values_list("source_file", flat=True)
+                        }
+                    ),
+                }
+            )
+        except DatabaseError as exc:
+            return schema_outdated_response(exc)
+
+
+class CompetitionPracticeLinkProposalViewSet(viewsets.ModelViewSet):
+    serializer_class = CompetitionPracticeLinkProposalSerializer
+    queryset = CompetitionPracticeLinkProposal.objects.select_related(
+        "target_entry",
+        "proposer",
+        "reviewer",
+    ).all()
+    permission_classes = [AuthenticatedAndNotBanned]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+
+        if not is_manager(user):
+            queryset = queryset.filter(proposer=user)
+
+        status_filter = self.request.query_params.get("status")
+        if status_filter in dict(CompetitionPracticeLinkProposal.Status.choices):
+            queryset = queryset.filter(status=status_filter)
+
+        target_entry = self.request.query_params.get("target_entry")
+        if isinstance(target_entry, str) and target_entry.strip():
+            try:
+                queryset = queryset.filter(target_entry_id=int(target_entry))
+            except (TypeError, ValueError):
+                queryset = queryset.none()
+
+        return queryset.order_by("-created_at")
+
+    def create(self, request, *args, **kwargs):
+        try:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            proposal = serializer.save(proposer=request.user)
+            log_event(
+                request.user,
+                ContributionEvent.EventType.ISSUE,
+                proposal,
+                {"action": "create_competition_practice_proposal"},
+            )
+            return Response(self.get_serializer(proposal).data, status=status.HTTP_201_CREATED)
+        except DatabaseError as exc:
+            return schema_outdated_response(exc)
+
+    def update(self, request, *args, **kwargs):
+        try:
+            partial = kwargs.pop("partial", False)
+            proposal = self.get_object()
+            if not (is_manager(request.user) or proposal.proposer_id == request.user.id):
+                return Response({"detail": "No permission to edit this proposal."}, status=status.HTTP_403_FORBIDDEN)
+            if proposal.status != CompetitionPracticeLinkProposal.Status.PENDING:
+                return Response({"detail": "Only pending proposals can be edited."}, status=status.HTTP_400_BAD_REQUEST)
+
+            serializer = self.get_serializer(proposal, data=request.data, partial=partial)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            log_event(
+                request.user,
+                ContributionEvent.EventType.ISSUE if proposal.proposer_id == request.user.id else ContributionEvent.EventType.ADMIN,
+                proposal,
+                {"action": "update_competition_practice_proposal"},
+            )
+            return Response(serializer.data)
+        except DatabaseError as exc:
+            return schema_outdated_response(exc)
+
+    def partial_update(self, request, *args, **kwargs):
+        kwargs["partial"] = True
+        return self.update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            proposal = self.get_object()
+            if not (is_manager(request.user) or proposal.proposer_id == request.user.id):
+                return Response({"detail": "No permission to delete this proposal."}, status=status.HTTP_403_FORBIDDEN)
+            if proposal.status != CompetitionPracticeLinkProposal.Status.PENDING:
+                return Response({"detail": "Only pending proposals can be deleted."}, status=status.HTTP_400_BAD_REQUEST)
+            log_event(
+                request.user,
+                ContributionEvent.EventType.ISSUE if proposal.proposer_id == request.user.id else ContributionEvent.EventType.ADMIN,
+                proposal,
+                {"action": "delete_competition_practice_proposal"},
+            )
+            return super().destroy(request, *args, **kwargs)
+        except DatabaseError as exc:
+            return schema_outdated_response(exc)
+
+    def list(self, request, *args, **kwargs):
+        try:
+            return super().list(request, *args, **kwargs)
+        except DatabaseError as exc:
+            return schema_outdated_response(exc)
+
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            return super().retrieve(request, *args, **kwargs)
+        except DatabaseError as exc:
+            return schema_outdated_response(exc)
+
+    def _ensure_manager(self, user):
+        return bool(user and user.is_authenticated and is_manager(user))
+
+    def _apply_review_action(self, proposal, reviewer, *, action, review_note=""):
+        if not self._ensure_manager(reviewer):
+            return False, status.HTTP_403_FORBIDDEN, "Only admins can review practice-link proposals."
+        if proposal.status != CompetitionPracticeLinkProposal.Status.PENDING:
+            return False, status.HTTP_400_BAD_REQUEST, "Proposal is already reviewed."
+
+        action = (action or "").strip().lower()
+        review_note = "" if review_note is None else str(review_note)
+        now = timezone.now()
+
+        if action == "approve":
+            with transaction.atomic():
+                target = proposal.target_entry
+                if target is None:
+                    next_display_order = (
+                        CompetitionPracticeLink.objects.order_by("-display_order").values_list("display_order", flat=True).first() or 0
+                    )
+                    target = CompetitionPracticeLink.objects.create(
+                        source_key=f"manual-proposal-{proposal.id}",
+                        year=proposal.proposed_year,
+                        series=proposal.proposed_series,
+                        stage=proposal.proposed_stage,
+                        short_name=proposal.proposed_short_name,
+                        official_name=proposal.proposed_official_name,
+                        official_url=proposal.proposed_official_url,
+                        event_date=proposal.proposed_event_date,
+                        event_date_text=proposal.proposed_event_date_text,
+                        organizer=proposal.proposed_organizer,
+                        practice_links=proposal.proposed_practice_links,
+                        practice_links_note=proposal.proposed_practice_links_note,
+                        source_file="user_proposal",
+                        source_section="user_submission",
+                        display_order=next_display_order + 1,
+                        created_by=proposal.proposer,
+                        updated_by=reviewer,
+                    )
+                else:
+                    target.year = proposal.proposed_year
+                    target.series = proposal.proposed_series
+                    target.stage = proposal.proposed_stage
+                    target.short_name = proposal.proposed_short_name
+                    target.official_name = proposal.proposed_official_name
+                    target.official_url = proposal.proposed_official_url
+                    target.event_date = proposal.proposed_event_date
+                    target.event_date_text = proposal.proposed_event_date_text
+                    target.organizer = proposal.proposed_organizer
+                    target.practice_links = proposal.proposed_practice_links
+                    target.practice_links_note = proposal.proposed_practice_links_note
+                    if not target.source_file:
+                        target.source_file = "user_proposal"
+                    if not target.source_section:
+                        target.source_section = "user_submission"
+                    target.updated_by = reviewer
+                    target.save()
+
+                proposal.target_entry = target
+                proposal.status = CompetitionPracticeLinkProposal.Status.APPROVED
+                proposal.reviewer = reviewer
+                proposal.review_note = review_note
+                proposal.reviewed_at = now
+                proposal.save(
+                    update_fields=[
+                        "target_entry",
+                        "status",
+                        "reviewer",
+                        "review_note",
+                        "reviewed_at",
+                        "updated_at",
+                    ]
+                )
+        elif action == "reject":
+            proposal.status = CompetitionPracticeLinkProposal.Status.REJECTED
+            proposal.reviewer = reviewer
+            proposal.review_note = review_note
+            proposal.reviewed_at = now
+            proposal.save(update_fields=["status", "reviewer", "review_note", "reviewed_at", "updated_at"])
+        else:
+            return False, status.HTTP_400_BAD_REQUEST, "Invalid review action."
+
+        log_event(
+            reviewer,
+            ContributionEvent.EventType.ADMIN,
+            proposal,
+            {"action": f"{action}_competition_practice_proposal"},
+        )
+        if proposal.proposer_id != reviewer.id:
+            create_notification(
+                user=proposal.proposer,
+                actor=reviewer,
+                target=proposal,
+                title=f"补题链接申请已{ '通过' if action == 'approve' else '驳回' }：{proposal.proposed_short_name}",
+                content=review_note[:180] if review_note else "管理员已处理你的补题链接申请。",
+                link="/competition",
+                level=UserNotification.Level.WARNING if action == "reject" else UserNotification.Level.INFO,
+            )
+        return True, status.HTTP_200_OK, None
+
+    @action(detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned])
+    def approve(self, request, pk=None):
+        try:
+            proposal = self.get_object()
+            ok, error_status, detail = self._apply_review_action(
+                proposal,
+                request.user,
+                action="approve",
+                review_note=request.data.get("review_note", ""),
+            )
+            if not ok:
+                return Response({"detail": detail}, status=error_status)
+            return Response(self.get_serializer(proposal).data)
+        except DatabaseError as exc:
+            return schema_outdated_response(exc)
+
+    @action(detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned])
+    def reject(self, request, pk=None):
+        try:
+            proposal = self.get_object()
+            ok, error_status, detail = self._apply_review_action(
+                proposal,
+                request.user,
+                action="reject",
+                review_note=request.data.get("review_note", ""),
+            )
+            if not ok:
+                return Response({"detail": detail}, status=error_status)
+            return Response(self.get_serializer(proposal).data)
         except DatabaseError as exc:
             return schema_outdated_response(exc)
 

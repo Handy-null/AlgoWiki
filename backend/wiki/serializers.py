@@ -8,6 +8,7 @@ from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import Throttled
 
+from .competition_practice import parse_practice_links_text, practice_links_to_text
 from .models import (
     Announcement,
     AnnouncementRead,
@@ -17,6 +18,8 @@ from .models import (
     ArticleStar,
     Category,
     CompetitionNotice,
+    CompetitionPracticeLink,
+    CompetitionPracticeLinkProposal,
     CompetitionScheduleEntry,
     ContributionEvent,
     ExtensionPage,
@@ -434,6 +437,7 @@ class IssueTicketSerializer(serializers.ModelSerializer):
     author = UserPublicSerializer(read_only=True)
     assignee = UserPublicSerializer(read_only=True)
     related_article_title = serializers.CharField(source="related_article.title", read_only=True)
+    visibility_label = serializers.CharField(source="get_visibility_display", read_only=True)
 
     class Meta:
         model = IssueTicket
@@ -445,6 +449,8 @@ class IssueTicketSerializer(serializers.ModelSerializer):
             "author",
             "related_article",
             "related_article_title",
+            "visibility",
+            "visibility_label",
             "status",
             "assignee",
             "resolution_note",
@@ -761,6 +767,167 @@ class CompetitionScheduleEntrySerializer(serializers.ModelSerializer):
         if value and not value.is_visible:
             raise serializers.ValidationError("不能关联已隐藏的赛事公告。")
         return value
+
+
+class CompetitionPracticeLinkSerializer(serializers.ModelSerializer):
+    created_by = UserPublicSerializer(read_only=True)
+    updated_by = UserPublicSerializer(read_only=True)
+    series_label = serializers.CharField(source="get_series_display", read_only=True)
+    stage_label = serializers.CharField(source="get_stage_display", read_only=True)
+    practice_links_text = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CompetitionPracticeLink
+        fields = [
+            "id",
+            "source_key",
+            "year",
+            "series",
+            "series_label",
+            "stage",
+            "stage_label",
+            "short_name",
+            "official_name",
+            "official_url",
+            "event_date",
+            "event_date_text",
+            "organizer",
+            "practice_links",
+            "practice_links_note",
+            "practice_links_text",
+            "source_file",
+            "source_section",
+            "display_order",
+            "created_by",
+            "updated_by",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = fields
+
+    def get_practice_links_text(self, obj):
+        return practice_links_to_text(obj.practice_links, obj.practice_links_note)
+
+
+class CompetitionPracticeLinkProposalSerializer(serializers.ModelSerializer):
+    proposer = UserPublicSerializer(read_only=True)
+    reviewer = UserPublicSerializer(read_only=True)
+    target_entry_summary = serializers.CharField(source="target_entry.short_name", read_only=True)
+    proposed_series_label = serializers.CharField(source="get_proposed_series_display", read_only=True)
+    proposed_stage_label = serializers.CharField(source="get_proposed_stage_display", read_only=True)
+    proposed_practice_links_text = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    practice_links_text = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CompetitionPracticeLinkProposal
+        fields = [
+            "id",
+            "target_entry",
+            "target_entry_summary",
+            "proposer",
+            "proposed_year",
+            "proposed_series",
+            "proposed_series_label",
+            "proposed_stage",
+            "proposed_stage_label",
+            "proposed_short_name",
+            "proposed_official_name",
+            "proposed_official_url",
+            "proposed_event_date",
+            "proposed_event_date_text",
+            "proposed_organizer",
+            "proposed_practice_links",
+            "proposed_practice_links_note",
+            "proposed_practice_links_text",
+            "practice_links_text",
+            "reason",
+            "status",
+            "reviewer",
+            "review_note",
+            "reviewed_at",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "proposer",
+            "target_entry_summary",
+            "proposed_practice_links",
+            "proposed_practice_links_note",
+            "practice_links_text",
+            "status",
+            "reviewer",
+            "review_note",
+            "reviewed_at",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_practice_links_text(self, obj):
+        return practice_links_to_text(obj.proposed_practice_links, obj.proposed_practice_links_note)
+
+    def validate_proposed_year(self, value):
+        if value < 2000 or value > 2099:
+            raise serializers.ValidationError("Year must be between 2000 and 2099.")
+        return value
+
+    def validate_proposed_short_name(self, value):
+        value = (value or "").strip()
+        if not value:
+            raise serializers.ValidationError("Short name is required.")
+        return value[:120]
+
+    def validate_proposed_official_name(self, value):
+        value = (value or "").strip()
+        if not value:
+            raise serializers.ValidationError("Official name is required.")
+        return value[:500]
+
+    def validate_proposed_official_url(self, value):
+        return (value or "").strip()
+
+    def validate_proposed_event_date_text(self, value):
+        return (value or "").strip()[:80]
+
+    def validate_proposed_organizer(self, value):
+        return (value or "").strip()[:255]
+
+    def validate_reason(self, value):
+        return (value or "").strip()
+
+    def validate(self, attrs):
+        instance = getattr(self, "instance", None)
+        target_entry = attrs.get("target_entry", getattr(instance, "target_entry", None))
+        if (
+            instance
+            and "target_entry" in attrs
+            and target_entry
+            and instance.target_entry_id
+            and target_entry.id != instance.target_entry_id
+        ):
+            raise serializers.ValidationError(
+                {"target_entry": "Cannot change the target entry of an existing proposal."}
+            )
+
+        text = None
+        if "proposed_practice_links_text" in attrs:
+            text = attrs.pop("proposed_practice_links_text")
+        elif instance is None:
+            text = self.initial_data.get("proposed_practice_links_text", "")
+
+        if text is not None:
+            links, note = parse_practice_links_text(text)
+            attrs["proposed_practice_links"] = links
+            attrs["proposed_practice_links_note"] = note
+
+        event_date = attrs.get("proposed_event_date", getattr(instance, "proposed_event_date", None))
+        event_date_text = attrs.get(
+            "proposed_event_date_text",
+            getattr(instance, "proposed_event_date_text", ""),
+        )
+        if event_date and not event_date_text:
+            attrs["proposed_event_date_text"] = event_date.isoformat()
+
+        return attrs
 
 
 class ContributionEventSerializer(serializers.ModelSerializer):

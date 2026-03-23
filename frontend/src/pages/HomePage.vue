@@ -151,7 +151,7 @@ const fallbackTeamMember = {
   avatar_url: "/wiki-assets/resot.png",
   profile_url: "https://github.com/NullResot",
 };
-const starRepoUrl = "https://github.com/NullResot/xcpc";
+const starRepoUrl = "https://github.com/NullResot/AlgoWiki";
 const canEditTeam = computed(() => auth.isManager);
 const displayTeamMembers = computed(() => {
   const list = Array.isArray(teamMembers.value) ? [...teamMembers.value] : [];

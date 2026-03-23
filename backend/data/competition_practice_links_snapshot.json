@@ -1,0 +1,5213 @@
+[
+  {
+    "source_key": "provincial_invitational-6790d1777249e028",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "浙江",
+    "official_name": "“睿琪杯” 浙江省第 21 届大学生程序设计竞赛\n同时也被称呼为\nThe 3rd Universal Cup. Stage 8: Cangqian",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2024/zhejiang",
+    "event_date": "2024-04-13",
+    "event_date_text": "2024-04-13",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1780"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2023-2024 赛季",
+    "display_order": 1
+  },
+  {
+    "source_key": "provincial_invitational-98d3afc91961cd8c",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "黑龙江",
+    "official_name": "第十九届黑龙江省大学生程序设计竞赛",
+    "official_url": "",
+    "event_date": "2024-04-14",
+    "event_date_text": "2024-04-14",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "PTA",
+        "url": "https://pintia.cn/market/item/1793901564338823168"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2023-2024 赛季",
+    "display_order": 2
+  },
+  {
+    "source_key": "provincial_invitational-70066707e7d70860",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "invitational",
+    "short_name": "湖北邀请赛",
+    "official_name": "The 2024 International Collegiate Programming Contest in Hubei Province, China",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2024/hubei",
+    "event_date": "2024-04-27",
+    "event_date_text": "2024-04-27",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/105139"
+      },
+      {
+        "label": "洛谷",
+        "url": "https://www.luogu.com.cn/contest/188938"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2023-2024 赛季",
+    "display_order": 3
+  },
+  {
+    "source_key": "provincial_invitational-8d01feff670d7d1e",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "invitational",
+    "short_name": "武汉邀请赛",
+    "official_name": "2024 ICPC National Invitational Collegiate Programming Contest, Wuhan Site",
+    "official_url": "https://board.xcpcio.com/icpc/49th/wuhan-invitational",
+    "event_date": "2024-05-02",
+    "event_date_text": "2024-05-02",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/105143"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2023-2024 赛季",
+    "display_order": 4
+  },
+  {
+    "source_key": "provincial_invitational-a46824fc8b6faf8c",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "内蒙古",
+    "official_name": "“华讯杯”内蒙古自治区第十七届大学生程序设计竞赛",
+    "official_url": "",
+    "event_date": "2024-05-12",
+    "event_date_text": "2024-05-12",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "PTA",
+        "url": "https://pintia.cn/market/item/1793842121618161664"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2023-2024 赛季",
+    "display_order": 5
+  },
+  {
+    "source_key": "provincial_invitational-caa1ae671ded2ff3",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "江苏",
+    "official_name": "“华为杯” 2024 Jiangsu Collegiate Programming Contest",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2024/jiangsu",
+    "event_date": "2024-05-12",
+    "event_date_text": "2024-05-12",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/105161"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2023-2024 赛季",
+    "display_order": 6
+  },
+  {
+    "source_key": "provincial_invitational-18c1e05cf0aef5b8",
+    "year": 2024,
+    "series": "ccpc",
+    "stage": "invitational",
+    "short_name": "河南邀请赛",
+    "official_name": "2024 National Invitational of CCPC (Zhengzhou)\n同时也被称呼为\n2024 CCPC Henan Provincial Collegiate Programming Contest",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2024/henan",
+    "event_date": "2024-05-12",
+    "event_date_text": "2024-05-12",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/105158"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2023-2024 赛季",
+    "display_order": 7
+  },
+  {
+    "source_key": "provincial_invitational-baa6a29c3c9bbb5c",
+    "year": 2024,
+    "series": "ccpc",
+    "stage": "invitational",
+    "short_name": "吉林邀请赛",
+    "official_name": "The 2024 CCPC National Invitational Contest (Changchun)\n同时也被称呼为\nThe 17th Jilin Provincial Collegiate Programming Contest",
+    "official_url": "",
+    "event_date": "2024-05-18",
+    "event_date_text": "2024-05-18",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/105170"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2023-2024 赛季",
+    "display_order": 8
+  },
+  {
+    "source_key": "provincial_invitational-cefe31b44678cac9",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "新疆",
+    "official_name": "2024年国际大学生程序设计竞赛（ACM-ICPC）新疆赛区大赛",
+    "official_url": "",
+    "event_date": "2024-05-18",
+    "event_date_text": "2024-05-18",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/82345"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2023-2024 赛季",
+    "display_order": 9
+  },
+  {
+    "source_key": "provincial_invitational-f1aac4ff60aa5146",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "北京",
+    "official_name": "2024 北京市大学生程序设计竞赛",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2024/beijing",
+    "event_date": "2024-05-19",
+    "event_date_text": "2024-05-19",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1668"
+      },
+      {
+        "label": "PTA",
+        "url": "https://pintia.cn/market/item/1794312172238471168"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2023-2024 赛季",
+    "display_order": 10
+  },
+  {
+    "source_key": "provincial_invitational-1c9617cdf06f1f46",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "广西",
+    "official_name": "第七届广西大学生程序设计大赛",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2024/guangxi",
+    "event_date": "2024-05-19",
+    "event_date_text": "2024-05-19",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "PTA",
+        "url": "https://pintia.cn/market/item/1793821896168361984"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2023-2024 赛季",
+    "display_order": 11
+  },
+  {
+    "source_key": "provincial_invitational-64416ef6dd549701",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "invitational",
+    "short_name": "西安邀请赛",
+    "official_name": "第 49 届 ICPC 国际大学生程序设计竞赛邀请赛西安站",
+    "official_url": "https://board.xcpcio.com/icpc/49th/xian-invitational",
+    "event_date": "2024-05-19",
+    "event_date_text": "2024-05-19",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "洛谷",
+        "url": "https://www.luogu.com.cn/contest/173404"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2023-2024 赛季",
+    "display_order": 12
+  },
+  {
+    "source_key": "provincial_invitational-68abfbf88d8f8bb6",
+    "year": 2024,
+    "series": "ccpc",
+    "stage": "invitational",
+    "short_name": "东北四省邀请赛",
+    "official_name": "The 2024 CCPC National Invitational Contest (Northeast)\n同时也被称呼为\nThe 18th Northeast Collegiate Programming Contest",
+    "official_url": "",
+    "event_date": "2024-05-19",
+    "event_date_text": "2024-05-19",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/105173"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2023-2024 赛季",
+    "display_order": 13
+  },
+  {
+    "source_key": "provincial_invitational-7195b4a6d724bd26",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "invitational",
+    "short_name": "昆明邀请赛",
+    "official_name": "The 2024 ICPC Kunming Invitational Contest",
+    "official_url": "https://board.xcpcio.com/icpc/49th/kunming-invitational",
+    "event_date": "2024-05-26",
+    "event_date_text": "2024-05-26",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1803"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2023-2024 赛季",
+    "display_order": 14
+  },
+  {
+    "source_key": "provincial_invitational-e54a32169ef6bf13",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "广东",
+    "official_name": "第二十一届广东省大学生程序设计竞赛",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2024/guangdong",
+    "event_date": "2024-05-26",
+    "event_date_text": "2024-05-26",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1692"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2023-2024 赛季",
+    "display_order": 15
+  },
+  {
+    "source_key": "provincial_invitational-7f3c04b007ba98fe",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "河北",
+    "official_name": "The 8th Hebei Collegiate Programming Contest",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2024/hebei",
+    "event_date": "2024-05-26",
+    "event_date_text": "2024-05-26",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/105184"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2023-2024 赛季",
+    "display_order": 16
+  },
+  {
+    "source_key": "provincial_invitational-29ea96e675967235",
+    "year": 2024,
+    "series": "ccpc",
+    "stage": "invitational",
+    "short_name": "山东邀请赛",
+    "official_name": "The 2024 CCPC Shandong Invitational Contest and Provincial Collegiate Programming Contest",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2024/shandong",
+    "event_date": "2024-05-26",
+    "event_date_text": "2024-05-26",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1802"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2023-2024 赛季",
+    "display_order": 17
+  },
+  {
+    "source_key": "provincial_invitational-bd5bb9b51b638aa3",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "江西",
+    "official_name": "2024 (ICPC) Jiangxi Provincial Contest -- Official Contest",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2024/jiangxi",
+    "event_date": "2024-06-02",
+    "event_date_text": "2024-06-02",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/105231"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2023-2024 赛季",
+    "display_order": 18
+  },
+  {
+    "source_key": "provincial_invitational-f54bc6e241bba314",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "陕西",
+    "official_name": "2024 ICPC ShaanXi Provincial Contest",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2024/shaanxi",
+    "event_date": "2024-06-02",
+    "event_date_text": "2024-06-02",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/105257"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2023-2024 赛季",
+    "display_order": 19
+  },
+  {
+    "source_key": "provincial_invitational-d2950e1d164a2540",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "四川",
+    "official_name": "The 2024 Sichuan Provincial Collegiate Programming Contest",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2024/sichuan",
+    "event_date": "2024-06-16",
+    "event_date_text": "2024-06-16",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/105222"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2023-2024 赛季",
+    "display_order": 20
+  },
+  {
+    "source_key": "provincial_invitational-c0c3065258bb7325",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "上海",
+    "official_name": "“华为智联杯”The 2024 Shanghai Collegiate Programming Contest",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2024/shanghai",
+    "event_date": "2024-06-16",
+    "event_date_text": "2024-06-16",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/105229"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2023-2024 赛季",
+    "display_order": 21
+  },
+  {
+    "source_key": "provincial_invitational-88d4f4a183d00761",
+    "year": 2023,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "浙江",
+    "official_name": "The 20th Zhejiang Provincial Collegiate Programming Contest\n同时也被称呼为\nThe 1st Universal Cup. Stage 15: Hangzhou",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2023/zhejiang",
+    "event_date": "2023-04-15",
+    "event_date_text": "2023-04-15",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1221"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2022-2023 赛季",
+    "display_order": 22
+  },
+  {
+    "source_key": "provincial_invitational-2273eba824a69a82",
+    "year": 2023,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "湖北",
+    "official_name": "2023 Hubei Provincial Collegiate Programming Contest",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2023/hubei",
+    "event_date": "2023-04-30",
+    "event_date_text": "2023-04-30",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104337"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2022-2023 赛季",
+    "display_order": 23
+  },
+  {
+    "source_key": "provincial_invitational-83b6ce722869c88c",
+    "year": 2023,
+    "series": "ccpc",
+    "stage": "provincial",
+    "short_name": "河南",
+    "official_name": "2023 CCPC Henan Provincial Collegiate Programming Contest",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2023/henan",
+    "event_date": "2023-05-05",
+    "event_date_text": "2023-05-05",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104354"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2022-2023 赛季",
+    "display_order": 24
+  },
+  {
+    "source_key": "provincial_invitational-f54e57bb15f421a6",
+    "year": 2023,
+    "series": "icpc",
+    "stage": "invitational",
+    "short_name": "西安邀请赛",
+    "official_name": "The 2023 ICPC Xi'an Invitational Programming Contest",
+    "official_url": "https://board.xcpcio.com/icpc/48th/xian-invitational",
+    "event_date": "2023-05-14",
+    "event_date_text": "2023-05-14",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1291"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2022-2023 赛季",
+    "display_order": 25
+  },
+  {
+    "source_key": "provincial_invitational-7db4d8e9363f3443",
+    "year": 2023,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "广东",
+    "official_name": "The 2023 Guangdong Provincial Collegiate Programming Contest",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2023/guangdong",
+    "event_date": "2023-05-14",
+    "event_date_text": "2023-05-14",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1247"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2022-2023 赛季",
+    "display_order": 26
+  },
+  {
+    "source_key": "provincial_invitational-4c995d1c0dfc2fd8",
+    "year": 2023,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "新疆1",
+    "official_name": "2023年国际大学生程序设计竞赛（ACM-ICPC）新疆赛区",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2023/xinjiang",
+    "event_date": "2023-05-20",
+    "event_date_text": "2023-05-20",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/57840"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2022-2023 赛季",
+    "display_order": 27
+  },
+  {
+    "source_key": "provincial_invitational-7c0ca7f34fb21a9d",
+    "year": 2023,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "江西",
+    "official_name": "2023 (ICPC) Jiangxi Provincial Contest -- Official Contest",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2023/jiangxi",
+    "event_date": "2023-05-21",
+    "event_date_text": "2023-05-21",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104385"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2022-2023 赛季",
+    "display_order": 28
+  },
+  {
+    "source_key": "provincial_invitational-498bd9d977cf259c",
+    "year": 2023,
+    "series": "ccpc",
+    "stage": "provincial",
+    "short_name": "河北",
+    "official_name": "2023 年 CCPC 河北省大学生程序设计竞赛",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2023/hebei",
+    "event_date": "2023-05-21",
+    "event_date_text": "2023-05-21",
+    "organizer": "",
+    "practice_links": [],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2022-2023 赛季",
+    "display_order": 29
+  },
+  {
+    "source_key": "provincial_invitational-c9d41ffeef763790",
+    "year": 2023,
+    "series": "ccpc",
+    "stage": "invitational",
+    "short_name": "江苏",
+    "official_name": "2023 Jiangsu Collegiate Programming Contest\n同时也被称呼为\n2023 National Invitational of CCPC (Hunan),\nThe 13th Xiangtan Collegiate Programming Contest",
+    "official_url": "https://board.xcpcio.com/ccpc/9th/jiangsu-and-xiangtan",
+    "event_date": "2023-05-28",
+    "event_date_text": "2023-05-28",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104396"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2022-2023 赛季",
+    "display_order": 30
+  },
+  {
+    "source_key": "provincial_invitational-01b51f9061f72d06",
+    "year": 2023,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "山东",
+    "official_name": "The 2023 ICPC China Shandong Provincial Programming Contest",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2023/shandong",
+    "event_date": "2023-06-04",
+    "event_date_text": "2023-06-04",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1280"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2022-2023 赛季",
+    "display_order": 31
+  },
+  {
+    "source_key": "provincial_invitational-15daa5e6dd1d08ba",
+    "year": 2023,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "广西",
+    "official_name": "2023 年第六届广西大学生程序设计竞赛",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2023/guangxi",
+    "event_date": "2023-06-04",
+    "event_date_text": "2023-06-04",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/59040"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2022-2023 赛季",
+    "display_order": 32
+  },
+  {
+    "source_key": "provincial_invitational-99c2723dd93ea58b",
+    "year": 2023,
+    "series": "ccpc",
+    "stage": "invitational",
+    "short_name": "湖南邀请赛",
+    "official_name": "2023 National Invitational of CCPC (Hunan)\n同时也被称呼为\n2023 Jiangsu Collegiate Programming Contest,\nThe 13th Xiangtan Collegiate Programming Contest",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2023/hunan",
+    "event_date": "2023-09-17",
+    "event_date_text": "2023-09-17",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104396"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2022-2023 赛季",
+    "display_order": 33
+  },
+  {
+    "source_key": "provincial_invitational-fa8fd7e19a0a6e95",
+    "year": 2023,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "辽宁",
+    "official_name": "第四届辽宁省大学生程序设计竞赛",
+    "official_url": "",
+    "event_date": "2023-10-29",
+    "event_date_text": "2023-10-29",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/68504"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2022-2023 赛季",
+    "display_order": 34
+  },
+  {
+    "source_key": "provincial_invitational-8f35e2cae2fc5684",
+    "year": 2023,
+    "series": "ccpc",
+    "stage": "provincial",
+    "short_name": "新疆2",
+    "official_name": "2023 中国大学生程序设计竞赛（CCPC）新疆赛区",
+    "official_url": "",
+    "event_date": "2023-11-18",
+    "event_date_text": "2023-11-18",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/69555"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2022-2023 赛季",
+    "display_order": 35
+  },
+  {
+    "source_key": "provincial_invitational-2ba666cbedd47034",
+    "year": 2023,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "北京",
+    "official_name": "2023 北京市大学生程序设计竞赛",
+    "official_url": "",
+    "event_date": "2023-12-23",
+    "event_date_text": "2023-12-23",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1464"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2022-2023 赛季",
+    "display_order": 36
+  },
+  {
+    "source_key": "provincial_invitational-16b41c9308adc126",
+    "year": 2022,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "浙江",
+    "official_name": "The 19th Zhejiang Provincial Collegiate Programming Contest",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2022/zjcpc",
+    "event_date": "2022-04-16",
+    "event_date_text": "2022-04-16",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/103687"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2021-2022 赛季",
+    "display_order": 37
+  },
+  {
+    "source_key": "provincial_invitational-bb7867e49f288385",
+    "year": 2022,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "黑龙江",
+    "official_name": "“统信杯” 第十七届黑龙江省大学生程序设计竞赛",
+    "official_url": "",
+    "event_date": "2022-05-15",
+    "event_date_text": "2022-05-15",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/34332"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2021-2022 赛季",
+    "display_order": 38
+  },
+  {
+    "source_key": "provincial_invitational-09b006389fb113b4",
+    "year": 2022,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "湖北",
+    "official_name": "2022 Hubei Provincial Collegiate Programming Contest",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2022/hbcpc",
+    "event_date": "2022-05-22",
+    "event_date_text": "2022-05-22",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/103729"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2021-2022 赛季",
+    "display_order": 39
+  },
+  {
+    "source_key": "provincial_invitational-b9bca3d459b4dbc8",
+    "year": 2022,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "东北地区",
+    "official_name": "第十六届东北地区大学生程序设计竞赛",
+    "official_url": "",
+    "event_date": "2022-05-22",
+    "event_date_text": "2022-05-22",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/35146"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2021-2022 赛季",
+    "display_order": 40
+  },
+  {
+    "source_key": "provincial_invitational-de256cc92b97f4ec",
+    "year": 2022,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "江苏",
+    "official_name": "2022 年江苏省大学生程序设计大赛",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2022/jiangsu",
+    "event_date": "2022-05-28",
+    "event_date_text": "2022-05-28",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/103743"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2021-2022 赛季",
+    "display_order": 41
+  },
+  {
+    "source_key": "provincial_invitational-a4918445654d4a96",
+    "year": 2022,
+    "series": "ccpc",
+    "stage": "invitational",
+    "short_name": "广东邀请赛",
+    "official_name": "“小马智行杯“第十九届广东省大学生程序设计竞赛\n同时也被称呼为\n中国大学生程序设计大赛广东省赛",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2022/guangdong",
+    "event_date": "2022-06-26",
+    "event_date_text": "2022-06-26",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "PTA",
+        "url": "https://pintia.cn/market/item/1534086632285245440"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2021-2022 赛季",
+    "display_order": 42
+  },
+  {
+    "source_key": "provincial_invitational-7abc1ffd4531931c",
+    "year": 2022,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "广西",
+    "official_name": "第五届广西大学生程序设计大赛",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2022/guangxi",
+    "event_date": "2022-06-26",
+    "event_date_text": "2022-06-26",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "PTA",
+        "url": "https://pintia.cn/market/item/1541299013331705856"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2021-2022 赛季",
+    "display_order": 43
+  },
+  {
+    "source_key": "provincial_invitational-b65b807c4b9521b1",
+    "year": 2022,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "上海",
+    "official_name": "2022 Shanghai Collegiate Programming Contest",
+    "official_url": "",
+    "event_date": "2022-09-24",
+    "event_date_text": "2022-09-24",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/103931"
+      },
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/41614"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2021-2022 赛季",
+    "display_order": 44
+  },
+  {
+    "source_key": "provincial_invitational-201c54b4d7cf2cb1",
+    "year": 2022,
+    "series": "ccpc",
+    "stage": "invitational",
+    "short_name": "河南邀请赛",
+    "official_name": "2022 CCPC Henan Provincial Collegiate Programming Contest",
+    "official_url": "",
+    "event_date": "2022-10-02",
+    "event_date_text": "2022-10-02",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/103941"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2021-2022 赛季",
+    "display_order": 45
+  },
+  {
+    "source_key": "provincial_invitational-d557985b96301372",
+    "year": 2022,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "江西",
+    "official_name": "2022年江西省大学生程序设计竞赛",
+    "official_url": "",
+    "event_date": "2022-10-23",
+    "event_date_text": "2022-10-23",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/43898"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2021-2022 赛季",
+    "display_order": 46
+  },
+  {
+    "source_key": "provincial_invitational-dd00597769f53963",
+    "year": 2022,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "辽宁",
+    "official_name": "2022年第三届辽宁省大学生程序设计竞赛",
+    "official_url": "",
+    "event_date": "2022-10-23",
+    "event_date_text": "2022-10-23",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/43937"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2021-2022 赛季",
+    "display_order": 47
+  },
+  {
+    "source_key": "provincial_invitational-fdfde09ca6f98542",
+    "year": 2022,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "陕西",
+    "official_name": "2021-2022年度国际大学生程序设计竞赛第10届陕西省程序设计竞赛",
+    "official_url": "",
+    "event_date": "2022-10-22",
+    "event_date_text": "2022-10-22",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/44007"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2021-2022 赛季",
+    "display_order": 48
+  },
+  {
+    "source_key": "provincial_invitational-1fdf951c2bc12efb",
+    "year": 2022,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "四川",
+    "official_name": "“海康威视杯” 2022年第十四届四川省大学生程序设计大赛",
+    "official_url": "",
+    "event_date": "2022-10-07",
+    "event_date_text": "2022-10-07",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/42105"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2021-2022 赛季",
+    "display_order": 49
+  },
+  {
+    "source_key": "provincial_invitational-dbc79a58b05387c4",
+    "year": 2022,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "山东",
+    "official_name": "The 13th Shandong ICPC Provincial Collegiate Programming Contest",
+    "official_url": "",
+    "event_date": "2022-12-04",
+    "event_date_text": "2022-12-04",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104417"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2021-2022 赛季",
+    "display_order": 50
+  },
+  {
+    "source_key": "provincial_invitational-dc23618fd7b31837",
+    "year": 2021,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "浙江",
+    "official_name": "The 18th Zhejiang Provincial Collegiate Programming Contest",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2021/zjcpc",
+    "event_date": "2021-04-17",
+    "event_date_text": "2021-04-17",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/103055"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2020-2021 赛季",
+    "display_order": 51
+  },
+  {
+    "source_key": "provincial_invitational-59a2519ea6ce9b51",
+    "year": 2021,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "山东",
+    "official_name": "2021 Shandong Provincial Collegiate Programming Contest",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2021/sdcpc",
+    "event_date": "2021-05-09",
+    "event_date_text": "2021-05-09",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/103118"
+      },
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/15600"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2020-2021 赛季",
+    "display_order": 52
+  },
+  {
+    "source_key": "provincial_invitational-9544b73299bb8f91",
+    "year": 2021,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "四川",
+    "official_name": "The 2021 ICPC China Sichuan Provincial Programming Contest",
+    "official_url": "",
+    "event_date": "2021-05-30",
+    "event_date_text": "2021-05-30",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1292"
+      },
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/17624"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2020-2021 赛季",
+    "display_order": 53
+  },
+  {
+    "source_key": "provincial_invitational-fe96b1afab8ee112",
+    "year": 2021,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "东北地区",
+    "official_name": "“红旗杯”第十五届东北地区大学生程序设计竞赛",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2021/necpc",
+    "event_date": "2021-06-13",
+    "event_date_text": "2021-06-13",
+    "organizer": "",
+    "practice_links": [],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2020-2021 赛季",
+    "display_order": 54
+  },
+  {
+    "source_key": "provincial_invitational-bc8d991ced2121f5",
+    "year": 2021,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "广东",
+    "official_name": "GDCPC广东省大学生程序设计竞赛",
+    "official_url": "",
+    "event_date": "2021-06-20",
+    "event_date_text": "2021-06-20",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/17797"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2020-2021 赛季",
+    "display_order": 55
+  },
+  {
+    "source_key": "provincial_invitational-236f68972f4218d9",
+    "year": 2021,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "上海",
+    "official_name": "“科大讯飞杯”The 2021 Shanghai Collegiate Programming Contest",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2021/shanghai",
+    "event_date": "2021-07-11",
+    "event_date_text": "2021-07-11",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/103186"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2020-2021 赛季",
+    "display_order": 56
+  },
+  {
+    "source_key": "provincial_invitational-5781ee735e478153",
+    "year": 2021,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "辽宁",
+    "official_name": "2021辽宁省大学生程序设计竞赛",
+    "official_url": "",
+    "event_date": "2021-10-23",
+    "event_date_text": "2021-10-23",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/22352"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2020-2021 赛季",
+    "display_order": 57
+  },
+  {
+    "source_key": "provincial_invitational-2e9d1d33c5e7badf",
+    "year": 2021,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "江西",
+    "official_name": "2021 ICPC 江西省大学生程序设计竞赛",
+    "official_url": "",
+    "event_date": "2021-10-23",
+    "event_date_text": "2021-10-23",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/21592"
+      },
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/103366"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2020-2021 赛季",
+    "display_order": 58
+  },
+  {
+    "source_key": "provincial_invitational-cfdaf96302fcc9f4",
+    "year": 2021,
+    "series": "ccpc",
+    "stage": "provincial",
+    "short_name": "河南",
+    "official_name": "2021 年河南省第三届 CCPC 大学生程序设计竞赛",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2021/henan",
+    "event_date": "2021-10-30",
+    "event_date_text": "2021-10-30",
+    "organizer": "",
+    "practice_links": [],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2020-2021 赛季",
+    "display_order": 59
+  },
+  {
+    "source_key": "provincial_invitational-438d09ce9914f984",
+    "year": 2021,
+    "series": "ccpc",
+    "stage": "provincial",
+    "short_name": "新疆",
+    "official_name": "2021 CCPC 新疆省赛",
+    "official_url": "",
+    "event_date": "2021-10-31",
+    "event_date_text": "2021-10-31",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/22754"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2020-2021 赛季",
+    "display_order": 60
+  },
+  {
+    "source_key": "provincial_invitational-dd1d9a9d58724ade",
+    "year": 2021,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "河南",
+    "official_name": "河南省第十三届ICPC大学生程序设计竞赛（重现赛）",
+    "official_url": "",
+    "event_date": "2021-11-03",
+    "event_date_text": "2021-11-03",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/17148"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2020-2021 赛季",
+    "display_order": 61
+  },
+  {
+    "source_key": "provincial_invitational-d2478312e1124ac6",
+    "year": 2021,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "吉林",
+    "official_name": "The 15th Jilin Provincial Collegiate Programming Contest",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2021/jilin",
+    "event_date": "2021-11-30",
+    "event_date_text": "2021-11-30",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/103486"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2020-2021 赛季",
+    "display_order": 62
+  },
+  {
+    "source_key": "provincial_invitational-4be4d2773d1b20fa",
+    "year": 2021,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "湖北",
+    "official_name": "2021 Hubei Provincial Collegiate Programming Contest",
+    "official_url": "",
+    "event_date": "2021-12-05",
+    "event_date_text": "2021-12-05",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/103104"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2020-2021 赛季",
+    "display_order": 63
+  },
+  {
+    "source_key": "provincial_invitational-d7338109ad8a6a19",
+    "year": 2021,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "江苏",
+    "official_name": "2021 年江苏省大学生程序设计大赛",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2021/jiangsu",
+    "event_date": "2021-12-25",
+    "event_date_text": "2021-12-25",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/103495"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2020-2021 赛季",
+    "display_order": 64
+  },
+  {
+    "source_key": "provincial_invitational-3f2a4f68a55ba22a",
+    "year": 2022,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "山东",
+    "official_name": "“山大地纬杯”第十二届山东省ICPC大学生程序设计竞赛",
+    "official_url": "",
+    "event_date": "2022-05-22",
+    "event_date_text": "2022-05-22",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/34980"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2020-2021 赛季",
+    "display_order": 65
+  },
+  {
+    "source_key": "provincial_invitational-b263db4b09f663f4",
+    "year": 2022,
+    "series": "icpc",
+    "stage": "invitational",
+    "short_name": "陕西邀请赛",
+    "official_name": "2021年ICPC国际大学生程序设计竞赛暨陕西省第九届大学生程序设计竞赛",
+    "official_url": "",
+    "event_date": "2022-05-28",
+    "event_date_text": "2022-05-28",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/35232"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2020-2021 赛季",
+    "display_order": 66
+  },
+  {
+    "source_key": "provincial_invitational-080f3d338525a0be",
+    "year": 2020,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "吉林",
+    "official_name": "The 14th Jilin Provincial Collegiate Programming Contest",
+    "official_url": "",
+    "event_date": "2020-09-27",
+    "event_date_text": "2020-09-27",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/102800"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2019-2020 赛季",
+    "display_order": 67
+  },
+  {
+    "source_key": "provincial_invitational-2fad81d83b4079db",
+    "year": 2020,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "东北",
+    "official_name": "“红旗杯”第十四届东北地区大学生程序设计竞赛",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2020/necpc",
+    "event_date": "2020-10-11",
+    "event_date_text": "2020-10-11",
+    "organizer": "",
+    "practice_links": [],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2019-2020 赛季",
+    "display_order": 68
+  },
+  {
+    "source_key": "provincial_invitational-8c35b2ab05c01ca6",
+    "year": 2020,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "浙江",
+    "official_name": "The 17th Zhejiang Provincial Collegiate Programming Contest",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2020/zjcpc",
+    "event_date": "2020-10-17",
+    "event_date_text": "2020-10-17",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/102770"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2019-2020 赛季",
+    "display_order": 69
+  },
+  {
+    "source_key": "provincial_invitational-c0c55e3766778e08",
+    "year": 2020,
+    "series": "ccpc",
+    "stage": "invitational",
+    "short_name": "湖南邀请赛",
+    "official_name": "第十六届湖南省大学生计算机程序设计竞赛（The 2020 Hunan Collegiate Programming Contest, HNCPC 2020）",
+    "official_url": "",
+    "event_date": "2020-10-18",
+    "event_date_text": "2020-10-18",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/908"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2019-2020 赛季",
+    "display_order": 70
+  },
+  {
+    "source_key": "provincial_invitational-dc1e4ff983f62458",
+    "year": 2020,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "江西",
+    "official_name": "2020ICPC 江西省大学生程序设计竞赛",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2020/jscpc",
+    "event_date": "2020-11-15",
+    "event_date_text": "2020-11-15",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/8827"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2019-2020 赛季",
+    "display_order": 71
+  },
+  {
+    "source_key": "provincial_invitational-419c8b59042e6033",
+    "year": 2020,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "江苏",
+    "official_name": "2020 Jiangsu Collegiate Programming Contest",
+    "official_url": "",
+    "event_date": "2020-11-15",
+    "event_date_text": "2020-11-15",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/102875"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2019-2020 赛季",
+    "display_order": 72
+  },
+  {
+    "source_key": "provincial_invitational-02ae7e7df74c5a34",
+    "year": 2020,
+    "series": "ccpc",
+    "stage": "provincial",
+    "short_name": "河南",
+    "official_name": "“卓见杯”2020 CCPC Henan Provincial Collegiate Programming Contest",
+    "official_url": "https://board.xcpcio.com/provincial-contest/2020/henancpc",
+    "event_date": "2020-11-21",
+    "event_date_text": "2020-11-21",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104095"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2019-2020 赛季",
+    "display_order": 73
+  },
+  {
+    "source_key": "provincial_invitational-ebfa2dd71d725cb7",
+    "year": 2019,
+    "series": "icpc",
+    "stage": "invitational",
+    "short_name": "南昌&丝绸之路邀请赛",
+    "official_name": "The 2019 ICPC China Nanchang National Invitational and International Silk-RoadProgramming Contest",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "计蒜客",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/3098"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2019 赛季",
+    "display_order": 74
+  },
+  {
+    "source_key": "provincial_invitational-1f97d30d42a9a0ae",
+    "year": 2018,
+    "series": "ccpc",
+    "stage": "invitational",
+    "short_name": "宁夏邀请赛",
+    "official_name": "2018宁夏邀请赛",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "计蒜客",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/3110"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2019 赛季",
+    "display_order": 75
+  },
+  {
+    "source_key": "provincial_invitational-1bea14ef2ef78969",
+    "year": 2019,
+    "series": "icpc",
+    "stage": "invitational",
+    "short_name": "南昌邀请赛",
+    "official_name": "The Preliminary Contest for ICPC China Nanchang National Invitational",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "计蒜客",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/2290"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2019 赛季",
+    "display_order": 76
+  },
+  {
+    "source_key": "provincial_invitational-32a770a632e434a1",
+    "year": 2019,
+    "series": "icpc",
+    "stage": "invitational",
+    "short_name": "陕西邀请赛",
+    "official_name": "The 2019 ACM-ICPC China Shannxi Provincial Programming Contest",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "GYM, QOJ",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104460"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1285"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2019 赛季",
+    "display_order": 77
+  },
+  {
+    "source_key": "provincial_invitational-f5fa669f86475383",
+    "year": 2019,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "陕西",
+    "official_name": "The 2019 ICPC China Shaanxi Provincial Programming Contest",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "GYM, QOJ",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104460"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1285"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2019 赛季",
+    "display_order": 78
+  },
+  {
+    "source_key": "provincial_invitational-f0e864b91a30b6cb",
+    "year": 2019,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "浙江",
+    "official_name": "The 16th Zhejiang Provincial Collegiate Programming Contest Sponsored by TuSimple",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "Vjudge",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "Vjudge",
+        "url": "https://vjudge.net/contest/298098"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2019 赛季",
+    "display_order": 79
+  },
+  {
+    "source_key": "provincial_invitational-b2c56a185fd4db47",
+    "year": 2019,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "山东",
+    "official_name": "The 2019 ICPC China Shandong Provincial Programming Contest",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "QOJ",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1281"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2019 赛季",
+    "display_order": 80
+  },
+  {
+    "source_key": "provincial_invitational-45be97214fc72e64",
+    "year": 2018,
+    "series": "ccpc",
+    "stage": "invitational",
+    "short_name": "丝绸之路邀请赛",
+    "official_name": "2018 ACM-ICPC 中国大学生程序设计竞赛暨丝绸之路程序设计竞赛(The First ACM-ICPC Chinese Collegiate Programming Contest & International Silk Road Programming Contest)",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "计蒜客",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/1227"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2018 赛季",
+    "display_order": 81
+  },
+  {
+    "source_key": "provincial_invitational-8ea6270d67ad0077",
+    "year": 2018,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "浙江",
+    "official_name": "The 15th Zhejiang Provincial Collegiate Programming Contest Sponsored by TuSimple",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "Vjudge",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "Vjudge",
+        "url": "https://vjudge.net/contest/226750"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2018 赛季",
+    "display_order": 82
+  },
+  {
+    "source_key": "provincial_invitational-05c4ed2f382dd124",
+    "year": 2018,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "山东",
+    "official_name": "The 10th Shandong Provincial Collegiate Programming Contest",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "GYM",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104459"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2018 赛季",
+    "display_order": 83
+  },
+  {
+    "source_key": "provincial_invitational-dbc94bb536de5060",
+    "year": 2018,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "江苏",
+    "official_name": "The 2018 ACM-ICPC China JiangSu Provincial Programming Contest (held by ChinaUniversity of Mining and Technology)",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "计蒜客",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/1408"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2018 赛季",
+    "display_order": 84
+  },
+  {
+    "source_key": "provincial_invitational-f524dec76fc4f051",
+    "year": 2018,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "银川",
+    "official_name": "The 2018 ACM-ICPC Chinese Collegiate Programming Contest (held by Ningxia Institute of Science and Technology)",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "计蒜客",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/1406"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "2018 赛季",
+    "display_order": 85
+  },
+  {
+    "source_key": "provincial_invitational-e3528ae4df23d206",
+    "year": 2017,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "2017浙江",
+    "official_name": "The 14th Zhejiang Provincial Collegiate Programming Contest",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "Vjudge, QOJ",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "Vjudge",
+        "url": "https://vjudge.net/contest/160686"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1301"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "更早期的浙江省赛",
+    "display_order": 86
+  },
+  {
+    "source_key": "provincial_invitational-105a27c8be891342",
+    "year": 2016,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "2016浙江",
+    "official_name": "The 13th Zhejiang Provincial Collegiate Programming Contest",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "Vjudge",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "Vjudge",
+        "url": "https://vjudge.net/contest/117083"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "更早期的浙江省赛",
+    "display_order": 87
+  },
+  {
+    "source_key": "provincial_invitational-8e07c826832d52ca",
+    "year": 2015,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "2015浙江",
+    "official_name": "The 12th Zhejiang Provincial Collegiate Programming Contest",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "Vjudge",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "Vjudge",
+        "url": "https://vjudge.net/contest/76679"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "更早期的浙江省赛",
+    "display_order": 88
+  },
+  {
+    "source_key": "provincial_invitational-0ccc0cf51e06a473",
+    "year": 2014,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "2014浙江",
+    "official_name": "The 11th Zhejiang Provincial Collegiate Programming Contest",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "Vjudge",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "Vjudge",
+        "url": "https://vjudge.net/contest/44195"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "更早期的浙江省赛",
+    "display_order": 89
+  },
+  {
+    "source_key": "provincial_invitational-91b70dcfddb06bed",
+    "year": 2013,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "2013浙江",
+    "official_name": "The 10th Zhejiang Provincial Collegiate Programming Contest",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "Vjudge",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "Vjudge",
+        "url": "https://vjudge.net/contest/23786"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "更早期的浙江省赛",
+    "display_order": 90
+  },
+  {
+    "source_key": "provincial_invitational-34ba4e9655982dd1",
+    "year": 2012,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "2012浙江",
+    "official_name": "The 9th Zhejiang Provincial Collegiate Programming Contest",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "Vjudge",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "Vjudge",
+        "url": "https://vjudge.net/contest/16323"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "更早期的浙江省赛",
+    "display_order": 91
+  },
+  {
+    "source_key": "provincial_invitational-4d21c36a645f4075",
+    "year": 2011,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "2011浙江",
+    "official_name": "The 8th Zhejiang Provincial Collegiate Programming Contest",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "Vjudge",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "Vjudge",
+        "url": "https://vjudge.net/contest/6709"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "更早期的浙江省赛",
+    "display_order": 92
+  },
+  {
+    "source_key": "provincial_invitational-6f13ff10f93cd2dd",
+    "year": 2010,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "2010浙江",
+    "official_name": "The 7th Zhejiang Provincial Collegiate Programming Contest",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "Vjudge",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "Vjudge",
+        "url": "https://vjudge.net/contest/7492"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "更早期的浙江省赛",
+    "display_order": 93
+  },
+  {
+    "source_key": "provincial_invitational-984275a152336326",
+    "year": 2009,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "2009浙江",
+    "official_name": "The 6th Zhejiang Provincial Collegiate Programming Contest",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "Vjudge",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "Vjudge",
+        "url": "https://vjudge.net/contest/9881"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "更早期的浙江省赛",
+    "display_order": 94
+  },
+  {
+    "source_key": "provincial_invitational-6aa365cf1d3a2fe2",
+    "year": 2008,
+    "series": "icpc",
+    "stage": "provincial",
+    "short_name": "2008浙江",
+    "official_name": "The 5th Zhejiang Provincial Collegiate Programming Contest",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "Vjudge",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "Vjudge",
+        "url": "https://vjudge.net/contest/7321"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "01 - 省赛与邀请赛.md",
+    "source_section": "更早期的浙江省赛",
+    "display_order": 95
+  },
+  {
+    "source_key": "icpc-6f02e9be2c1a51f3",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "网络预选赛(I)",
+    "official_name": "2024 ICPC Asia EC 网络预选赛",
+    "official_url": "https://pintia.cn/rankings/1831362571373408256",
+    "event_date": "2024-09-15",
+    "event_date_text": "2024-09-15",
+    "organizer": "在线-PTA",
+    "practice_links": [
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1797"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2024.9-2025 赛季 49th",
+    "display_order": 96
+  },
+  {
+    "source_key": "icpc-04f95c6d6c760865",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "网络预选赛(II)",
+    "official_name": "网络预选赛(II)",
+    "official_url": "",
+    "event_date": "2024-09-21",
+    "event_date_text": "2024-09-21",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1799"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2024.9-2025 赛季 49th",
+    "display_order": 97
+  },
+  {
+    "source_key": "icpc-cb79df80979e9a8e",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "香港",
+    "official_name": "香港",
+    "official_url": "",
+    "event_date": "2024-10-20",
+    "event_date_text": "2024-10-20",
+    "organizer": "",
+    "practice_links": [],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2024.9-2025 赛季 49th",
+    "display_order": 98
+  },
+  {
+    "source_key": "icpc-db5533d6419ab071",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "成都",
+    "official_name": "成都",
+    "official_url": "",
+    "event_date": "2024-10-27",
+    "event_date_text": "2024-10-27",
+    "organizer": "",
+    "practice_links": [],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2024.9-2025 赛季 49th",
+    "display_order": 99
+  },
+  {
+    "source_key": "icpc-09c2aa9dc7547974",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "南京",
+    "official_name": "南京",
+    "official_url": "",
+    "event_date": "2024-11-03",
+    "event_date_text": "2024-11-03",
+    "organizer": "",
+    "practice_links": [],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2024.9-2025 赛季 49th",
+    "display_order": 100
+  },
+  {
+    "source_key": "icpc-f4d39ad1c652abe9",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "杭州",
+    "official_name": "杭州",
+    "official_url": "",
+    "event_date": "2024-11-10",
+    "event_date_text": "2024-11-10",
+    "organizer": "",
+    "practice_links": [],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2024.9-2025 赛季 49th",
+    "display_order": 101
+  },
+  {
+    "source_key": "icpc-dc3761f14548c758",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "上海",
+    "official_name": "上海",
+    "official_url": "",
+    "event_date": "2024-11-17",
+    "event_date_text": "2024-11-17",
+    "organizer": "",
+    "practice_links": [],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2024.9-2025 赛季 49th",
+    "display_order": 102
+  },
+  {
+    "source_key": "icpc-ab8a6a66f226af8e",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "沈阳",
+    "official_name": "沈阳",
+    "official_url": "",
+    "event_date": "2024-11-24",
+    "event_date_text": "2024-11-24",
+    "organizer": "",
+    "practice_links": [],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2024.9-2025 赛季 49th",
+    "display_order": 103
+  },
+  {
+    "source_key": "icpc-5c85fff45c19af33",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "昆明",
+    "official_name": "昆明",
+    "official_url": "",
+    "event_date": "2024-12-01",
+    "event_date_text": "2024-12-01",
+    "organizer": "",
+    "practice_links": [],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2024.9-2025 赛季 49th",
+    "display_order": 104
+  },
+  {
+    "source_key": "icpc-43e7e2c516c00050",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "台湾网络预选赛",
+    "official_name": "ICPC Asia Taiwan Online Programming Contest",
+    "official_url": "",
+    "event_date": "2024-09-07",
+    "event_date_text": "2024-09-07",
+    "organizer": "线上-",
+    "practice_links": [],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2024.9-2025 赛季 49th",
+    "display_order": 105
+  },
+  {
+    "source_key": "icpc-9f1fcc4f30d668f6",
+    "year": 2024,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "台湾台中",
+    "official_name": "The 2024 ICPC Asia Taichung Regional Programming Contest",
+    "official_url": "",
+    "event_date": "2024-11-17",
+    "event_date_text": "2024-11-17",
+    "organizer": "亞洲大學",
+    "practice_links": [],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2024.9-2025 赛季 49th",
+    "display_order": 106
+  },
+  {
+    "source_key": "icpc-1ffe8bed09e31e6d",
+    "year": 2023,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "网络预选赛(I)",
+    "official_name": "The 2023 ICPC Asia EC Regionals Online Contest (I)",
+    "official_url": "https://board.xcpcio.com/icpc/48th/online-qualification-1",
+    "event_date": "2023-09-17",
+    "event_date_text": "2023-09-17",
+    "organizer": "在线-PTA",
+    "practice_links": [
+      {
+        "label": "PTA",
+        "url": "https://pintia.cn/market/item/1703381331863785472"
+      },
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104639"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2023.9-2024 赛季 48th",
+    "display_order": 107
+  },
+  {
+    "source_key": "icpc-97a62d6020ae0f75",
+    "year": 2023,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "网络预选赛(II)",
+    "official_name": "The 2023 ICPC Asia Regionals Online Contest (II)",
+    "official_url": "https://board.xcpcio.com/icpc/48th/online-qualification-2",
+    "event_date": "2023-09-23",
+    "event_date_text": "2023-09-23",
+    "organizer": "在线-PTA",
+    "practice_links": [
+      {
+        "label": "PTA",
+        "url": "https://pintia.cn/market/item/1705511462254264320"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2023.9-2024 赛季 48th",
+    "display_order": 108
+  },
+  {
+    "source_key": "icpc-a3d3ae6ba76f52f3",
+    "year": 2023,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "西安",
+    "official_name": "The 2023 ICPC Asia Xi'an Regional Contest\n同时也被称呼为\nThe 3rd Universal Cup. Stage 9: Xi'an\n【一年之期已到，恭迎凹包归位】",
+    "official_url": "https://board.xcpcio.com/icpc/48th/xian",
+    "event_date": "2023-10-22",
+    "event_date_text": "2023-10-22",
+    "organizer": "西北工业大学",
+    "practice_links": [
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1784?v=1"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2023.9-2024 赛季 48th",
+    "display_order": 109
+  },
+  {
+    "source_key": "icpc-8db037edb52f082b",
+    "year": 2023,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "南京",
+    "official_name": "The 2023 ICPC Asia Nanjing Regional Contest\n同时也被称呼为\nThe 2nd Universal Cup. Stage 11: Nanjing",
+    "official_url": "https://board.xcpcio.com/icpc/48th/nanjing",
+    "event_date": "2023-11-05",
+    "event_date_text": "2023-11-05",
+    "organizer": "南京航空航天大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104821"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1435"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2023.9-2024 赛季 48th",
+    "display_order": 110
+  },
+  {
+    "source_key": "icpc-0231b3a507a9c6f1",
+    "year": 2023,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "沈阳",
+    "official_name": "The 2023 ICPC Asia Shenyang Regional Contest\n同时也被称呼为\nThe 2nd Universal Cup. Stage 13: Shenyang",
+    "official_url": "https://board.xcpcio.com/icpc/48th/shenyang",
+    "event_date": "2023-11-12",
+    "event_date_text": "2023-11-12",
+    "organizer": "东北大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104869"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1449"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2023.9-2024 赛季 48th",
+    "display_order": 111
+  },
+  {
+    "source_key": "icpc-d9ae01a4dc237ac9",
+    "year": 2023,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "澳门",
+    "official_name": "The 2023 ICPC Asia Macau Regional Contest\n同时也被称呼为\nThe 2nd Universal Cup. Stage 15: Macau",
+    "official_url": "https://board.xcpcio.com/icpc/48th/macau",
+    "event_date": "2023-11-19",
+    "event_date_text": "2023-11-19",
+    "organizer": "澳门大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104891"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1459"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2023.9-2024 赛季 48th",
+    "display_order": 112
+  },
+  {
+    "source_key": "icpc-8c973377d61c2dd4",
+    "year": 2023,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "合肥",
+    "official_name": "The 2023 ICPC Asia Hefei Regional Contest\n同时也被称呼为\nThe 2nd Universal Cup. Stage 12: Hefei",
+    "official_url": "https://board.xcpcio.com/icpc/48th/hefei",
+    "event_date": "2023-11-26",
+    "event_date_text": "2023-11-26",
+    "organizer": "中国科学技术大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104857"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1440"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2023.9-2024 赛季 48th",
+    "display_order": 113
+  },
+  {
+    "source_key": "icpc-80b3e15098ca4b3d",
+    "year": 2023,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "济南",
+    "official_name": "The 2023 ICPC Asia Jinan Regional Contest\n同时也被称呼为\nThe 2nd Universal Cup. Stage 17: Jinan",
+    "official_url": "https://board.xcpcio.com/icpc/48th/jinan",
+    "event_date": "2023-12-03",
+    "event_date_text": "2023-12-03",
+    "organizer": "齐鲁工业大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104901"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1472"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2023.9-2024 赛季 48th",
+    "display_order": 114
+  },
+  {
+    "source_key": "icpc-879bca8b9929cf5a",
+    "year": 2023,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "杭州",
+    "official_name": "The 2023 ICPC Asia Hangzhou Regional Contest\n同时也被称呼为\nThe 2nd Universal Cup. Stage 22: Hangzhou",
+    "official_url": "https://board.xcpcio.com/icpc/48th/hangzhou",
+    "event_date": "2023-12-10",
+    "event_date_text": "2023-12-10",
+    "organizer": "杭州师范大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104976"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1516"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2023.9-2024 赛季 48th",
+    "display_order": 115
+  },
+  {
+    "source_key": "icpc-a1cb8e7a80e5eb9b",
+    "year": 2023,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "台湾网络预选赛",
+    "official_name": "2023 ICPC Asia Taiwan Online Programming Contest",
+    "official_url": "",
+    "event_date": "2023-09-16",
+    "event_date_text": "2023-09-16",
+    "organizer": "线上-",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104619"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2023.9-2024 赛季 48th",
+    "display_order": 116
+  },
+  {
+    "source_key": "icpc-721e04f4be1ae070",
+    "year": 2023,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "台湾桃园",
+    "official_name": "The 2023 ICPC Asia Taoyuan Regional Programming Contest",
+    "official_url": "",
+    "event_date": "2023-10-22",
+    "event_date_text": "2023-10-22",
+    "organizer": "桃園市立綜合體育館",
+    "practice_links": [],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2023.9-2024 赛季 48th",
+    "display_order": 117
+  },
+  {
+    "source_key": "icpc-6b7e70c45e461465",
+    "year": 2022,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "网络预选赛(I)",
+    "official_name": "The 2022 ICPC Asia Regionals Online Contest (I)",
+    "official_url": "https://board.xcpcio.com/icpc/47th/online-qualification-1",
+    "event_date": "2022-09-17",
+    "event_date_text": "2022-09-17",
+    "organizer": "在线-PTA",
+    "practice_links": [
+      {
+        "label": "PTA",
+        "url": "https://pintia.cn/market/item/1571156622976593920"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2022.9-2023 赛季 47th",
+    "display_order": 118
+  },
+  {
+    "source_key": "icpc-247f8c0fe1829df5",
+    "year": 2022,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "网络预选赛(II)",
+    "official_name": "The 2022 ICPC Asia Regionals Online Contest (II)",
+    "official_url": "https://board.xcpcio.com/icpc/47th/online-qualification-2",
+    "event_date": "2022-09-25",
+    "event_date_text": "2022-09-25",
+    "organizer": "在线-PTA",
+    "practice_links": [
+      {
+        "label": "PTA",
+        "url": "https://pintia.cn/market/item/1574061957311737856"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2022.9-2023 赛季 47th",
+    "display_order": 119
+  },
+  {
+    "source_key": "icpc-bc11849612e6e6d9",
+    "year": 2022,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "沈阳",
+    "official_name": "The 2022 ICPC Asia Shenyang Regional Contest\n同时也被称呼为\nThe 1st Universal Cup. Stage 1: Shenyang",
+    "official_url": "https://board.xcpcio.com/icpc/47th/shenyang",
+    "event_date": "2022-11-06",
+    "event_date_text": "2022-11-06",
+    "organizer": "线上-东北大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104160"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1096"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2022.9-2023 赛季 47th",
+    "display_order": 120
+  },
+  {
+    "source_key": "icpc-29705a10be759212",
+    "year": 2022,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "西安",
+    "official_name": "The 2022 ICPC Asia Xian Regional Contest",
+    "official_url": "https://board.xcpcio.com/icpc/47th/xian",
+    "event_date": "2022-11-13",
+    "event_date_text": "2022-11-13",
+    "organizer": "线上-西北工业大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104077"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1051"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2022.9-2023 赛季 47th",
+    "display_order": 121
+  },
+  {
+    "source_key": "icpc-3ea89a73b7217649",
+    "year": 2022,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "合肥",
+    "official_name": "第 47 届国际大学生程序设计竞赛亚洲区域赛合肥站\n【这一场出了大锅，应该不会再有了】",
+    "official_url": "https://board.xcpcio.com/icpc/47th/hefei",
+    "event_date": "2022-11-20",
+    "event_date_text": "2022-11-20",
+    "organizer": "线上-中国科学技术大学",
+    "practice_links": [],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2022.9-2023 赛季 47th",
+    "display_order": 122
+  },
+  {
+    "source_key": "icpc-6827abeb30570219",
+    "year": 2022,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "济南",
+    "official_name": "2022 International Collegiate Programming Contest, Jinan Site",
+    "official_url": "https://board.xcpcio.com/icpc/47th/jinan",
+    "event_date": "2022-11-27",
+    "event_date_text": "2022-11-27",
+    "organizer": "线上-齐鲁工业大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104076"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1053"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2022.9-2023 赛季 47th",
+    "display_order": 123
+  },
+  {
+    "source_key": "icpc-03307e13dfaa445c",
+    "year": 2022,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "杭州",
+    "official_name": "The 2022 ICPC Asia Hangzhou Regional Programming Contest",
+    "official_url": "https://board.xcpcio.com/icpc/47th/hangzhou",
+    "event_date": "2022-12-04",
+    "event_date_text": "2022-12-04",
+    "organizer": "线上-杭州师范大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104090"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1071"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2022.9-2023 赛季 47th",
+    "display_order": 124
+  },
+  {
+    "source_key": "icpc-afecf3b31aeb3aa1",
+    "year": 2022,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "南京",
+    "official_name": "The 2022 ICPC Asia Nanjing Regional Contest\n同时也被称呼为\nThe 1st Universal Cup. Stage 0: Nanjing (Trial Contest)",
+    "official_url": "https://board.xcpcio.com/icpc/47th/nanjing",
+    "event_date": "2022-12-18",
+    "event_date_text": "2022-12-18",
+    "organizer": "线上-南京航空航天大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104128"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1093"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2022.9-2023 赛季 47th",
+    "display_order": 125
+  },
+  {
+    "source_key": "icpc-b5ee762c6bd76069",
+    "year": 2023,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "香港",
+    "official_name": "The 2023 ICPC Asia Hong Kong Regional Programming Contest\n同时也被称呼为\nThe 1st Universal Cup. Stage 2: Hong Kong,\nPetrozavodsk Winter 2023. Day 3. 2023 ICPC Asia Hong Kong Regional.",
+    "official_url": "https://board.xcpcio.com/icpc/47th/hongkong",
+    "event_date": "2023-01-14",
+    "event_date_text": "2023-01-14",
+    "organizer": "香港中文大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104172"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1099"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2022.9-2023 赛季 47th",
+    "display_order": 126
+  },
+  {
+    "source_key": "icpc-9fab781c58566f69",
+    "year": 2021,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "台湾网络预选赛",
+    "official_name": "2022 ICPC Asia Taiwan Online Programming Contest",
+    "official_url": "",
+    "event_date": "2021-10-22",
+    "event_date_text": "2021-10-22",
+    "organizer": "在线-",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/103990"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2022.9-2023 赛季 47th",
+    "display_order": 127
+  },
+  {
+    "source_key": "icpc-121018100872b18e",
+    "year": 2022,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "台湾桃园",
+    "official_name": "The 2022 ICPC Asia Taoyuan Regional Programming Contest\n同时也被称呼为\nThe 1st Universal Cup. Stage 6: Taiwan",
+    "official_url": "",
+    "event_date": "2022-11-20",
+    "event_date_text": "2022-11-20",
+    "organizer": "桃園市武漢國民中學",
+    "practice_links": [
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1124"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2022.9-2023 赛季 47th",
+    "display_order": 128
+  },
+  {
+    "source_key": "icpc-9c6598f43c897253",
+    "year": 2021,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "网络预选赛(I)",
+    "official_name": "The 2021 ICPC Asia Regionals Online Contest (I)",
+    "official_url": "",
+    "event_date": "2021-09-19",
+    "event_date_text": "2021-09-19",
+    "organizer": "在线-PTA",
+    "practice_links": [
+      {
+        "label": "PTA",
+        "url": "https://pintia.cn/market/item/1439765428045058048"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2021.9-2022 赛季 46th",
+    "display_order": 129
+  },
+  {
+    "source_key": "icpc-2ee26a1e0191766a",
+    "year": 2021,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "网络预选赛(II)",
+    "official_name": "The 2021 ICPC Asia Regionals Online Contest (II)",
+    "official_url": "",
+    "event_date": "2021-09-25",
+    "event_date_text": "2021-09-25",
+    "organizer": "在线-PTA",
+    "practice_links": [
+      {
+        "label": "PTA",
+        "url": "https://pintia.cn/market/item/1442013218528759808"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2021.9-2022 赛季 46th",
+    "display_order": 130
+  },
+  {
+    "source_key": "icpc-4bb70d2bb9ba465c",
+    "year": 2021,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "济南",
+    "official_name": "The 2021 ICPC Asia Jinan Regional Contest",
+    "official_url": "https://board.xcpcio.com/icpc/46th/jinan",
+    "event_date": "2021-11-14",
+    "event_date_text": "2021-11-14",
+    "organizer": "在线-齐鲁工业大学",
+    "practice_links": [
+      {
+        "label": "PTA",
+        "url": "https://pintia.cn/market/item/1459833348620926976"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2021.9-2022 赛季 46th",
+    "display_order": 131
+  },
+  {
+    "source_key": "icpc-d3f9a1994fd7091a",
+    "year": 2021,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "沈阳",
+    "official_name": "The 2021 ICPC Asia Shenyang Regional Contest",
+    "official_url": "",
+    "event_date": "2021-11-21",
+    "event_date_text": "2021-11-21",
+    "organizer": "在线-东北大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/103427"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1252"
+      },
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/24346"
+      }
+    ],
+    "practice_links_note": ", ,",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2021.9-2022 赛季 46th",
+    "display_order": 132
+  },
+  {
+    "source_key": "icpc-2da6789bff8d58cc",
+    "year": 2021,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "上海",
+    "official_name": "The 2021 ICPC Asia Shanghai Regional Programming Contest",
+    "official_url": "https://board.xcpcio.com/icpc/46th/shanghai",
+    "event_date": "2021-11-28",
+    "event_date_text": "2021-11-28",
+    "organizer": "在线-上海大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/103446"
+      },
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/24872"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2021.9-2022 赛季 46th",
+    "display_order": 133
+  },
+  {
+    "source_key": "icpc-496391c18732c4cc",
+    "year": 2021,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "南京",
+    "official_name": "The 2021 ICPC Asia Nanjing Regional Contest\n同时也被称呼为\nXXII Open Cup named after E.V. Pankratiev, Grand Prix of Nanjing",
+    "official_url": "https://board.xcpcio.com/icpc/46th/nanjing",
+    "event_date": "2021-12-04",
+    "event_date_text": "2021-12-04",
+    "organizer": "在线-南京航空航天大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/103470"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1236"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2021.9-2022 赛季 46th",
+    "display_order": 134
+  },
+  {
+    "source_key": "icpc-3d4e6a1940f45ce7",
+    "year": 2022,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "昆明",
+    "official_name": "第46届ICPC亚洲区域赛（昆明）",
+    "official_url": "https://board.xcpcio.com/icpc/46th/kunming",
+    "event_date": "2022-04-16",
+    "event_date_text": "2022-04-16",
+    "organizer": "在线-昆明理工大学",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/32708"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2021.9-2022 赛季 46th",
+    "display_order": 135
+  },
+  {
+    "source_key": "icpc-4de69d91197b77ab",
+    "year": 2021,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "台湾网络预选赛",
+    "official_name": "2021 ICPC Asia Taiwan Online Programming Contest",
+    "official_url": "",
+    "event_date": "2021-10-23",
+    "event_date_text": "2021-10-23",
+    "organizer": "在线-",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/103373"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2021.9-2022 赛季 46th",
+    "display_order": 136
+  },
+  {
+    "source_key": "icpc-2a048cfd255109c7",
+    "year": 2021,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "台湾台北",
+    "official_name": "The 2021 ICPC Asia Taipei Regional Programming Contest",
+    "official_url": "",
+    "event_date": "2021-11-28",
+    "event_date_text": "2021-11-28",
+    "organizer": "國立台北商業大學",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/103443"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2021.9-2022 赛季 46th",
+    "display_order": 137
+  },
+  {
+    "source_key": "icpc-04614d04003b701b",
+    "year": 2020,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "小米·网络预选赛(I)",
+    "official_name": "ICPC2020-ICPC·小米 网络选拔赛第一场",
+    "official_url": "https://board.xcpcio.com/icpc/2020/xiaomi-preliminary-contest-1",
+    "event_date": "2020-10-25",
+    "event_date_text": "2020-10-25",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/7501"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2020.9-2021 赛季 45th",
+    "display_order": 138
+  },
+  {
+    "source_key": "icpc-cbe8a87a93c1da0b",
+    "year": 2020,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "小米·网络预选赛(II)",
+    "official_name": "ICPC2020-ICPC·小米 网络选拔赛第二场",
+    "official_url": "https://board.xcpcio.com/icpc/2020/xiaomi-preliminary-contest-2",
+    "event_date": "2020-10-31",
+    "event_date_text": "2020-10-31",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/7502"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2020.9-2021 赛季 45th",
+    "display_order": 139
+  },
+  {
+    "source_key": "icpc-9578a35c04823143",
+    "year": 2020,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "网络预选赛模拟赛",
+    "official_name": "第 45 届国际大学生程序设计竞赛（ICPC）亚洲网上区域赛模拟赛",
+    "official_url": "",
+    "event_date": "2020-10-31",
+    "event_date_text": "2020-10-31",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/8688"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2020.9-2021 赛季 45th",
+    "display_order": 140
+  },
+  {
+    "source_key": "icpc-f9f0f067ad20fa03",
+    "year": 2020,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "上海",
+    "official_name": "The 2020 ICPC Asia Shanghai Regional Contest",
+    "official_url": "https://board.xcpcio.com/icpc/2020/shanghai",
+    "event_date": "2020-12-13",
+    "event_date_text": "2020-12-13",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/102900"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1477"
+      },
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/9925"
+      }
+    ],
+    "practice_links_note": ", ,",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2020.9-2021 赛季 45th",
+    "display_order": 141
+  },
+  {
+    "source_key": "icpc-587b0d7ed9715f3a",
+    "year": 2020,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "南京",
+    "official_name": "The 2020 ICPC Asia Nanjing Regional Contest\n同时也被称呼为\nXXI Open Cup named after E.V. Pankratiev, Grand Prix of Nanjing",
+    "official_url": "https://board.xcpcio.com/icpc/2020/nanjing",
+    "event_date": "2020-12-20",
+    "event_date_text": "2020-12-20",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1235"
+      },
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/10272"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2020.9-2021 赛季 45th",
+    "display_order": 142
+  },
+  {
+    "source_key": "icpc-18e767d2946ef611",
+    "year": 2020,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "济南",
+    "official_name": "第 45 届国际大学生程序设计竞赛（ICPC）亚洲区域赛（济南）",
+    "official_url": "https://board.xcpcio.com/icpc/2020/jinan",
+    "event_date": "2020-12-27",
+    "event_date_text": "2020-12-27",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/10662"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2020.9-2021 赛季 45th",
+    "display_order": 143
+  },
+  {
+    "source_key": "icpc-8fe028f8f351b788",
+    "year": 2021,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "昆明",
+    "official_name": "第 45 届国际大学生程序设计竞赛（ICPC）亚洲区域赛（昆明）",
+    "official_url": "https://board.xcpcio.com/icpc/2020/kunming",
+    "event_date": "2021-04-03",
+    "event_date_text": "2021-04-03",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/12548"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2020.9-2021 赛季 45th",
+    "display_order": 144
+  },
+  {
+    "source_key": "icpc-fada5277ee1c0aec",
+    "year": 2021,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "银川",
+    "official_name": "The 2020 ICPC Asia Yinchuan Regional Contest",
+    "official_url": "https://board.xcpcio.com/icpc/2020/yinchuan",
+    "event_date": "2021-05-16",
+    "event_date_text": "2021-05-16",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1322"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2020.9-2021 赛季 45th",
+    "display_order": 145
+  },
+  {
+    "source_key": "icpc-fddce5c57c198db9",
+    "year": 2021,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "澳门",
+    "official_name": "The 2020 ICPC Asia Macau Regional Contest",
+    "official_url": "",
+    "event_date": "2021-06-01",
+    "event_date_text": "2021-06-01",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1538"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2020.9-2021 赛季 45th",
+    "display_order": 146
+  },
+  {
+    "source_key": "icpc-61cfa08d9afeba0e",
+    "year": 2021,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "沈阳",
+    "official_name": "The 2020 ICPC Asia Shenyang Regional Contest",
+    "official_url": "",
+    "event_date": "2021-07-18",
+    "event_date_text": "2021-07-18",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/103202"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1251"
+      },
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/18713"
+      }
+    ],
+    "practice_links_note": ", ,",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2020.9-2021 赛季 45th",
+    "display_order": 147
+  },
+  {
+    "source_key": "icpc-f70568b73cba88d1",
+    "year": 2020,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "台湾新竹",
+    "official_name": "The 2020 ICPC Asia Taipei-Hsinchu Site Programming Contest",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/102835"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/469"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2020.9-2021 赛季 45th",
+    "display_order": 148
+  },
+  {
+    "source_key": "icpc-f8d8324292066cc8",
+    "year": 2019,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "银川预选赛",
+    "official_name": "The 2019 Asia Yinchuan First Round Online Programming",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "计蒜客",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/2991"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2019.9-2020 赛季 44th",
+    "display_order": 149
+  },
+  {
+    "source_key": "icpc-c2f216a349ea2e8c",
+    "year": 2019,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "银川",
+    "official_name": "The 2019 ICPC Asia Yinchuan Regional Contest",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "GYM, QOJ, 计蒜客",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104021"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1320"
+      },
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/5527"
+      }
+    ],
+    "practice_links_note": ", ,",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2019.9-2020 赛季 44th",
+    "display_order": 150
+  },
+  {
+    "source_key": "icpc-fe661292f8f3d5c8",
+    "year": 2019,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "南京预选赛",
+    "official_name": "The Preliminary Contest for ICPC Asia Nanjing 2019",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "计蒜客",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/3004"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2019.9-2020 赛季 44th",
+    "display_order": 151
+  },
+  {
+    "source_key": "icpc-b03377e17fbad82f",
+    "year": 2019,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "南京",
+    "official_name": "The 2019 ICPC Asia Nanjing Regional Contest",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "GYM, QOJ, 计蒜客",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/103466"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1321"
+      },
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/5528"
+      }
+    ],
+    "practice_links_note": ", ,",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2019.9-2020 赛季 44th",
+    "display_order": 152
+  },
+  {
+    "source_key": "icpc-6983b09072c4c8f2",
+    "year": 2019,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "徐州预选赛",
+    "official_name": "The Preliminary Contest for ICPC Asia Xuzhou 2019",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "计蒜客",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/3005"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2019.9-2020 赛季 44th",
+    "display_order": 153
+  },
+  {
+    "source_key": "icpc-b27177f6dd552dbb",
+    "year": 2019,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "徐州",
+    "official_name": "2019 ICPC Asia Xuzhou Regional",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "计蒜客",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/5529"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2019.9-2020 赛季 44th",
+    "display_order": 154
+  },
+  {
+    "source_key": "icpc-2a6ffd75c9e86164",
+    "year": 2019,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "南昌预选赛",
+    "official_name": "The 2019 Asia Nanchang First Round Online Programming Contest",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "计蒜客",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/3870"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2019.9-2020 赛季 44th",
+    "display_order": 155
+  },
+  {
+    "source_key": "icpc-8a0ec36eb80e8fdb",
+    "year": 2019,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "南昌",
+    "official_name": "2019 ICPC Asia Nanchang Regional",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "计蒜客",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/5530"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2019.9-2020 赛季 44th",
+    "display_order": 156
+  },
+  {
+    "source_key": "icpc-e2cddb57e4a3ada7",
+    "year": 2019,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "沈阳预选赛",
+    "official_name": "The Preliminary Contest for ICPC Asia Shenyang 2019",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "计蒜客",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/3007"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2019.9-2020 赛季 44th",
+    "display_order": 157
+  },
+  {
+    "source_key": "icpc-cdd34edc3e118a6b",
+    "year": 2019,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "上海预选赛",
+    "official_name": "The Preliminary Contest for ICPC Asia Shanghai 2019",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "计蒜客",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/3003"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2019.9-2020 赛季 44th",
+    "display_order": 158
+  },
+  {
+    "source_key": "icpc-b6c8882a97a28fc4",
+    "year": 2019,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "上海",
+    "official_name": "The 2019 ICPC Asia Shanghai Regional Contest",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "牛客",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/4370"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2019.9-2020 赛季 44th",
+    "display_order": 159
+  },
+  {
+    "source_key": "icpc-cf4a8f71b11b02b9",
+    "year": 2019,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "香港",
+    "official_name": "2019-2020 ICPC Asia Hong Kong Regional Contest",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "GYM, QOJ",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/102452"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1537"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2019.9-2020 赛季 44th",
+    "display_order": 160
+  },
+  {
+    "source_key": "icpc-4474516fd06602ad",
+    "year": 2019,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "台湾新竹",
+    "official_name": "2019-2020 ICPC Asia Taipei-Hsinchu Regional Contest",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "GYM, QOJ, 计蒜客",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/102460"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/432"
+      },
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/8288"
+      }
+    ],
+    "practice_links_note": ", ,",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2019.9-2020 赛季 44th",
+    "display_order": 161
+  },
+  {
+    "source_key": "icpc-84fc857023a8fc76",
+    "year": 2018,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "北京预选赛",
+    "official_name": "ACM/ICPC 2018亚洲区预选赛北京赛站网络赛",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "hihocoder",
+        "url": "http://hihocoder.com/contest/acmicpc2018beijingonline/problems"
+      }
+    ],
+    "practice_links_note": "【已无法使用】",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2018.9-2019 赛季 43th",
+    "display_order": 162
+  },
+  {
+    "source_key": "icpc-74caf945b36cc9ba",
+    "year": 2018,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "北京",
+    "official_name": "ACM-ICPC北京赛区2018",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "",
+    "organizer": "官网",
+    "practice_links": [
+      {
+        "label": "hihocoder",
+        "url": "http://hihocoder.com/contest/icpcbeijing2018/problems"
+      }
+    ],
+    "practice_links_note": "【已无法使用】",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2018.9-2019 赛季 43th",
+    "display_order": 163
+  },
+  {
+    "source_key": "icpc-4f65ef339dc76321",
+    "year": 2018,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "南京预选赛",
+    "official_name": "ACIM-ICPC 2018 南京赛区网络预赛",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/1555"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2018.9-2019 赛季 43th",
+    "display_order": 164
+  },
+  {
+    "source_key": "icpc-ef2a8ae60cc6d2bb",
+    "year": 2018,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "南京",
+    "official_name": "2018-2019 ACM-ICPC, Asia Nanjing Regional Contest",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/101981"
+      },
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/1847"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2018.9-2019 赛季 43th",
+    "display_order": 165
+  },
+  {
+    "source_key": "icpc-28c4798955f5481d",
+    "year": 2018,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "沈阳预选赛",
+    "official_name": "ACM-ICPC 2018 沈阳赛区网络预赛",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/1556"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2018.9-2019 赛季 43th",
+    "display_order": 166
+  },
+  {
+    "source_key": "icpc-5f432d1c6441718f",
+    "year": 2018,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "沈阳",
+    "official_name": "The 2018 ICPC Asia Shenyang Regional Programming Contest",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/101955"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1318"
+      },
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/1849"
+      }
+    ],
+    "practice_links_note": ", ,",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2018.9-2019 赛季 43th",
+    "display_order": 167
+  },
+  {
+    "source_key": "icpc-dcbd1c7ca86367ab",
+    "year": 2018,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "焦作预选赛",
+    "official_name": "ACM-ICPC 2018 焦作赛区网络预赛",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/1558"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2018.9-2019 赛季 43th",
+    "display_order": 168
+  },
+  {
+    "source_key": "icpc-f2f79d5c6738fb35",
+    "year": 2018,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "焦作",
+    "official_name": "2018-2019 ACM-ICPC, Asia Jiaozuo Regional Contest",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/102028"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1319"
+      },
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/1858"
+      }
+    ],
+    "practice_links_note": ", ,",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2018.9-2019 赛季 43th",
+    "display_order": 169
+  },
+  {
+    "source_key": "icpc-1f8df8f7b8efe615",
+    "year": 2018,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "青岛预选赛",
+    "official_name": "The 2018 ACM-ICPC Asia Qingdao Regional Contest, Online\n同时也被称呼为\nThe 2nd Universal Cup. Stage 1: Qingdao",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104566"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2018.9-2019 赛季 43th",
+    "display_order": 170
+  },
+  {
+    "source_key": "icpc-8de8afec6d0ac2c6",
+    "year": 2018,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "青岛",
+    "official_name": "The 2018 ICPC Asia Qingdao Regional Contest\n同时也被称呼为\nThe 1st Universal Cup. Stage 9: Qingdao",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104270"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1187"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2018.9-2019 赛季 43th",
+    "display_order": 171
+  },
+  {
+    "source_key": "icpc-ac593eab5c939fe5",
+    "year": 2018,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "徐州预选赛",
+    "official_name": "ACM-ICPC 2018 徐州赛区网络预赛",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/1557"
+      },
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/3113"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2018.9-2019 赛季 43th",
+    "display_order": 172
+  },
+  {
+    "source_key": "icpc-6ab491befa2e6f7a",
+    "year": 2018,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "徐州",
+    "official_name": "2018-2019 ACM-ICPC, Asia Xuzhou Regional Contest",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/102012"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1317"
+      },
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/1856"
+      }
+    ],
+    "practice_links_note": ", ,",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2018.9-2019 赛季 43th",
+    "display_order": 173
+  },
+  {
+    "source_key": "icpc-d0fae827f0976018",
+    "year": 2018,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "香港",
+    "official_name": "香港",
+    "official_url": "",
+    "event_date": "2018-11-18",
+    "event_date_text": "2018-11-18",
+    "organizer": "",
+    "practice_links": [],
+    "practice_links_note": "2018-11-18",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2018.9-2019 赛季 43th",
+    "display_order": 174
+  },
+  {
+    "source_key": "icpc-d92096616dfbc942",
+    "year": 2017,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "北京预选赛",
+    "official_name": "ACM-ICPC国际大学生程序设计竞赛北京赛区(2017)网络赛",
+    "official_url": "",
+    "event_date": "2017-09-23",
+    "event_date_text": "2017-09-23",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "hihocoder",
+        "url": "https://hihocoder.com/contest/acmicpc2017beijingonline"
+      }
+    ],
+    "practice_links_note": "【已无法使用】",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2017.9-2018 赛季 42th",
+    "display_order": 175
+  },
+  {
+    "source_key": "icpc-834435dd270276f9",
+    "year": 2017,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "北京",
+    "official_name": "ACM-ICPC北京赛区2017网络同步赛",
+    "official_url": "",
+    "event_date": "2017-11-19",
+    "event_date_text": "2017-11-19",
+    "organizer": "官网",
+    "practice_links": [
+      {
+        "label": "hihocoder",
+        "url": "https://hihocoder.com/contest/icpcbeijing2017"
+      }
+    ],
+    "practice_links_note": "【已无法使用】",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2017.9-2018 赛季 42th",
+    "display_order": 176
+  },
+  {
+    "source_key": "icpc-7002802e33d18666",
+    "year": 2017,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "青岛预选赛",
+    "official_name": "2017 ACM/ICPC Asia Regional Qingdao Online",
+    "official_url": "",
+    "event_date": "2017-09-17",
+    "event_date_text": "2017-09-17",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "HDU",
+        "url": "https://acm.hdu.edu.cn/search.php?field=problem&key=2017+ACM%2FICPC+Asia+Regional+Qingdao+Online&source=1&searchmode=source"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2017.9-2018 赛季 42th",
+    "display_order": 177
+  },
+  {
+    "source_key": "icpc-1cd8a24334ee86d5",
+    "year": 2017,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "山东-青岛",
+    "official_name": "2017 ACM/ICPC Asia Regional Qingdao Online",
+    "official_url": "",
+    "event_date": "2017-11-05",
+    "event_date_text": "2017-11-05",
+    "organizer": "知乎\n出题人节奏",
+    "practice_links": [
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/965"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2017.9-2018 赛季 42th",
+    "display_order": 178
+  },
+  {
+    "source_key": "icpc-3ad3a9b604a7a3b2",
+    "year": 2017,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "西安预选赛",
+    "official_name": "2017 ACM-ICPC 亚洲区（西安赛区）网络赛",
+    "official_url": "",
+    "event_date": "2017-09-16",
+    "event_date_text": "2017-09-16",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/876"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2017.9-2018 赛季 42th",
+    "display_order": 179
+  },
+  {
+    "source_key": "icpc-63bf28fe6bc261b0",
+    "year": 2017,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "西安",
+    "official_name": "2017 ACM-ICPC Asia Xi'an Regional Contest",
+    "official_url": "",
+    "event_date": "2017-10-29",
+    "event_date_text": "2017-10-29",
+    "organizer": "贴吧, 知乎",
+    "practice_links": [
+      {
+        "label": "Vjudge",
+        "url": "https://vjudge.net/contest/432765"
+      },
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/966"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2017.9-2018 赛季 42th",
+    "display_order": 180
+  },
+  {
+    "source_key": "icpc-b7828e2cf8aaa098",
+    "year": 2017,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "新疆预选赛",
+    "official_name": "2017 ACM-ICPC 亚洲区（乌鲁木齐赛区）网络赛",
+    "official_url": "",
+    "event_date": "2017-09-09",
+    "event_date_text": "2017-09-09",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/870"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2017.9-2018 赛季 42th",
+    "display_order": 181
+  },
+  {
+    "source_key": "icpc-ba2f827c0efce1f1",
+    "year": 2017,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "新疆-乌鲁木齐",
+    "official_name": "ACM-ICPC 2017 Asia Urumqi",
+    "official_url": "",
+    "event_date": "2017-12-03",
+    "event_date_text": "2017-12-03",
+    "organizer": "知乎",
+    "practice_links": [
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/969"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2017.9-2018 赛季 42th",
+    "display_order": 182
+  },
+  {
+    "source_key": "icpc-0d3a75cd75618716",
+    "year": 2017,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "沈阳预选赛",
+    "official_name": "2017 ACM/ICPC Asia Regional Shenyang Online",
+    "official_url": "",
+    "event_date": "2017-09-10",
+    "event_date_text": "2017-09-10",
+    "organizer": "知乎",
+    "practice_links": [
+      {
+        "label": "HDU",
+        "url": "https://acm.hdu.edu.cn/search.php?field=problem&key=2017+ACM%2FICPC+Asia+Regional+Shenyang+Online&source=1&searchmode=source"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2017.9-2018 赛季 42th",
+    "display_order": 183
+  },
+  {
+    "source_key": "icpc-99d6a72f1c695905",
+    "year": 2017,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "沈阳",
+    "official_name": "The 2017 ACM-ICPC Asia Shenyang Regional Contest",
+    "official_url": "",
+    "event_date": "2017-10-22",
+    "event_date_text": "2017-10-22",
+    "organizer": "知乎",
+    "practice_links": [
+      {
+        "label": "Vjudge",
+        "url": "https://vjudge.net/contest/196923"
+      },
+      {
+        "label": "HDU",
+        "url": "https://acm.hdu.edu.cn/search.php?field=problem&key=2017ACM%2FICPC%D1%C7%D6%DE%C7%F8%C9%F2%D1%F4%D5%BE-%D6%D8%CF%D6%C8%FC%A3%A8%B8%D0%D0%BB%B6%AB%B1%B1%B4%F3%D1%A7%A3%A9&source=1&searchmode=source"
+      },
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/942"
+      }
+    ],
+    "practice_links_note": ", ,",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2017.9-2018 赛季 42th",
+    "display_order": 184
+  },
+  {
+    "source_key": "icpc-272237e3ad6da5ab",
+    "year": 2017,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "广西邀请赛",
+    "official_name": "2017ACM/ICPC广西邀请赛-重现赛（感谢广西大学）",
+    "official_url": "",
+    "event_date": "2017-08-27",
+    "event_date_text": "2017-08-27",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "HDU",
+        "url": "https://acm.hdu.edu.cn/search.php?field=problem&key=2017ACM%2FICPC%B9%E3%CE%F7%D1%FB%C7%EB%C8%FC-%D6%D8%CF%D6%C8%FC%A3%A8%B8%D0%D0%BB%B9%E3%CE%F7%B4%F3%D1%A7%A3%A9&source=1&searchmode=source"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2017.9-2018 赛季 42th",
+    "display_order": 185
+  },
+  {
+    "source_key": "icpc-924f5af9e411528a",
+    "year": 2017,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "广西预选赛",
+    "official_name": "2017 ACM-ICPC 亚洲区（南宁赛区）网络赛",
+    "official_url": "",
+    "event_date": "2017-09-24",
+    "event_date_text": "2017-09-24",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/877"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2017.9-2018 赛季 42th",
+    "display_order": 186
+  },
+  {
+    "source_key": "icpc-01ce447ff8f7112d",
+    "year": 2017,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "广西-南宁",
+    "official_name": "ACM-ICPC 2017 Asia Nanning",
+    "official_url": "",
+    "event_date": "2017-11-26",
+    "event_date_text": "2017-11-26",
+    "organizer": "知乎",
+    "practice_links": [
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/968"
+      },
+      {
+        "label": "Vjudge",
+        "url": "https://vjudge.net/contest/229239"
+      }
+    ],
+    "practice_links_note": ", 【已无法使用】",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2017.9-2018 赛季 42th",
+    "display_order": 187
+  },
+  {
+    "source_key": "icpc-5801e548aee351e8",
+    "year": 2017,
+    "series": "icpc",
+    "stage": "network",
+    "short_name": "香港预选赛",
+    "official_name": "香港预选赛",
+    "official_url": "",
+    "event_date": "2017-09-10",
+    "event_date_text": "2017-09-10",
+    "organizer": "",
+    "practice_links": [],
+    "practice_links_note": "【HDU，页面疑似被隐藏】",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2017.9-2018 赛季 42th",
+    "display_order": 188
+  },
+  {
+    "source_key": "icpc-8e23c8fbcfcb7d46",
+    "year": 2017,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "香港",
+    "official_name": "ACM-ICPC 2017 Asia HongKong",
+    "official_url": "",
+    "event_date": "2017-11-19",
+    "event_date_text": "2017-11-19",
+    "organizer": "知乎",
+    "practice_links": [
+      {
+        "label": "计蒜客",
+        "url": "https://www.jisuanke.com/contest/967"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2017.9-2018 赛季 42th",
+    "display_order": 189
+  },
+  {
+    "source_key": "icpc-9f7d645991a8fbfe",
+    "year": 2017,
+    "series": "icpc",
+    "stage": "regional",
+    "short_name": "台湾花莲",
+    "official_name": "2017 ACM ICPC Asia Hua-Lien Regional",
+    "official_url": "",
+    "event_date": null,
+    "event_date_text": "",
+    "organizer": "",
+    "practice_links": [
+      {
+        "label": "Vjudge",
+        "url": "https://vjudge.net/contest/226220"
+      }
+    ],
+    "practice_links_note": "【已无法使用】",
+    "source_file": "02 - ICPC.md",
+    "source_section": "2017.9-2018 赛季 42th",
+    "display_order": 190
+  },
+  {
+    "source_key": "ccpc-cfd6edc774b376a3",
+    "year": 2024,
+    "series": "ccpc",
+    "stage": "network",
+    "short_name": "网络预选赛",
+    "official_name": "The 2024 CCPC Online Contest",
+    "official_url": "https://pintia.cn/rankings/1830898870598004736",
+    "event_date": "2024-09-08",
+    "event_date_text": "2024-09-08",
+    "organizer": "在线-PTA",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/105336"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2024.9-2025 赛季 10th",
+    "display_order": 191
+  },
+  {
+    "source_key": "ccpc-78399db8e6d27165",
+    "year": 2024,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "哈尔滨",
+    "official_name": "哈尔滨",
+    "official_url": "",
+    "event_date": "2024-10-20",
+    "event_date_text": "2024-10-20",
+    "organizer": "东北林业大学",
+    "practice_links": [],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2024.9-2025 赛季 10th",
+    "display_order": 192
+  },
+  {
+    "source_key": "ccpc-222c6a1528c2bbdd",
+    "year": 2024,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "济南",
+    "official_name": "济南",
+    "official_url": "",
+    "event_date": "2024-10-27",
+    "event_date_text": "2024-10-27",
+    "organizer": "山东大学",
+    "practice_links": [],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2024.9-2025 赛季 10th",
+    "display_order": 193
+  },
+  {
+    "source_key": "ccpc-e718a1042ceabe52",
+    "year": 2024,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "重庆",
+    "official_name": "重庆",
+    "official_url": "",
+    "event_date": "2024-11-10",
+    "event_date_text": "2024-11-10",
+    "organizer": "重庆大学",
+    "practice_links": [],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2024.9-2025 赛季 10th",
+    "display_order": 194
+  },
+  {
+    "source_key": "ccpc-bb9ba2a6ca448b18",
+    "year": 2024,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "郑州",
+    "official_name": "郑州",
+    "official_url": "",
+    "event_date": "2024-11-17",
+    "event_date_text": "2024-11-17",
+    "organizer": "郑州轻工业大学",
+    "practice_links": [],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2024.9-2025 赛季 10th",
+    "display_order": 195
+  },
+  {
+    "source_key": "ccpc-523818a04ad77835",
+    "year": 2023,
+    "series": "ccpc",
+    "stage": "network",
+    "short_name": "网络预选赛",
+    "official_name": "The 2023 CCPC Online Contest\n同时也被称呼为\nThe 2nd Universal Cup. Stage 3: Binjiang",
+    "official_url": "https://board.xcpcio.com/ccpc/9th/online-qualification",
+    "event_date": "2023-08-20",
+    "event_date_text": "2023-08-20",
+    "organizer": "在线-PTA",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104651"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://contest.ucup.ac/contest/1358"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2023.9-2024 赛季 9th",
+    "display_order": 196
+  },
+  {
+    "source_key": "ccpc-0a5af4ce28240eac",
+    "year": 2023,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "秦皇岛",
+    "official_name": "The 2023 CCPC (Qinhuangdao) Onsite\n同时也被称呼为\nThe 2nd Universal Cup. Stage 9: Qinhuangdao",
+    "official_url": "https://board.xcpcio.com/ccpc/9th/qinhuangdao",
+    "event_date": "2023-10-15",
+    "event_date_text": "2023-10-15",
+    "organizer": "东北大学秦皇岛分校",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104787"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2023.9-2024 赛季 9th",
+    "display_order": 197
+  },
+  {
+    "source_key": "ccpc-b010c2c08846aa53",
+    "year": 2023,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "桂林",
+    "official_name": "2023 China Collegiate Programming Contest (CCPC) Guilin Onsite\n同时也被称呼为\nThe 2nd Universal Cup. Stage 8: Guilin",
+    "official_url": "https://board.xcpcio.com/ccpc/9th/guilin",
+    "event_date": "2023-10-29",
+    "event_date_text": "2023-10-29",
+    "organizer": "桂林电子科技大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104768"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2023.9-2024 赛季 9th",
+    "display_order": 198
+  },
+  {
+    "source_key": "ccpc-0e6f97b95bd91619",
+    "year": 2023,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "哈尔滨",
+    "official_name": "The 9th CCPC (Harbin) Onsite\n同时也被称呼为\nThe 2nd Universal Cup. Stage 10: Harbin",
+    "official_url": "https://board.xcpcio.com/ccpc/9th/harbin",
+    "event_date": "2023-11-05",
+    "event_date_text": "2023-11-05",
+    "organizer": "哈尔滨工程大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104813"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2023.9-2024 赛季 9th",
+    "display_order": 199
+  },
+  {
+    "source_key": "ccpc-98ea8d7e464d02b6",
+    "year": 2023,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "深圳",
+    "official_name": "第九届中国大学生程序设计竞赛 深圳站（CCPC 2023 Shenzhen Site）\n同时也被称呼为\nThe 2nd Universal Cup. Stage 25: Shenzhen",
+    "official_url": "https://board.xcpcio.com/ccpc/9th/shenzhen",
+    "event_date": "2023-11-12",
+    "event_date_text": "2023-11-12",
+    "organizer": "深圳技术大学",
+    "practice_links": [
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1540"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2023.9-2024 赛季 9th",
+    "display_order": 200
+  },
+  {
+    "source_key": "ccpc-ec0b7fd5bd244466",
+    "year": 2022,
+    "series": "ccpc",
+    "stage": "network",
+    "short_name": "网络预选赛",
+    "official_name": "2022 年中国大学生程序设计竞赛网络预选赛",
+    "official_url": "https://board.xcpcio.com/ccpc/8th/online-qualification",
+    "event_date": "2022-09-11",
+    "event_date_text": "2022-09-11",
+    "organizer": "在线-PTA",
+    "practice_links": [],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2022.9-2023 赛季 8th",
+    "display_order": 201
+  },
+  {
+    "source_key": "ccpc-b4981a66144fdb01",
+    "year": 2022,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "桂林",
+    "official_name": "2022 China Collegiate Programming Contest (CCPC) Guilin Site",
+    "official_url": "https://board.xcpcio.com/ccpc/8th/guilin",
+    "event_date": "2022-10-30",
+    "event_date_text": "2022-10-30",
+    "organizer": "在线-桂林电子科技大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104008"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1303"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2022.9-2023 赛季 8th",
+    "display_order": 202
+  },
+  {
+    "source_key": "ccpc-1f63eb0b02216316",
+    "year": 2022,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "威海",
+    "official_name": "2022 China Collegiate Programming Contest (CCPC) Weihai Site",
+    "official_url": "https://board.xcpcio.com/ccpc/8th/weihai",
+    "event_date": "2022-11-06",
+    "event_date_text": "2022-11-06",
+    "organizer": "在线-哈尔滨工业大学（威海）",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104023"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2022.9-2023 赛季 8th",
+    "display_order": 203
+  },
+  {
+    "source_key": "ccpc-2d474522d7858f93",
+    "year": 2022,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "广州",
+    "official_name": "2022 China Collegiate Programming Contest (CCPC) Guangzhou Onsite",
+    "official_url": "https://board.xcpcio.com/ccpc/8th/guangzhou",
+    "event_date": "2022-11-13",
+    "event_date_text": "2022-11-13",
+    "organizer": "在线-华南师范大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104053"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1493"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2022.9-2023 赛季 8th",
+    "display_order": 204
+  },
+  {
+    "source_key": "ccpc-433cbc2d037a3a9a",
+    "year": 2022,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "绵阳",
+    "official_name": "2022 China Collegiate Programming Contest (CCPC) Mianyang Onsite",
+    "official_url": "https://board.xcpcio.com/ccpc/8th/mianyang",
+    "event_date": "2022-11-20",
+    "event_date_text": "2022-11-20",
+    "organizer": "在线-西南科技大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/104065"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1480"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2022.9-2023 赛季 8th",
+    "display_order": 205
+  },
+  {
+    "source_key": "ccpc-200e61ded2ce0658",
+    "year": 2021,
+    "series": "ccpc",
+    "stage": "network",
+    "short_name": "网络预选赛",
+    "official_name": "2021中国大学生程序设计竞赛（CCPC）- 网络选拔赛",
+    "official_url": "",
+    "event_date": "2021-08-29",
+    "event_date_text": "2021-08-29",
+    "organizer": "在线-HDU",
+    "practice_links": [
+      {
+        "label": "HDU",
+        "url": "https://acm.hdu.edu.cn/search.php?field=problem&key=2021%D6%D0%B9%FA%B4%F3%D1%A7%C9%FA%B3%CC%D0%F2%C9%E8%BC%C6%BE%BA%C8%FC%A3%A8CCPC%A3%A9-+%CD%F8%C2%E7%D1%A1%B0%CE%C8%FC&source=1&searchmode=source"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2021.9-2022 赛季 7th",
+    "display_order": 206
+  },
+  {
+    "source_key": "ccpc-52ac5aa63a8623c4",
+    "year": 2021,
+    "series": "ccpc",
+    "stage": "network",
+    "short_name": "网络预选赛重赛",
+    "official_name": "2021中国大学生程序设计竞赛（CCPC）- 网络选拔赛（重赛）",
+    "official_url": "",
+    "event_date": "2021-10-10",
+    "event_date_text": "2021-10-10",
+    "organizer": "在线-HDU",
+    "practice_links": [
+      {
+        "label": "HDU",
+        "url": "https://acm.hdu.edu.cn/search.php?field=problem&key=2021%D6%D0%B9%FA%B4%F3%D1%A7%C9%FA%B3%CC%D0%F2%C9%E8%BC%C6%BE%BA%C8%FC%A3%A8CCPC%A3%A9-+%CD%F8%C2%E7%D1%A1%B0%CE%C8%FC%A3%A8%D6%D8%C8%FC%A3%A9&source=1&searchmode=source"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2021.9-2022 赛季 7th",
+    "display_order": 207
+  },
+  {
+    "source_key": "ccpc-f80ce33e4f4a7c08",
+    "year": 2021,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "桂林",
+    "official_name": "The 2021 CCPC Guilin Onsite\n同时也被称呼为\nXXII Open Cup named after E.V. Pankratiev, Grand Prix of EDG",
+    "official_url": "https://board.xcpcio.com/ccpc/7th/guilin",
+    "event_date": "2021-11-07",
+    "event_date_text": "2021-11-07",
+    "organizer": "在线-桂林电子科技大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/103409"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1305"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2021.9-2022 赛季 7th",
+    "display_order": 208
+  },
+  {
+    "source_key": "ccpc-33adecf3b625b259",
+    "year": 2021,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "广州",
+    "official_name": "The 2021 CCPC Guangzhou Onsite",
+    "official_url": "https://board.xcpcio.com/ccpc/7th/guangzhou",
+    "event_date": "2021-11-14",
+    "event_date_text": "2021-11-14",
+    "organizer": "在线-华南师范大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/103415"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2021.9-2022 赛季 7th",
+    "display_order": 209
+  },
+  {
+    "source_key": "ccpc-0645e4325b4865f8",
+    "year": 2021,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "威海",
+    "official_name": "The 2021 CCPC Weihai Onsite",
+    "official_url": "https://board.xcpcio.com/ccpc/7th/weihai",
+    "event_date": "2021-11-21",
+    "event_date_text": "2021-11-21",
+    "organizer": "在线-哈尔滨工业大学（威海）",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/103428"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2021.9-2022 赛季 7th",
+    "display_order": 210
+  },
+  {
+    "source_key": "ccpc-018c1142df0a3950",
+    "year": 2021,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "哈尔滨",
+    "official_name": "The 2021 China Collegiate Programming Contest (Harbin)",
+    "official_url": "https://board.xcpcio.com/ccpc/7th/harbin",
+    "event_date": "2021-11-28",
+    "event_date_text": "2021-11-28",
+    "organizer": "在线-哈尔滨工程大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/103447"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2021.9-2022 赛季 7th",
+    "display_order": 211
+  },
+  {
+    "source_key": "ccpc-cc0a6e5a7512598e",
+    "year": 2020,
+    "series": "ccpc",
+    "stage": "network",
+    "short_name": "网络预选赛",
+    "official_name": "2020中国大学生程序设计竞赛（CCPC） - 网络选拔赛",
+    "official_url": "",
+    "event_date": "2020-09-20",
+    "event_date_text": "2020-09-20",
+    "organizer": "在线-HDU",
+    "practice_links": [
+      {
+        "label": "HDU",
+        "url": "https://acm.hdu.edu.cn/search.php?field=problem&key=2020%D6%D0%B9%FA%B4%F3%D1%A7%C9%FA%B3%CC%D0%F2%C9%E8%BC%C6%BE%BA%C8%FC%A3%A8CCPC%A3%A9+-+%CD%F8%C2%E7%D1%A1%B0%CE%C8%FC&source=1&searchmode=source"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2020.9-2021 赛季 6th",
+    "display_order": 212
+  },
+  {
+    "source_key": "ccpc-48e7f6da1bd419fb",
+    "year": 2020,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "秦皇岛",
+    "official_name": "2020 China Collegiate Programming Contest Qinhuangdao Site",
+    "official_url": "https://board.xcpcio.com/ccpc/2020/qinhuangdao",
+    "event_date": "2020-10-18",
+    "event_date_text": "2020-10-18",
+    "organizer": "在线-东北大学秦皇岛分校",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/102769"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2020.9-2021 赛季 6th",
+    "display_order": 213
+  },
+  {
+    "source_key": "ccpc-f1f17fc3df166c6a",
+    "year": 2020,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "威海",
+    "official_name": "2020 China Collegiate Programming Contest, Weihai Site\n同时也被称呼为\nXXI Open Cup named after E.V. Pankratiev, Grand Prix of Weihai",
+    "official_url": "https://board.xcpcio.com/ccpc/2020/weihai",
+    "event_date": "2020-10-25",
+    "event_date_text": "2020-10-25",
+    "organizer": "在线-哈尔滨工业大学（威海）",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/102798"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1793"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2020.9-2021 赛季 6th",
+    "display_order": 214
+  },
+  {
+    "source_key": "ccpc-1634b31a38314cf5",
+    "year": 2020,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "绵阳",
+    "official_name": "2020 China Collegiate Programming Contest - Mianyang Site",
+    "official_url": "https://board.xcpcio.com/ccpc/2020/mianyang",
+    "event_date": "2020-11-01",
+    "event_date_text": "2020-11-01",
+    "organizer": "在线-西南科技大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/102822"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2020.9-2021 赛季 6th",
+    "display_order": 215
+  },
+  {
+    "source_key": "ccpc-835bc11382f87a32",
+    "year": 2020,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "长春",
+    "official_name": "2020 China Collegiate Programming Contest Changchun Onsite",
+    "official_url": "https://board.xcpcio.com/ccpc/2020/changchun",
+    "event_date": "2020-11-08",
+    "event_date_text": "2020-11-08",
+    "organizer": "在线-长春理工大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/102832"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2020.9-2021 赛季 6th",
+    "display_order": 216
+  },
+  {
+    "source_key": "ccpc-4318587aef827a19",
+    "year": 2019,
+    "series": "ccpc",
+    "stage": "network",
+    "short_name": "网络预选赛",
+    "official_name": "2019中国大学生程序设计竞赛（CCPC） - 网络选拔赛",
+    "official_url": "",
+    "event_date": "2019-08-23",
+    "event_date_text": "2019-08-23",
+    "organizer": "在线-HDU",
+    "practice_links": [
+      {
+        "label": "HDU",
+        "url": "https://acm.hdu.edu.cn/search.php?field=problem&key=2019%D6%D0%B9%FA%B4%F3%D1%A7%C9%FA%B3%CC%D0%F2%C9%E8%BC%C6%BE%BA%C8%FC%A3%A8CCPC%A3%A9+-+%CD%F8%C2%E7%D1%A1%B0%CE%C8%FC&source=1&searchmode=source"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2019.9-2020 赛季 5th",
+    "display_order": 217
+  },
+  {
+    "source_key": "ccpc-7818da8afa6967a4",
+    "year": 2019,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "秦皇岛",
+    "official_name": "2019 China Collegiate Programming Contest Qinhuangdao Onsite",
+    "official_url": "",
+    "event_date": "2019-09-22",
+    "event_date_text": "2019-09-22",
+    "organizer": "东北大学秦皇岛分校",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/102361"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2019.9-2020 赛季 5th",
+    "display_order": 218
+  },
+  {
+    "source_key": "ccpc-93b8612f8bc894d2",
+    "year": 2019,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "哈尔滨",
+    "official_name": "The 2019 China Collegiate Programming Contest Harbin Site",
+    "official_url": "",
+    "event_date": "2019-10-13",
+    "event_date_text": "2019-10-13",
+    "organizer": "东北林业大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/102394"
+      },
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1797"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2019.9-2020 赛季 5th",
+    "display_order": 219
+  },
+  {
+    "source_key": "ccpc-b0604776662b790c",
+    "year": 2019,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "厦门",
+    "official_name": "第五届中国大学生程序设计竞赛 厦门站（CCPC 2019 Xiamen Site）\n同时也被称呼为\nMoscow International Workshops 2019. Day 6. CCPC Contest",
+    "official_url": "",
+    "event_date": "2019-10-20",
+    "event_date_text": "2019-10-20",
+    "organizer": "厦门理工学院",
+    "practice_links": [
+      {
+        "label": "QOJ",
+        "url": "https://qoj.ac/contest/1733"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2019.9-2020 赛季 5th",
+    "display_order": 220
+  },
+  {
+    "source_key": "ccpc-caf2cab276437a36",
+    "year": 2018,
+    "series": "ccpc",
+    "stage": "network",
+    "short_name": "网络预选赛",
+    "official_name": "2018中国大学生程序设计竞赛 - 网络选拔赛",
+    "official_url": "",
+    "event_date": "2018-08-25",
+    "event_date_text": "2018-08-25",
+    "organizer": "在线-HDU",
+    "practice_links": [
+      {
+        "label": "HDU",
+        "url": "https://acm.hdu.edu.cn/search.php?field=problem&key=2018%D6%D0%B9%FA%B4%F3%D1%A7%C9%FA%B3%CC%D0%F2%C9%E8%BC%C6%BE%BA%C8%FC+-+%CD%F8%C2%E7%D1%A1%B0%CE%C8%FC&source=1&searchmode=source"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2018.9-2019 赛季 4th",
+    "display_order": 221
+  },
+  {
+    "source_key": "ccpc-bc28ec2b075c68b9",
+    "year": 2018,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "吉林",
+    "official_name": "2018CCPC吉林赛区",
+    "official_url": "",
+    "event_date": "2018-09-22",
+    "event_date_text": "2018-09-22",
+    "organizer": "北华大学",
+    "practice_links": [
+      {
+        "label": "Vjudge",
+        "url": "https://vjudge.net/contest/314390"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2018.9-2019 赛季 4th",
+    "display_order": 222
+  },
+  {
+    "source_key": "ccpc-58b32662cc0316fe",
+    "year": 2018,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "秦皇岛",
+    "official_name": "秦皇岛",
+    "official_url": "",
+    "event_date": "2018-09-28",
+    "event_date_text": "2018-09-28",
+    "organizer": "东北大学秦皇岛分校",
+    "practice_links": [],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2018.9-2019 赛季 4th",
+    "display_order": 223
+  },
+  {
+    "source_key": "ccpc-fdccf4a40d465002",
+    "year": 2018,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "桂林",
+    "official_name": "2018 China Collegiate Programming Contest - Guilin Site",
+    "official_url": "",
+    "event_date": "2018-10-28",
+    "event_date_text": "2018-10-28",
+    "organizer": "桂林电子科技大学",
+    "practice_links": [
+      {
+        "label": "GYM",
+        "url": "https://codeforces.com/gym/102823"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2018.9-2019 赛季 4th",
+    "display_order": 224
+  },
+  {
+    "source_key": "ccpc-b225f36b60c0d041",
+    "year": 2017,
+    "series": "ccpc",
+    "stage": "network",
+    "short_name": "网络预选赛",
+    "official_name": "2017中国大学生程序设计竞赛 - 网络选拔赛",
+    "official_url": "",
+    "event_date": "2017-08-19",
+    "event_date_text": "2017-08-19",
+    "organizer": "在线-HDU",
+    "practice_links": [
+      {
+        "label": "HDU",
+        "url": "https://acm.hdu.edu.cn/search.php?field=problem&key=2017%D6%D0%B9%FA%B4%F3%D1%A7%C9%FA%B3%CC%D0%F2%C9%E8%BC%C6%BE%BA%C8%FC+-+%CD%F8%C2%E7%D1%A1%B0%CE%C8%FC&source=1&searchmode=source"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2017.9-2018 赛季 3th",
+    "display_order": 225
+  },
+  {
+    "source_key": "ccpc-6275a894e9e10508",
+    "year": 2017,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "哈尔滨",
+    "official_name": "CCPC.2017哈尔滨站-重现赛",
+    "official_url": "",
+    "event_date": "2017-10-22",
+    "event_date_text": "2017-10-22",
+    "organizer": "哈尔滨理工大学",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/19"
+      },
+      {
+        "label": "HDU",
+        "url": "https://acm.hdu.edu.cn/search.php?field=problem&key=2017%D6%D0%B9%FA%B4%F3%D1%A7%C9%FA%B3%CC%D0%F2%C9%E8%BC%C6%BE%BA%C8%FC-%B9%FE%B6%FB%B1%F5%D5%BE-%D6%D8%CF%D6%C8%FC%A3%A8%B8%D0%D0%BB%B9%FE%C0%ED%B9%A4%A3%A9&source=1&searchmode=source"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2017.9-2018 赛季 3th",
+    "display_order": 226
+  },
+  {
+    "source_key": "ccpc-065927f6070e8099",
+    "year": 2017,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "秦皇岛",
+    "official_name": "CCPC.2017秦皇岛站-重现赛",
+    "official_url": "",
+    "event_date": "2017-10-29",
+    "event_date_text": "2017-10-29",
+    "organizer": "东北大学秦皇岛分校",
+    "practice_links": [
+      {
+        "label": "牛客",
+        "url": "https://ac.nowcoder.com/acm/contest/25"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2017.9-2018 赛季 3th",
+    "display_order": 227
+  },
+  {
+    "source_key": "ccpc-8455ee683c69eb38",
+    "year": 2017,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "杭州",
+    "official_name": "he 2017 China Collegiate Programming Contest, Hangzhou Site",
+    "official_url": "",
+    "event_date": "2017-11-05",
+    "event_date_text": "2017-11-05",
+    "organizer": "浙江理工大学",
+    "practice_links": [
+      {
+        "label": "Vjudge",
+        "url": "https://vjudge.net/contest/223540"
+      },
+      {
+        "label": "HDU",
+        "url": "https://acm.hdu.edu.cn/search.php?field=problem&key=2017%D6%D0%B9%FA%B4%F3%D1%A7%C9%FA%B3%CC%D0%F2%C9%E8%BC%C6%BE%BA%C8%FC-%BA%BC%D6%DD%D5%BE-%D6%D8%CF%D6%C8%FC%A3%A8%B8%D0%D0%BB%D5%E3%BD%AD%C0%ED%B9%A4%A3%A9&source=1&searchmode=source"
+      }
+    ],
+    "practice_links_note": ",",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2017.9-2018 赛季 3th",
+    "display_order": 228
+  },
+  {
+    "source_key": "ccpc-83e36d0b2d4c0418",
+    "year": 2016,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "长春",
+    "official_name": "ccpc-changchun",
+    "official_url": "https://acm.sdut.edu.cn/acmss/ccpc/2016/changchun/index.html",
+    "event_date": "2016-09-27",
+    "event_date_text": "2016-09-27",
+    "organizer": "吉林大学",
+    "practice_links": [
+      {
+        "label": "Vjudge",
+        "url": "https://vjudge.net/contest/176726"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2016.9-2017 赛季 2th",
+    "display_order": 229
+  },
+  {
+    "source_key": "ccpc-bbfaf87345e171bb",
+    "year": 2016,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "合肥",
+    "official_name": "2016 CCPC Hefei Onsite",
+    "official_url": "https://acm.sdut.edu.cn/acmss/ccpc/2016/hefei/index.html",
+    "event_date": "2016-10-16",
+    "event_date_text": "2016-10-16",
+    "organizer": "安徽大学",
+    "practice_links": [
+      {
+        "label": "Vjudge",
+        "url": "https://vjudge.net/contest/140483"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2016.9-2017 赛季 2th",
+    "display_order": 230
+  },
+  {
+    "source_key": "ccpc-cd9fb23f0bbfa593",
+    "year": 2016,
+    "series": "ccpc",
+    "stage": "regional",
+    "short_name": "杭州",
+    "official_name": "2016 CCPC Hangzhou Onsite",
+    "official_url": "https://acm.sdut.edu.cn/acmss/ccpc/2016/hangzhou/index.html",
+    "event_date": "2016-10-19",
+    "event_date_text": "2016-10-19",
+    "organizer": "杭州电子科技大学",
+    "practice_links": [
+      {
+        "label": "Vjudge",
+        "url": "https://vjudge.net/contest/139457"
+      }
+    ],
+    "practice_links_note": "待补充",
+    "source_file": "03 - CCPC.md",
+    "source_section": "2016.9-2017 赛季 2th",
+    "display_order": 231
+  }
+]

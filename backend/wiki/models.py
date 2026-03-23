@@ -208,6 +208,10 @@ class IssueTicket(TimeStampedModel):
         ISSUE = "issue", "Issue"
         REQUEST = "request", "Request"
 
+    class Visibility(models.TextChoices):
+        PRIVATE = "private", "Private"
+        PUBLIC = "public", "Public"
+
     class Status(models.TextChoices):
         PENDING = "pending", "Pending Review"
         OPEN = "open", "Open"
@@ -225,6 +229,12 @@ class IssueTicket(TimeStampedModel):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
+    )
+    visibility = models.CharField(
+        max_length=20,
+        choices=Visibility.choices,
+        default=Visibility.PUBLIC,
+        db_index=True,
     )
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     assignee = models.ForeignKey(
@@ -369,6 +379,110 @@ class CompetitionScheduleEntry(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.event_date} {self.competition_type}"
+
+
+class CompetitionPracticeLink(TimeStampedModel):
+    class Series(models.TextChoices):
+        ICPC = "icpc", "ICPC"
+        CCPC = "ccpc", "CCPC"
+
+    class Stage(models.TextChoices):
+        NETWORK = "network", "Network"
+        REGIONAL = "regional", "Regional"
+        INVITATIONAL = "invitational", "Invitational"
+        PROVINCIAL = "provincial", "Provincial"
+
+    source_key = models.CharField(max_length=200, unique=True, db_index=True)
+    year = models.PositiveIntegerField(db_index=True)
+    series = models.CharField(max_length=20, choices=Series.choices, db_index=True)
+    stage = models.CharField(max_length=20, choices=Stage.choices, db_index=True)
+    short_name = models.CharField(max_length=120)
+    official_name = models.CharField(max_length=500)
+    official_url = models.URLField(max_length=500, blank=True)
+    event_date = models.DateField(null=True, blank=True, db_index=True)
+    event_date_text = models.CharField(max_length=80, blank=True)
+    organizer = models.CharField(max_length=255, blank=True)
+    practice_links = models.JSONField(default=list, blank=True)
+    practice_links_note = models.CharField(max_length=255, blank=True)
+    source_file = models.CharField(max_length=120, blank=True)
+    source_section = models.CharField(max_length=180, blank=True)
+    display_order = models.PositiveIntegerField(default=0, db_index=True)
+    created_by = models.ForeignKey(
+        "User",
+        related_name="created_competition_practice_links",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    updated_by = models.ForeignKey(
+        "User",
+        related_name="updated_competition_practice_links",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        ordering = ["-year", "display_order", "id"]
+
+    def __str__(self) -> str:
+        return f"{self.year} {self.get_series_display()} {self.short_name}"
+
+
+class CompetitionPracticeLinkProposal(TimeStampedModel):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+
+    target_entry = models.ForeignKey(
+        CompetitionPracticeLink,
+        related_name="proposals",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    proposer = models.ForeignKey(
+        "User",
+        related_name="competition_practice_link_proposals",
+        on_delete=models.CASCADE,
+    )
+    proposed_year = models.PositiveIntegerField(db_index=True)
+    proposed_series = models.CharField(
+        max_length=20,
+        choices=CompetitionPracticeLink.Series.choices,
+        db_index=True,
+    )
+    proposed_stage = models.CharField(
+        max_length=20,
+        choices=CompetitionPracticeLink.Stage.choices,
+        db_index=True,
+    )
+    proposed_short_name = models.CharField(max_length=120)
+    proposed_official_name = models.CharField(max_length=500)
+    proposed_official_url = models.URLField(max_length=500, blank=True)
+    proposed_event_date = models.DateField(null=True, blank=True, db_index=True)
+    proposed_event_date_text = models.CharField(max_length=80, blank=True)
+    proposed_organizer = models.CharField(max_length=255, blank=True)
+    proposed_practice_links = models.JSONField(default=list, blank=True)
+    proposed_practice_links_note = models.CharField(max_length=255, blank=True)
+    reason = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True)
+    reviewer = models.ForeignKey(
+        "User",
+        related_name="reviewed_competition_practice_link_proposals",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    review_note = models.TextField(blank=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.proposed_year} {self.proposed_short_name} ({self.status})"
 
 
 class Question(TimeStampedModel):
