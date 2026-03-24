@@ -1,9 +1,42 @@
 ﻿<template>
-  <section class="admin-layout">
-    <article class="admin-card full">
+  <section class="admin-shell">
+    <header class="admin-card admin-shell-head">
+      <div class="admin-shell-copy">
+        <p class="admin-kicker">{{ currentSectionConfig.label }}</p>
+        <h1>AlgoWiki 管理台</h1>
+        <p class="meta">{{ currentSectionConfig.description }}</p>
+        <p class="meta admin-shell-note">
+          当前分区 <code>{{ currentSectionPath }}</code>；Django 原生后台固定使用
+          <a href="/admin/" target="_blank" rel="noopener">/admin/</a>。
+        </p>
+      </div>
+      <div class="admin-shell-actions">
+        <button class="btn" @click="reloadCurrentSection">刷新当前分区</button>
+        <a class="btn" href="/admin/" target="_blank" rel="noopener">打开 Django 后台</a>
+      </div>
+    </header>
+
+    <nav class="admin-nav-grid" aria-label="管理分区">
+      <RouterLink
+        v-for="item in adminSections"
+        :key="item.key"
+        :to="buildAdminSectionRoute(item.key)"
+        class="admin-nav-link"
+        :class="{ 'admin-nav-link--active': item.key === currentSection }"
+      >
+        <div class="admin-nav-top">
+          <strong>{{ item.label }}</strong>
+          <span v-if="sectionCounter(item.key)" class="admin-nav-count">{{ sectionCounter(item.key) }}</span>
+        </div>
+        <span class="admin-nav-desc">{{ item.description }}</span>
+      </RouterLink>
+    </nav>
+
+    <section class="admin-layout">
+    <article v-if="currentSection === 'overview'" class="admin-card full">
       <h2>管理概览</h2>
       <p class="meta overview-help">
-        站内管理台固定使用 <code>/manage</code>；Django 原生后台固定使用
+        站内管理台分区使用 <code>{{ currentSectionPath }}</code>；Django 原生后台固定使用
         <a href="/admin/" target="_blank" rel="noopener">/admin/</a>。
       </p>
       <div class="overview-grid" v-if="adminOverview">
@@ -66,7 +99,7 @@
       </div>
       <p class="meta" v-if="!adminOverview">概览数据加载中...</p>
     </article>
-    <article class="admin-card">
+    <article v-if="currentSection === 'announcements'" class="admin-card full">
       <h2>公告发布</h2>
 
       <div class="announce-form">
@@ -101,7 +134,7 @@
       </article>
     </article>
 
-    <article class="admin-card">
+    <article v-if="currentSection === 'users'" class="admin-card full">
       <h2>用户管理</h2>
       <div class="bulk-tools">
         <select class="select bulk-select" v-model="userFilters.role">
@@ -176,7 +209,7 @@
       <button v-if="usersMeta.hasMore" class="btn" @click="loadMoreUsers">加载更多用户</button>
     </article>
 
-    <article class="admin-card full">
+    <article v-if="currentSection === 'tickets'" class="admin-card full">
       <h2>Issue / Request 处理</h2>
       <p class="meta">共 {{ ticketsMeta.count }} 条工单</p>
       <div class="bulk-tools">
@@ -269,7 +302,7 @@
       <button v-if="ticketsMeta.hasMore" class="btn" @click="loadMoreTickets">加载更多工单</button>
     </article>
 
-    <article class="admin-card full">
+    <article v-if="currentSection === 'pages'" class="admin-card full">
       <h2>扩展页面管理</h2>
       <div class="page-panel">
         <div class="page-form-grid">
@@ -309,7 +342,7 @@
       </article>
     </article>
 
-    <article class="admin-card full">
+    <article v-if="currentSection === 'categories'" class="admin-card full">
       <h2>分类管理</h2>
       <div class="page-panel">
         <div class="category-form-grid">
@@ -363,10 +396,8 @@
       </article>
     </article>
 
-    <article class="admin-card full">
-      <h2>内容治理</h2>
-
-      <h3 class="sub-title">文章管理</h3>
+    <article v-if="currentSection === 'articles'" class="admin-card full">
+      <h2>文章治理</h2>
       <p class="meta">共 {{ moderationArticlesMeta.count }} 篇文章</p>
       <div class="bulk-tools">
         <label class="bulk-check">
@@ -412,8 +443,10 @@
         加载更多文章
       </button>
       <p v-if="!moderationArticles.length" class="meta">暂无可管理文章。</p>
+    </article>
 
-      <h3 class="sub-title">评论管理</h3>
+    <article v-if="currentSection === 'comments'" class="admin-card full">
+      <h2>评论治理</h2>
       <p class="meta">共 {{ moderationCommentsMeta.count }} 条评论</p>
       <div class="bulk-tools">
         <label class="bulk-check">
@@ -457,8 +490,10 @@
         加载更多评论
       </button>
       <p v-if="!moderationComments.length" class="meta">暂无评论记录。</p>
+    </article>
 
-      <h3 class="sub-title">问题管理</h3>
+    <article v-if="currentSection === 'questions'" class="admin-card full">
+      <h2>问答治理</h2>
       <p class="meta">共 {{ moderationQuestionsMeta.count }} 条问题</p>
       <div class="bulk-tools">
         <label class="bulk-check">
@@ -514,7 +549,7 @@
       <p v-if="!moderationQuestions.length" class="meta">暂无问题记录。</p>
     </article>
 
-    <article class="admin-card full">
+    <article v-if="currentSection === 'security'" class="admin-card full">
       <h2>安全审计日志</h2>
       <div class="bulk-tools">
         <select class="select bulk-select" v-model="securityWindowHours">
@@ -610,7 +645,7 @@
       <p v-if="!securityLogs.length" class="meta">暂无安全日志。</p>
     </article>
 
-    <article class="admin-card full">
+    <article v-if="currentSection === 'events'" class="admin-card full">
       <h2>操作日志</h2>
       <p class="meta">共 {{ eventsMeta.count }} 条日志</p>
       <div class="bulk-tools">
@@ -644,18 +679,39 @@
       <button v-if="eventsMeta.hasMore" class="btn" @click="loadMoreEvents">加载更多日志</button>
       <p v-if="!events.length" class="meta">暂无日志记录。</p>
     </article>
+    </section>
   </section>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, reactive, ref, watch } from "vue";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 
 import api from "../services/api";
 import { useAuthStore } from "../stores/auth";
 import { useUiStore } from "../stores/ui";
 
+const route = useRoute();
+const router = useRouter();
 const auth = useAuthStore();
 const ui = useUiStore();
+
+const DEFAULT_ADMIN_SECTION = "overview";
+const adminSections = [
+  { key: "overview", label: "概览", description: "查看全站核心指标、事件分布和后台入口。" },
+  { key: "announcements", label: "公告", description: "发布、编辑与上下线站内公告。" },
+  { key: "users", label: "用户", description: "筛选用户并执行批量封禁、恢复、改角色。" },
+  { key: "tickets", label: "工单", description: "处理 Issue / Request，分派负责人并记录备注。" },
+  { key: "pages", label: "页面", description: "维护关于 AlgoWiki 等扩展页面内容。" },
+  { key: "categories", label: "分类", description: "管理分类树、作用域和排序。" },
+  { key: "articles", label: "文章治理", description: "批量发布或删除文章内容。" },
+  { key: "comments", label: "评论治理", description: "筛查评论并执行隐藏操作。" },
+  { key: "questions", label: "问答治理", description: "处理问题状态与批量治理动作。" },
+  { key: "security", label: "安全", description: "查看登录审计、安全汇总和异常 IP。" },
+  { key: "events", label: "操作日志", description: "检索站内事件并导出 CSV。" },
+];
+const adminSectionKeys = new Set(adminSections.map((item) => item.key));
+const loadedSections = reactive(Object.fromEntries(adminSections.map((item) => [item.key, false])));
 
 const announcements = ref([]);
 const users = ref([]);
@@ -819,6 +875,54 @@ const securityTopIpMaxCount = computed(() => {
   const max = Math.max(...rows.map((item) => Number(item.count) || 0), 0);
   return max || 1;
 });
+const currentSection = computed(() => normalizeAdminSection(route.params.section));
+const currentSectionConfig = computed(
+  () => adminSections.find((item) => item.key === currentSection.value) || adminSections[0]
+);
+const currentSectionPath = computed(() => `/manage/${currentSection.value}`);
+
+function normalizeAdminSection(rawSection) {
+  const section = Array.isArray(rawSection) ? rawSection[0] : rawSection;
+  if (typeof section !== "string" || !section.trim()) {
+    return DEFAULT_ADMIN_SECTION;
+  }
+  return adminSectionKeys.has(section) ? section : DEFAULT_ADMIN_SECTION;
+}
+
+function buildAdminSectionRoute(section) {
+  return { name: "admin", params: { section } };
+}
+
+function sectionCounter(section) {
+  if (!loadedSections[section]) return "";
+
+  switch (section) {
+    case "overview":
+      return String(adminOverview.value?.users?.active ?? 0);
+    case "announcements":
+      return String(announcements.value.length);
+    case "users":
+      return String(usersMeta.count);
+    case "tickets":
+      return String(ticketsMeta.count);
+    case "pages":
+      return String(extensionPages.value.length);
+    case "categories":
+      return String(categories.value.length);
+    case "articles":
+      return String(moderationArticlesMeta.count);
+    case "comments":
+      return String(moderationCommentsMeta.count);
+    case "questions":
+      return String(moderationQuestionsMeta.count);
+    case "security":
+      return String(securityLogsMeta.count);
+    case "events":
+      return String(eventsMeta.count);
+    default:
+      return "";
+  }
+}
 
 function getErrorText(error, fallback = "操作失败") {
   const payload = error?.response?.data;
@@ -1716,10 +1820,6 @@ async function deleteCategory(item) {
   }
 }
 
-async function reloadModerationContent() {
-  await Promise.all([loadModerationArticles(), loadModerationComments(), loadModerationQuestions()]);
-}
-
 async function publishArticle(item) {
   try {
     await api.post(`/articles/${item.id}/publish/`);
@@ -1917,27 +2017,199 @@ function renderPayload(payload) {
   return pairs || "{}";
 }
 
-onMounted(async () => {
-  await Promise.all([
-    loadAdminOverview(),
-    loadAnnouncements(),
-    loadUsers(),
-    loadAssigneeOptions(),
-    loadTickets(),
-    loadExtensionPages(),
-    loadCategories(),
-    reloadModerationContent(),
-    loadSecuritySummary(),
-    loadSecurityLogs(),
-    loadEvents(),
-  ]);
-});
+async function ensureSectionLoaded(section, force = false) {
+  const targetSection = normalizeAdminSection(section);
+  if (!force && loadedSections[targetSection]) return;
+
+  switch (targetSection) {
+    case "overview":
+      await loadAdminOverview();
+      break;
+    case "announcements":
+      await loadAnnouncements();
+      break;
+    case "users":
+      await loadUsers();
+      break;
+    case "tickets":
+      await Promise.all([loadAssigneeOptions(), loadTickets()]);
+      break;
+    case "pages":
+      await loadExtensionPages();
+      break;
+    case "categories":
+      await loadCategories();
+      break;
+    case "articles":
+      if (!loadedSections.categories) {
+        await loadCategories();
+        loadedSections.categories = true;
+      }
+      await loadModerationArticles();
+      break;
+    case "comments":
+      await loadModerationComments();
+      break;
+    case "questions":
+      if (!loadedSections.categories) {
+        await loadCategories();
+        loadedSections.categories = true;
+      }
+      await loadModerationQuestions();
+      break;
+    case "security":
+      await Promise.all([loadSecuritySummary(), loadSecurityLogs()]);
+      break;
+    case "events":
+      await loadEvents();
+      break;
+    default:
+      break;
+  }
+
+  loadedSections[targetSection] = true;
+}
+
+async function reloadCurrentSection() {
+  await ensureSectionLoaded(currentSection.value, true);
+}
+
+watch(
+  () => route.params.section,
+  async (value) => {
+    const normalized = normalizeAdminSection(value);
+    const rawValue = Array.isArray(value) ? value[0] : value;
+
+    if (rawValue !== normalized) {
+      await router.replace(buildAdminSectionRoute(normalized));
+      return;
+    }
+
+    window.scrollTo({ top: 0, behavior: "auto" });
+    await ensureSectionLoaded(normalized);
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>
+.admin-shell {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-shell-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+}
+
+.admin-shell-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.admin-kicker {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #4f8fff;
+}
+
+.admin-shell-head h1 {
+  margin: 0;
+  font-size: clamp(32px, 4vw, 42px);
+}
+
+.admin-shell-note {
+  margin-top: 6px;
+}
+
+.admin-shell-note code,
+.overview-help code {
+  border-radius: 6px;
+  padding: 2px 6px;
+  background: rgba(15, 23, 42, 0.08);
+  color: #1f2937;
+}
+
+.admin-shell-note a,
+.overview-help a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.admin-shell-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-nav-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.admin-nav-link {
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.58);
+  box-shadow: var(--shadow-sm);
+  padding: 12px 14px;
+  display: grid;
+  gap: 8px;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.admin-nav-link:hover {
+  transform: translateY(-1px);
+  border-color: rgba(79, 143, 255, 0.28);
+}
+
+.admin-nav-link--active {
+  border-color: rgba(79, 143, 255, 0.42);
+  background: linear-gradient(180deg, rgba(242, 247, 255, 0.98), rgba(255, 255, 255, 0.72));
+}
+
+.admin-nav-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.admin-nav-top strong {
+  font-size: 16px;
+  color: #1e2733;
+}
+
+.admin-nav-count {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(79, 143, 255, 0.12);
+  color: #2d5fd4;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 28px;
+  text-align: center;
+}
+
+.admin-nav-desc {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #5c6778;
+}
+
 .admin-layout {
   display: grid;
-  grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
 
@@ -1991,18 +2263,6 @@ onMounted(async () => {
 
 .overview-help {
   margin-bottom: 10px;
-}
-
-.overview-help code {
-  border-radius: 6px;
-  padding: 2px 6px;
-  background: rgba(15, 23, 42, 0.08);
-  color: #1f2937;
-}
-
-.overview-help a {
-  color: var(--accent);
-  text-decoration: underline;
 }
 
 .overview-analytics {
@@ -2067,18 +2327,15 @@ onMounted(async () => {
   background: linear-gradient(90deg, #4f8fff, #6d6bff);
 }
 
-.sub-title {
-  margin: 12px 0 8px;
-  font-size: 22px;
-}
-
 .announce-form {
   display: grid;
   gap: 8px;
   margin-bottom: 12px;
 }
 
-.announce-actions {
+.announce-actions,
+.bulk-tools,
+.page-actions {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -2086,10 +2343,6 @@ onMounted(async () => {
 }
 
 .bulk-tools {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
   margin-bottom: 10px;
 }
 
@@ -2109,11 +2362,23 @@ onMounted(async () => {
   width: min(320px, 100%);
 }
 
-.notice {
-  padding: 10px 12px;
+.notice,
+.user-row,
+.ticket-row,
+.page-row,
+.category-row {
+  padding: 11px 12px;
   margin-top: 10px;
   border-radius: 10px;
   background: rgba(245, 250, 255, 0.82);
+}
+
+.notice:first-of-type,
+.user-row:first-of-type,
+.ticket-row:first-of-type,
+.page-row:first-of-type,
+.category-row:first-of-type {
+  margin-top: 0;
 }
 
 .notice-head {
@@ -2130,27 +2395,22 @@ onMounted(async () => {
 }
 
 .user-row,
-.ticket-row {
-  padding: 11px 12px;
-  margin-top: 10px;
-  border-radius: 10px;
-  background: rgba(245, 250, 255, 0.82);
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.user-row:first-of-type,
-.ticket-row:first-of-type {
-  margin-top: 0;
+.ticket-row,
+.page-row,
+.category-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
 }
 
 .user-actions,
-.ticket-actions {
+.ticket-actions,
+.page-tools {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   justify-content: flex-end;
+  align-content: flex-start;
 }
 
 .ticket-main {
@@ -2166,7 +2426,6 @@ onMounted(async () => {
 
 .ticket-actions {
   width: 280px;
-  align-content: flex-start;
 }
 
 .page-panel {
@@ -2193,83 +2452,23 @@ onMounted(async () => {
   gap: 8px;
 }
 
-.page-actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.page-row {
-  padding: 11px 12px;
-  margin-top: 10px;
-  border-radius: 10px;
-  background: rgba(245, 250, 255, 0.82);
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.category-row {
-  padding: 11px 12px;
-  margin-top: 10px;
-  border-radius: 10px;
-  background: rgba(245, 250, 255, 0.82);
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.page-tools {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-}
-
 @media (max-width: 1100px) {
-  .admin-layout {
+  .admin-shell-head {
     grid-template-columns: 1fr;
   }
 
-  .ticket-row {
-    flex-direction: column;
-  }
-
-  .ticket-actions {
-    width: 100%;
-  }
-
-  .page-row {
-    flex-direction: column;
-  }
-
-  .category-row {
-    flex-direction: column;
-  }
-
-  .page-tools {
+  .admin-shell-actions {
     justify-content: flex-start;
   }
-}
 
-@media (max-width: 640px) {
-  .announce-actions {
-    align-items: stretch;
+  .admin-nav-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .page-form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .category-form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .overview-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .overview-analytics {
+  .user-row,
+  .ticket-row,
+  .page-row,
+  .category-row {
     grid-template-columns: 1fr;
   }
 
@@ -2277,14 +2476,46 @@ onMounted(async () => {
   .ticket-actions,
   .page-tools {
     width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-shell-head h1,
+  .admin-card h2 {
+    font-size: 28px;
   }
 
-  .bulk-tools {
+  .admin-nav-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .announce-actions,
+  .bulk-tools,
+  .page-actions,
+  .admin-shell-actions {
     align-items: stretch;
   }
 
+  .page-form-grid,
+  .category-form-grid,
+  .overview-analytics,
+  .overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .overview-bar-row {
+    grid-template-columns: 72px minmax(0, 1fr) 36px;
+  }
+
+  .overview-day-row {
+    grid-template-columns: 44px minmax(0, 1fr) 36px;
+  }
+
   .bulk-select,
-  .bulk-input {
+  .bulk-input,
+  .ticket-actions,
+  .page-tools {
     width: 100%;
   }
 }

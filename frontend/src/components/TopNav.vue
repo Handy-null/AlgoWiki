@@ -84,7 +84,7 @@
         <RouterLink
           v-if="auth.isManager"
           class="mobile-link"
-          :to="{ name: 'admin' }"
+          :to="{ name: 'admin', params: { section: 'overview' } }"
           @click="showMobileMenu = false"
         >
           管理台
@@ -142,7 +142,7 @@ const primaryNav = computed(() => {
     { name: "友链", to: { name: "friendly-links" } },
   ];
   if (auth.isReviewer) nav.push({ name: "审核", to: { name: "review" } });
-  if (auth.isManager) nav.push({ name: "管理", to: { name: "admin" } });
+  if (auth.isManager) nav.push({ name: "管理", to: { name: "admin", params: { section: "overview" } } });
   return nav;
 });
 
