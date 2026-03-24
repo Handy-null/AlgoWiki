@@ -16,20 +16,25 @@
       </div>
     </header>
 
-    <nav class="admin-nav-grid" aria-label="管理分区">
-      <RouterLink
-        v-for="item in adminSections"
-        :key="item.key"
-        :to="buildAdminSectionRoute(item.key)"
-        class="admin-nav-link"
-        :class="{ 'admin-nav-link--active': item.key === currentSection }"
-      >
-        <div class="admin-nav-top">
-          <strong>{{ item.label }}</strong>
-          <span v-if="sectionCounter(item.key)" class="admin-nav-count">{{ sectionCounter(item.key) }}</span>
+    <nav class="admin-nav-panels" aria-label="管理分区">
+      <section v-for="group in adminSectionGroups" :key="group.label" class="admin-nav-group">
+        <p class="admin-nav-group-title">{{ group.label }}</p>
+        <div class="admin-nav-grid">
+          <RouterLink
+            v-for="item in group.items"
+            :key="item.key"
+            :to="buildAdminSectionRoute(item.key)"
+            class="admin-nav-link"
+            :class="{ 'admin-nav-link--active': item.key === currentSection }"
+          >
+            <div class="admin-nav-top">
+              <strong>{{ item.label }}</strong>
+              <span v-if="sectionCounter(item.key)" class="admin-nav-count">{{ sectionCounter(item.key) }}</span>
+            </div>
+            <span class="admin-nav-desc">{{ item.description }}</span>
+          </RouterLink>
         </div>
-        <span class="admin-nav-desc">{{ item.description }}</span>
-      </RouterLink>
+      </section>
     </nav>
 
     <section class="admin-layout">
@@ -501,8 +506,8 @@
     </article>
 
     <article v-if="currentSection === 'questions'" class="admin-card full">
-      <h2>问答治理</h2>
-      <p class="meta">问题 {{ moderationQuestionsMeta.count }} 条，回答 {{ moderationAnswersMeta.count }} 条</p>
+      <h2>问题治理</h2>
+      <p class="meta">共 {{ moderationQuestionsMeta.count }} 条问题</p>
       <div class="bulk-tools">
         <label class="bulk-check">
           <input
@@ -560,8 +565,11 @@
         加载更多问题
       </button>
       <p v-if="!moderationQuestions.length" class="meta">暂无问题记录。</p>
+    </article>
 
-      <h3>回答审核</h3>
+    <article v-if="currentSection === 'answers'" class="admin-card full">
+      <h2>回答治理</h2>
+      <p class="meta">共 {{ moderationAnswersMeta.count }} 条回答</p>
       <div class="bulk-tools">
         <label class="bulk-check">
           <input
@@ -746,32 +754,57 @@
 
 <script setup>
 import { computed, reactive, ref, watch } from "vue";
-import { RouterLink, useRoute, useRouter } from "vue-router";
+import { RouterLink, useRouter } from "vue-router";
 
 import api from "../services/api";
 import { useAuthStore } from "../stores/auth";
 import { useUiStore } from "../stores/ui";
 
-const route = useRoute();
+const props = defineProps({
+  section: {
+    type: String,
+    default: "overview",
+  },
+});
 const router = useRouter();
 const auth = useAuthStore();
 const ui = useUiStore();
 
 const DEFAULT_ADMIN_SECTION = "overview";
 const adminSections = [
-  { key: "overview", label: "概览", description: "查看全站核心指标、事件分布和后台入口。" },
-  { key: "announcements", label: "公告", description: "发布、编辑与上下线站内公告。" },
-  { key: "users", label: "用户", description: "筛选用户并执行批量封禁、恢复、改角色。" },
-  { key: "tickets", label: "工单", description: "处理 Issue / Request，分派负责人并记录备注。" },
-  { key: "pages", label: "页面", description: "维护关于 AlgoWiki 等扩展页面内容。" },
-  { key: "categories", label: "分类", description: "管理分类树、作用域和排序。" },
-  { key: "articles", label: "文章治理", description: "批量发布或删除文章内容。" },
-  { key: "comments", label: "评论治理", description: "筛查评论并执行隐藏操作。" },
-  { key: "questions", label: "问答治理", description: "处理问题状态与批量治理动作。" },
-  { key: "security", label: "安全", description: "查看登录审计、安全汇总和异常 IP。" },
-  { key: "events", label: "操作日志", description: "检索站内事件并导出 CSV。" },
+  { key: "overview", label: "概览", description: "查看全站核心指标、事件分布和后台入口。", routeName: "admin" },
+  { key: "announcements", label: "公告", description: "发布、编辑与上下线站内公告。", routeName: "manage-announcements" },
+  { key: "users", label: "用户", description: "筛选用户并执行批量封禁、恢复、改角色。", routeName: "manage-users" },
+  { key: "tickets", label: "工单", description: "处理 Issue / Request，分派负责人并记录备注。", routeName: "manage-tickets" },
+  { key: "pages", label: "页面", description: "维护关于 AlgoWiki 等扩展页面内容。", routeName: "manage-pages" },
+  { key: "categories", label: "分类", description: "管理分类树、作用域和排序。", routeName: "manage-categories" },
+  { key: "articles", label: "文章治理", description: "批量发布或删除文章内容。", routeName: "manage-articles" },
+  { key: "comments", label: "评论治理", description: "筛查评论并执行隐藏操作。", routeName: "manage-comments" },
+  { key: "questions", label: "问题治理", description: "处理提问状态、分类和批量审核动作。", routeName: "manage-questions" },
+  { key: "answers", label: "回答治理", description: "单独处理待审回答、批量驳回或隐藏。", routeName: "manage-answers" },
+  { key: "security", label: "安全", description: "查看登录审计、安全汇总和异常 IP。", routeName: "manage-security" },
+  { key: "events", label: "操作日志", description: "检索站内事件并导出 CSV。", routeName: "manage-events" },
 ];
 const adminSectionKeys = new Set(adminSections.map((item) => item.key));
+const adminSectionMap = new Map(adminSections.map((item) => [item.key, item]));
+const adminSectionGroups = [
+  {
+    label: "总览与站务",
+    items: ["overview", "users", "tickets"].map((key) => adminSectionMap.get(key)),
+  },
+  {
+    label: "内容管理",
+    items: ["announcements", "pages", "categories", "articles"].map((key) => adminSectionMap.get(key)),
+  },
+  {
+    label: "审核治理",
+    items: ["comments", "questions", "answers"].map((key) => adminSectionMap.get(key)),
+  },
+  {
+    label: "安全与审计",
+    items: ["security", "events"].map((key) => adminSectionMap.get(key)),
+  },
+];
 const loadedSections = reactive(Object.fromEntries(adminSections.map((item) => [item.key, false])));
 
 const announcements = ref([]);
@@ -950,11 +983,11 @@ const securityTopIpMaxCount = computed(() => {
   const max = Math.max(...rows.map((item) => Number(item.count) || 0), 0);
   return max || 1;
 });
-const currentSection = computed(() => normalizeAdminSection(route.params.section));
+const currentSection = computed(() => normalizeAdminSection(props.section));
 const currentSectionConfig = computed(
   () => adminSections.find((item) => item.key === currentSection.value) || adminSections[0]
 );
-const currentSectionPath = computed(() => `/manage/${currentSection.value}`);
+const currentSectionPath = computed(() => router.resolve(buildAdminSectionRoute(currentSection.value)).href);
 
 function normalizeAdminSection(rawSection) {
   const section = Array.isArray(rawSection) ? rawSection[0] : rawSection;
@@ -965,7 +998,8 @@ function normalizeAdminSection(rawSection) {
 }
 
 function buildAdminSectionRoute(section) {
-  return { name: "admin", params: { section } };
+  const item = adminSectionMap.get(section);
+  return { name: item?.routeName || "admin" };
 }
 
 function sectionCounter(section) {
@@ -989,7 +1023,9 @@ function sectionCounter(section) {
     case "comments":
       return String(moderationCommentsMeta.count);
     case "questions":
-      return String(moderationQuestionsMeta.count + moderationAnswersMeta.count);
+      return String(moderationQuestionsMeta.count);
+    case "answers":
+      return String(moderationAnswersMeta.count);
     case "security":
       return String(securityLogsMeta.count);
     case "events":
@@ -2270,7 +2306,10 @@ async function ensureSectionLoaded(section, force = false) {
         await loadCategories();
         loadedSections.categories = true;
       }
-      await Promise.all([loadModerationQuestions(), loadModerationAnswers()]);
+      await loadModerationQuestions();
+      break;
+    case "answers":
+      await loadModerationAnswers();
       break;
     case "security":
       await Promise.all([loadSecuritySummary(), loadSecurityLogs()]);
@@ -2290,12 +2329,10 @@ async function reloadCurrentSection() {
 }
 
 watch(
-  () => route.params.section,
+  () => props.section,
   async (value) => {
     const normalized = normalizeAdminSection(value);
-    const rawValue = Array.isArray(value) ? value[0] : value;
-
-    if (rawValue !== normalized) {
+    if (value !== normalized) {
       await router.replace(buildAdminSectionRoute(normalized));
       return;
     }
@@ -2363,6 +2400,25 @@ watch(
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.admin-nav-panels {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-nav-group {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-nav-group-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6b7280;
 }
 
 .admin-nav-grid {

@@ -16,6 +16,20 @@ const AuthPage = () => import("../pages/AuthPage.vue");
 const ReviewPage = () => import("../pages/ReviewPage.vue");
 const RevisionReviewPage = () => import("../pages/RevisionReviewPage.vue");
 
+const manageSections = [
+  { path: "announcements", name: "manage-announcements", section: "announcements" },
+  { path: "users", name: "manage-users", section: "users" },
+  { path: "tickets", name: "manage-tickets", section: "tickets" },
+  { path: "pages", name: "manage-pages", section: "pages" },
+  { path: "categories", name: "manage-categories", section: "categories" },
+  { path: "articles", name: "manage-articles", section: "articles" },
+  { path: "comments", name: "manage-comments", section: "comments" },
+  { path: "questions", name: "manage-questions", section: "questions" },
+  { path: "answers", name: "manage-answers", section: "answers" },
+  { path: "security", name: "manage-security", section: "security" },
+  { path: "events", name: "manage-events", section: "events" },
+];
+
 const routes = [
   { path: "/", name: "home", component: HomePage },
   { path: "/announcements", name: "announcements", component: AnnouncementsPage },
@@ -27,13 +41,42 @@ const routes = [
   { path: "/profile", name: "profile", component: ProfilePage, meta: { requiresAuth: true } },
   { path: "/extra/:slug", name: "extra", component: ExtraPage, props: true },
   {
-    path: "/manage/:section?",
-    alias: ["/manage/"],
+    path: "/manage",
     name: "admin",
     component: AdminPage,
+    props: { section: "overview" },
     meta: { requiresManager: true },
   },
-  { path: "/review", name: "review", component: ReviewPage, meta: { requiresReviewer: true } },
+  ...manageSections.map((item) => ({
+    path: `/manage/${item.path}`,
+    name: item.name,
+    component: AdminPage,
+    props: { section: item.section },
+    meta: { requiresManager: true },
+  })),
+  {
+    path: "/manage/:legacySection",
+    redirect: (to) => {
+      const match = manageSections.find((item) => item.section === to.params.legacySection);
+      return match ? { name: match.name } : { name: "admin" };
+    },
+    meta: { requiresManager: true },
+  },
+  { path: "/review", name: "review", component: ReviewPage, props: { section: "revisions" }, meta: { requiresReviewer: true } },
+  {
+    path: "/review/tickets",
+    name: "review-tickets",
+    component: ReviewPage,
+    props: { section: "tickets" },
+    meta: { requiresReviewer: true },
+  },
+  {
+    path: "/review/comments",
+    name: "review-comments",
+    component: ReviewPage,
+    props: { section: "comments" },
+    meta: { requiresReviewer: true },
+  },
   { path: "/review/revisions/:id", name: "review-revision", component: RevisionReviewPage, props: true, meta: { requiresReviewer: true } },
   { path: "/auth", name: "auth", component: AuthPage },
 ];

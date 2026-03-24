@@ -1,6 +1,31 @@
 ﻿<template>
   <section class="review-layout">
-    <article class="review-card full">
+    <header class="review-card review-shell-head">
+      <div class="review-shell-copy">
+        <p class="review-kicker">{{ currentSectionConfig.label }}</p>
+        <h1>审核台</h1>
+        <p class="meta">{{ currentSectionConfig.description }}</p>
+        <p class="meta review-shell-note">当前分区 <code>{{ currentSectionPath }}</code></p>
+      </div>
+      <div class="review-shell-actions">
+        <button class="btn" @click="reloadCurrentSection">刷新当前分区</button>
+      </div>
+    </header>
+
+    <nav class="review-tabs" aria-label="审核分区">
+      <RouterLink
+        v-for="item in reviewSections"
+        :key="item.key"
+        :to="buildReviewRoute(item.key)"
+        class="review-tab"
+        :class="{ 'review-tab--active': item.key === currentSection }"
+      >
+        <strong>{{ item.label }}</strong>
+        <span>{{ item.description }}</span>
+      </RouterLink>
+    </nav>
+
+    <article v-if="currentSection === 'revisions'" class="review-card full">
       <h2>内容修改审核</h2>
       <p class="meta">学校用户可审核赛事板块，管理员可审核全部分类。</p>
       <p class="meta">待审核：{{ pendingPagination.count }}</p>
@@ -61,7 +86,7 @@
       </section>
     </article>
 
-    <article class="review-card full">
+    <article v-if="currentSection === 'tickets'" class="review-card full">
       <h2>Issue / Request 审核</h2>
       <p class="meta">共 {{ ticketPagination.count }} 条</p>
       <div class="ticket-filters">
@@ -119,7 +144,7 @@
       <p v-if="!tickets.length" class="meta">暂无工单。</p>
     </article>
 
-    <article class="review-card full">
+    <article v-if="currentSection === 'comments'" class="review-card full">
       <h2>评论审核</h2>
       <p class="meta">待审核：{{ pendingCommentPagination.count }}</p>
 
@@ -171,8 +196,8 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from "vue";
-import { useRouter } from "vue-router";
+import { computed, reactive, ref, watch } from "vue";
+import { RouterLink, useRouter } from "vue-router";
 
 import api from "../services/api";
 import { countChangedLines, renderUnifiedDiffHtml } from "../services/revisionDiff";
@@ -181,7 +206,23 @@ import { useUiStore } from "../stores/ui";
 
 const auth = useAuthStore();
 const ui = useUiStore();
+const props = defineProps({
+  section: {
+    type: String,
+    default: "revisions",
+  },
+});
 const router = useRouter();
+
+const DEFAULT_REVIEW_SECTION = "revisions";
+const reviewSections = [
+  { key: "revisions", label: "修订审核", description: "查看待审修订和审批历史。", routeName: "review" },
+  { key: "tickets", label: "工单审核", description: "处理 Issue / Request 和指派。", routeName: "review-tickets" },
+  { key: "comments", label: "评论审核", description: "审核评论并执行批量通过或驳回。", routeName: "review-comments" },
+];
+const reviewSectionMap = new Map(reviewSections.map((item) => [item.key, item]));
+const reviewSectionKeys = new Set(reviewSections.map((item) => item.key));
+const loadedSections = reactive(Object.fromEntries(reviewSections.map((item) => [item.key, false])));
 
 const pendingRevisions = ref([]);
 const reviewedRevisions = ref([]);
@@ -222,6 +263,22 @@ const allPendingChecked = computed(
 const allPendingCommentsChecked = computed(
   () => pendingComments.value.length > 0 && selectedPendingCommentIds.value.length === pendingComments.value.length
 );
+const currentSection = computed(() => normalizeReviewSection(props.section));
+const currentSectionConfig = computed(() => reviewSectionMap.get(currentSection.value) || reviewSections[0]);
+const currentSectionPath = computed(() => router.resolve(buildReviewRoute(currentSection.value)).href);
+
+function normalizeReviewSection(rawSection) {
+  const section = Array.isArray(rawSection) ? rawSection[0] : rawSection;
+  if (typeof section !== "string" || !section.trim()) {
+    return DEFAULT_REVIEW_SECTION;
+  }
+  return reviewSectionKeys.has(section) ? section : DEFAULT_REVIEW_SECTION;
+}
+
+function buildReviewRoute(section) {
+  const item = reviewSectionMap.get(section);
+  return { name: item?.routeName || "review" };
+}
 
 function formatDateTime(value) {
   if (!value) return "-";
@@ -618,13 +675,42 @@ async function loadMorePendingComments() {
   }
 }
 
-onMounted(async () => {
-  if (auth.role === "school") {
-    ticketFilters.scope = "assigned";
+async function ensureSectionLoaded(section, force = false) {
+  const targetSection = normalizeReviewSection(section);
+  if (!force && loadedSections[targetSection]) return;
+
+  if (targetSection === "revisions") {
+    await Promise.all([loadPendingRevisions(), loadReviewedRevisions()]);
+  } else if (targetSection === "tickets") {
+    if (auth.role === "school" && !ticketFilters.scope) {
+      ticketFilters.scope = "assigned";
+    }
+    await Promise.all([loadAssigneeOptions(), loadTickets()]);
+  } else if (targetSection === "comments") {
+    await loadPendingComments();
   }
-  await loadAssigneeOptions();
-  await Promise.all([loadPendingRevisions(), loadReviewedRevisions(), loadTickets(), loadPendingComments()]);
-});
+
+  loadedSections[targetSection] = true;
+}
+
+async function reloadCurrentSection() {
+  await ensureSectionLoaded(currentSection.value, true);
+}
+
+watch(
+  () => props.section,
+  async (value) => {
+    const normalized = normalizeReviewSection(value);
+    if (value !== normalized) {
+      await router.replace(buildReviewRoute(normalized));
+      return;
+    }
+
+    window.scrollTo({ top: 0, behavior: "auto" });
+    await ensureSectionLoaded(normalized);
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>
@@ -640,6 +726,85 @@ onMounted(async () => {
   background: rgba(255, 255, 255, 0.58);
   padding: 14px;
   box-shadow: var(--shadow-sm);
+}
+
+.review-shell-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+}
+
+.review-shell-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.review-kicker {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #4f8fff;
+}
+
+.review-shell-head h1 {
+  margin: 0;
+  font-size: clamp(32px, 4vw, 42px);
+}
+
+.review-shell-note code {
+  border-radius: 6px;
+  padding: 2px 6px;
+  background: rgba(15, 23, 42, 0.08);
+  color: #1f2937;
+}
+
+.review-shell-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.review-tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.review-tab {
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.58);
+  box-shadow: var(--shadow-sm);
+  padding: 12px 14px;
+  display: grid;
+  gap: 6px;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.review-tab:hover {
+  transform: translateY(-1px);
+  border-color: rgba(79, 143, 255, 0.28);
+}
+
+.review-tab--active {
+  border-color: rgba(79, 143, 255, 0.42);
+  background: linear-gradient(180deg, rgba(242, 247, 255, 0.98), rgba(255, 255, 255, 0.72));
+}
+
+.review-tab strong {
+  font-size: 16px;
+  color: #1e2733;
+}
+
+.review-tab span {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #5c6778;
 }
 
 .review-card.full {
@@ -823,6 +988,10 @@ onMounted(async () => {
 }
 
 @media (max-width: 1100px) {
+  .review-shell-head {
+    grid-template-columns: 1fr;
+  }
+
   .revision-row,
   .ticket-row,
   .history-row,
@@ -838,6 +1007,10 @@ onMounted(async () => {
 @media (max-width: 640px) {
   .review-card h2 {
     font-size: 28px;
+  }
+
+  .review-tabs {
+    grid-template-columns: 1fr;
   }
 
   .ticket-filters .select,
