@@ -3,6 +3,8 @@ set -euo pipefail
 
 env_file="${1:-deploy/.env.production}"
 compose_file="${2:-docker-compose.server.yml}"
+public_site_url="${PUBLIC_SITE_URL:-}"
+public_apex_url="${PUBLIC_APEX_URL:-}"
 
 resolve_compose_cmd() {
   if docker compose version >/dev/null 2>&1; then
@@ -89,6 +91,8 @@ echo
 
 if [[ -f "${env_file}" ]]; then
   export_compose_env "${env_file}"
+  public_site_url="${PUBLIC_SITE_URL:-${public_site_url}}"
+  public_apex_url="${PUBLIC_APEX_URL:-${public_apex_url}}"
   echo "== compose config =="
   if [[ "${compose_runner}" == "docker compose" ]]; then
     docker compose --env-file "${env_file}" -f "${compose_file}" config >/dev/null
@@ -104,5 +108,25 @@ if [[ -f "${env_file}" ]]; then
   echo
 fi
 
+app_port="${APP_PORT:-8001}"
+
 echo "== health check =="
-curl -fsS http://127.0.0.1:8001/api/health/ || true
+curl -fsS -H 'X-Forwarded-Proto: https' "http://127.0.0.1:${app_port}/api/health/" || true
+echo
+
+if [[ -n "${public_site_url}" ]]; then
+  public_site_url="${public_site_url%/}"
+  echo
+  echo "== public site =="
+  curl -I "${public_site_url}" || true
+  echo
+  curl -fsS "${public_site_url}/api/health/" || true
+  echo
+fi
+
+if [[ -n "${public_apex_url}" ]]; then
+  public_apex_url="${public_apex_url%/}"
+  echo
+  echo "== apex redirect =="
+  curl -I "${public_apex_url}" || true
+fi
