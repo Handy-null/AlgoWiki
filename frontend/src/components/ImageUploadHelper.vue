@@ -1,5 +1,5 @@
 <template>
-  <div class="image-upload-helper">
+  <div v-if="auth.isManager" class="image-upload-helper">
     <button class="btn btn-mini" type="button" :disabled="disabled || uploading" @click="pickFile">
       {{ uploading ? "上传中..." : label }}
     </button>
@@ -17,6 +17,7 @@
 import { ref } from "vue";
 
 import api from "../services/api";
+import { useAuthStore } from "../stores/auth";
 import { useUiStore } from "../stores/ui";
 
 const props = defineProps({
@@ -31,6 +32,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["uploaded"]);
+const auth = useAuthStore();
 const ui = useUiStore();
 const inputRef = ref(null);
 const uploading = ref(false);

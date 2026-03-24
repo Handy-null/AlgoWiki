@@ -64,6 +64,14 @@
           <strong>{{ adminOverview.workflow?.revisions_pending ?? 0 }}</strong>
           <span>待审核修订</span>
         </div>
+        <div class="overview-item">
+          <strong>{{ adminOverview.workflow?.questions_pending ?? 0 }}</strong>
+          <span>待审核问题</span>
+        </div>
+        <div class="overview-item">
+          <strong>{{ adminOverview.workflow?.answers_pending ?? 0 }}</strong>
+          <span>待审核回答</span>
+        </div>
       </div>
       <div class="overview-actions">
         <button class="btn" @click="loadAdminOverview" :disabled="overviewLoading">
@@ -494,7 +502,7 @@
 
     <article v-if="currentSection === 'questions'" class="admin-card full">
       <h2>问答治理</h2>
-      <p class="meta">共 {{ moderationQuestionsMeta.count }} 条问题</p>
+      <p class="meta">问题 {{ moderationQuestionsMeta.count }} 条，回答 {{ moderationAnswersMeta.count }} 条</p>
       <div class="bulk-tools">
         <label class="bulk-check">
           <input
@@ -508,6 +516,7 @@
         <input class="input bulk-input" v-model="moderationQuestionFilters.author" placeholder="提问用户名" />
         <select class="select bulk-select" v-model="moderationQuestionFilters.status">
           <option value="">全部状态</option>
+          <option value="pending">pending</option>
           <option value="open">open</option>
           <option value="closed">closed</option>
           <option value="hidden">hidden</option>
@@ -520,6 +529,8 @@
         </select>
         <button class="btn" @click="loadModerationQuestions">筛选问题</button>
         <button class="btn" @click="resetModerationQuestionFilters">重置</button>
+        <button class="btn" @click="bulkApproveQuestions">批量通过</button>
+        <button class="btn" @click="bulkRejectQuestions">批量驳回</button>
         <button class="btn" @click="bulkCloseQuestions">批量关闭</button>
         <button class="btn" @click="bulkReopenQuestions">批量重开</button>
         <button class="btn" @click="bulkHideQuestions">批量隐藏</button>
@@ -538,6 +549,8 @@
           <p class="ticket-content">{{ item.content_md }}</p>
         </div>
         <div class="ticket-actions">
+          <button class="btn" v-if="item.status === 'pending'" @click="approveQuestionItem(item)">通过</button>
+          <button class="btn" v-if="item.status === 'pending'" @click="rejectQuestionItem(item)">驳回</button>
           <button class="btn" v-if="item.status !== 'closed'" @click="closeQuestionItem(item)">关闭</button>
           <button class="btn" v-if="item.status !== 'open'" @click="reopenQuestionItem(item)">重开</button>
           <button class="btn" v-if="item.status !== 'hidden'" @click="hideQuestionItem(item)">隐藏</button>
@@ -547,6 +560,54 @@
         加载更多问题
       </button>
       <p v-if="!moderationQuestions.length" class="meta">暂无问题记录。</p>
+
+      <h3>回答审核</h3>
+      <div class="bulk-tools">
+        <label class="bulk-check">
+          <input
+            type="checkbox"
+            :checked="allModerationAnswersChecked"
+            @change="toggleSelectAllModerationAnswers($event.target.checked)"
+          />
+          全选回答
+        </label>
+        <input class="input bulk-input" v-model="moderationAnswerFilters.search" placeholder="按回答内容搜索" />
+        <input class="input bulk-input" v-model="moderationAnswerFilters.author" placeholder="回答用户名" />
+        <select class="select bulk-select" v-model="moderationAnswerFilters.status">
+          <option value="">全部状态</option>
+          <option value="pending">pending</option>
+          <option value="visible">visible</option>
+          <option value="hidden">hidden</option>
+        </select>
+        <button class="btn" @click="loadModerationAnswers">筛选回答</button>
+        <button class="btn" @click="resetModerationAnswerFilters">重置</button>
+        <button class="btn" @click="bulkApproveAnswers">批量通过</button>
+        <button class="btn" @click="bulkRejectAnswers">批量驳回</button>
+        <button class="btn" @click="bulkHideAnswers">批量隐藏</button>
+      </div>
+      <article class="ticket-row" v-for="item in moderationAnswers" :key="`answer-${item.id}`">
+        <div class="ticket-main">
+          <label class="bulk-check">
+            <input type="checkbox" :value="item.id" v-model="selectedModerationAnswerIds" />
+            选择
+          </label>
+          <strong>{{ item.question_title || `问题 #${item.question}` }}</strong>
+          <p class="meta">
+            回答者 {{ item.author.username }} · {{ item.status }}
+            <span v-if="item.is_accepted"> · 已采纳</span>
+          </p>
+          <p class="ticket-content">{{ item.content_md }}</p>
+        </div>
+        <div class="ticket-actions">
+          <button class="btn" v-if="item.status === 'pending'" @click="approveAnswerItem(item)">通过</button>
+          <button class="btn" v-if="item.status === 'pending'" @click="rejectAnswerItem(item)">驳回</button>
+          <button class="btn" v-if="item.status !== 'hidden'" @click="hideAnswerItem(item)">隐藏</button>
+        </div>
+      </article>
+      <button v-if="moderationAnswersMeta.hasMore" class="btn" @click="loadMoreModerationAnswers">
+        加载更多回答
+      </button>
+      <p v-if="!moderationAnswers.length" class="meta">暂无回答记录。</p>
     </article>
 
     <article v-if="currentSection === 'security'" class="admin-card full">
@@ -722,6 +783,7 @@ const categories = ref([]);
 const moderationArticles = ref([]);
 const moderationComments = ref([]);
 const moderationQuestions = ref([]);
+const moderationAnswers = ref([]);
 const securityLogs = ref([]);
 const events = ref([]);
 const adminOverview = ref(null);
@@ -736,6 +798,7 @@ const selectedTicketIds = ref([]);
 const selectedModerationArticleIds = ref([]);
 const selectedModerationCommentIds = ref([]);
 const selectedModerationQuestionIds = ref([]);
+const selectedModerationAnswerIds = ref([]);
 const bulkRole = ref("normal");
 const securityWindowHours = ref(24);
 
@@ -744,6 +807,7 @@ const ticketsMeta = reactive({ count: 0, page: 1, hasMore: false });
 const moderationArticlesMeta = reactive({ count: 0, page: 1, hasMore: false });
 const moderationCommentsMeta = reactive({ count: 0, page: 1, hasMore: false });
 const moderationQuestionsMeta = reactive({ count: 0, page: 1, hasMore: false });
+const moderationAnswersMeta = reactive({ count: 0, page: 1, hasMore: false });
 const securityLogsMeta = reactive({ count: 0, page: 1, hasMore: false });
 const eventsMeta = reactive({ count: 0, page: 1, hasMore: false });
 
@@ -816,6 +880,12 @@ const moderationQuestionFilters = reactive({
   author: "",
 });
 
+const moderationAnswerFilters = reactive({
+  search: "",
+  status: "",
+  author: "",
+});
+
 const eventFilters = reactive({
   event_type: "",
   user: "",
@@ -859,6 +929,11 @@ const allModerationQuestionsChecked = computed(
   () =>
     moderationQuestions.value.length > 0 &&
     selectedModerationQuestionIds.value.length === moderationQuestions.value.length
+);
+const allModerationAnswersChecked = computed(
+  () =>
+    moderationAnswers.value.length > 0 &&
+    selectedModerationAnswerIds.value.length === moderationAnswers.value.length
 );
 const eventTypeSeries = computed(() => adminOverview.value?.analytics?.event_type_counts || []);
 const dailyEventSeries = computed(() => adminOverview.value?.analytics?.daily_events || []);
@@ -914,7 +989,7 @@ function sectionCounter(section) {
     case "comments":
       return String(moderationCommentsMeta.count);
     case "questions":
-      return String(moderationQuestionsMeta.count);
+      return String(moderationQuestionsMeta.count + moderationAnswersMeta.count);
     case "security":
       return String(securityLogsMeta.count);
     case "events":
@@ -1015,6 +1090,10 @@ function toggleSelectAllModerationComments(checked) {
 
 function toggleSelectAllModerationQuestions(checked) {
   selectedModerationQuestionIds.value = checked ? moderationQuestions.value.map((item) => item.id) : [];
+}
+
+function toggleSelectAllModerationAnswers(checked) {
+  selectedModerationAnswerIds.value = checked ? moderationAnswers.value.map((item) => item.id) : [];
 }
 
 async function runBulk(requests, successText) {
@@ -1173,6 +1252,22 @@ async function loadModerationQuestions(page = 1, append = false) {
   }
 }
 
+async function loadModerationAnswers(page = 1, append = false) {
+  try {
+    const params = { page, order: "latest" };
+    if (moderationAnswerFilters.search.trim()) params.search = moderationAnswerFilters.search.trim();
+    if (moderationAnswerFilters.status) params.status = moderationAnswerFilters.status;
+    if (moderationAnswerFilters.author.trim()) params.author = moderationAnswerFilters.author.trim();
+    const { data } = await api.get("/answers/", { params });
+    const { results, count } = unpackListPayload(data);
+    moderationAnswers.value = append ? appendUniqueById(moderationAnswers.value, results) : results;
+    updatePageMeta(moderationAnswersMeta, count, moderationAnswers.value.length, page);
+    syncSelectedIds(selectedModerationAnswerIds, moderationAnswers.value);
+  } catch (error) {
+    ui.error(getErrorText(error, "回答列表加载失败"));
+  }
+}
+
 async function loadEvents(page = 1, append = false) {
   try {
     const { data } = await api.get("/events/", { params: buildEventParams(page) });
@@ -1267,6 +1362,11 @@ async function loadMoreModerationComments() {
 async function loadMoreModerationQuestions() {
   if (!moderationQuestionsMeta.hasMore) return;
   await loadModerationQuestions(moderationQuestionsMeta.page + 1, true);
+}
+
+async function loadMoreModerationAnswers() {
+  if (!moderationAnswersMeta.hasMore) return;
+  await loadModerationAnswers(moderationAnswersMeta.page + 1, true);
 }
 
 async function loadMoreEvents() {
@@ -1546,6 +1646,13 @@ function resetModerationQuestionFilters() {
   moderationQuestionFilters.category = "";
   moderationQuestionFilters.author = "";
   loadModerationQuestions();
+}
+
+function resetModerationAnswerFilters() {
+  moderationAnswerFilters.search = "";
+  moderationAnswerFilters.status = "";
+  moderationAnswerFilters.author = "";
+  loadModerationAnswers();
 }
 
 function resetEventFilters() {
@@ -1857,7 +1964,7 @@ async function closeQuestionItem(item) {
   try {
     await api.post(`/questions/${item.id}/close/`);
     ui.success("问题已关闭");
-    await Promise.all([loadModerationQuestions(), loadEvents(), loadAdminOverview()]);
+    await Promise.all([loadModerationQuestions(), loadModerationAnswers(), loadEvents(), loadAdminOverview()]);
   } catch (error) {
     ui.error(getErrorText(error, "关闭问题失败"));
   }
@@ -1868,7 +1975,7 @@ async function reopenQuestionItem(item) {
   try {
     await api.post(`/questions/${item.id}/reopen/`);
     ui.success("问题已重开");
-    await Promise.all([loadModerationQuestions(), loadEvents(), loadAdminOverview()]);
+    await Promise.all([loadModerationQuestions(), loadModerationAnswers(), loadEvents(), loadAdminOverview()]);
   } catch (error) {
     ui.error(getErrorText(error, "重开问题失败"));
   }
@@ -1879,9 +1986,64 @@ async function hideQuestionItem(item) {
   try {
     await api.delete(`/questions/${item.id}/`);
     ui.success("问题已隐藏");
-    await Promise.all([loadModerationQuestions(), loadEvents(), loadAdminOverview()]);
+    await Promise.all([loadModerationQuestions(), loadModerationAnswers(), loadEvents(), loadAdminOverview()]);
   } catch (error) {
     ui.error(getErrorText(error, "隐藏问题失败"));
+  }
+}
+
+async function approveQuestionItem(item) {
+  if (item.status !== "pending") return;
+  try {
+    await api.post(`/questions/${item.id}/approve/`);
+    ui.success("问题已通过审核");
+    await Promise.all([loadModerationQuestions(), loadModerationAnswers(), loadEvents(), loadAdminOverview()]);
+  } catch (error) {
+    ui.error(getErrorText(error, "通过问题失败"));
+  }
+}
+
+async function rejectQuestionItem(item) {
+  if (item.status !== "pending") return;
+  try {
+    await api.post(`/questions/${item.id}/reject/`);
+    ui.success("问题已驳回");
+    await Promise.all([loadModerationQuestions(), loadModerationAnswers(), loadEvents(), loadAdminOverview()]);
+  } catch (error) {
+    ui.error(getErrorText(error, "驳回问题失败"));
+  }
+}
+
+async function approveAnswerItem(item) {
+  if (item.status !== "pending") return;
+  try {
+    await api.post(`/answers/${item.id}/approve/`);
+    ui.success("回答已通过审核");
+    await Promise.all([loadModerationAnswers(), loadModerationQuestions(), loadEvents(), loadAdminOverview()]);
+  } catch (error) {
+    ui.error(getErrorText(error, "通过回答失败"));
+  }
+}
+
+async function rejectAnswerItem(item) {
+  if (item.status !== "pending") return;
+  try {
+    await api.post(`/answers/${item.id}/reject/`);
+    ui.success("回答已驳回");
+    await Promise.all([loadModerationAnswers(), loadModerationQuestions(), loadEvents(), loadAdminOverview()]);
+  } catch (error) {
+    ui.error(getErrorText(error, "驳回答案失败"));
+  }
+}
+
+async function hideAnswerItem(item) {
+  if (item.status === "hidden") return;
+  try {
+    const { data } = await api.post("/answers/bulk-moderate/", { ids: [item.id], action: "hide" });
+    notifyBulkSummary(data, "隐藏回答");
+    await Promise.all([loadModerationAnswers(), loadModerationQuestions(), loadEvents(), loadAdminOverview()]);
+  } catch (error) {
+    ui.error(getErrorText(error, "隐藏回答失败"));
   }
 }
 
@@ -1926,6 +2088,22 @@ async function bulkCloseQuestions() {
   await runQuestionBulkModeration("close", "批量关闭问题");
 }
 
+async function bulkApproveQuestions() {
+  if (!selectedModerationQuestionIds.value.length) {
+    ui.info("请先选择要通过的问题");
+    return;
+  }
+  await runQuestionBulkModeration("approve", "批量通过问题");
+}
+
+async function bulkRejectQuestions() {
+  if (!selectedModerationQuestionIds.value.length) {
+    ui.info("请先选择要驳回的问题");
+    return;
+  }
+  await runQuestionBulkModeration("reject", "批量驳回问题");
+}
+
 async function bulkReopenQuestions() {
   if (!selectedModerationQuestionIds.value.length) {
     ui.info("请先选择要重开的问题");
@@ -1940,6 +2118,30 @@ async function bulkHideQuestions() {
     return;
   }
   await runQuestionBulkModeration("hide", "批量隐藏问题");
+}
+
+async function bulkApproveAnswers() {
+  if (!selectedModerationAnswerIds.value.length) {
+    ui.info("请先选择要通过的回答");
+    return;
+  }
+  await runAnswerBulkModeration("approve", "批量通过回答");
+}
+
+async function bulkRejectAnswers() {
+  if (!selectedModerationAnswerIds.value.length) {
+    ui.info("请先选择要驳回的回答");
+    return;
+  }
+  await runAnswerBulkModeration("reject", "批量驳回答案");
+}
+
+async function bulkHideAnswers() {
+  if (!selectedModerationAnswerIds.value.length) {
+    ui.info("请先选择要隐藏的回答");
+    return;
+  }
+  await runAnswerBulkModeration("hide", "批量隐藏回答");
 }
 
 async function runArticleBulkModeration(action, successText) {
@@ -1962,7 +2164,20 @@ async function runQuestionBulkModeration(action, successText) {
       action,
     });
     notifyBulkSummary(data, successText);
-    await Promise.all([loadModerationQuestions(), loadEvents(), loadAdminOverview()]);
+    await Promise.all([loadModerationQuestions(), loadModerationAnswers(), loadEvents(), loadAdminOverview()]);
+  } catch (error) {
+    ui.error(getErrorText(error, `${successText}失败`));
+  }
+}
+
+async function runAnswerBulkModeration(action, successText) {
+  try {
+    const { data } = await api.post("/answers/bulk-moderate/", {
+      ids: selectedModerationAnswerIds.value,
+      action,
+    });
+    notifyBulkSummary(data, successText);
+    await Promise.all([loadModerationAnswers(), loadModerationQuestions(), loadEvents(), loadAdminOverview()]);
   } catch (error) {
     ui.error(getErrorText(error, `${successText}失败`));
   }
@@ -2055,7 +2270,7 @@ async function ensureSectionLoaded(section, force = false) {
         await loadCategories();
         loadedSections.categories = true;
       }
-      await loadModerationQuestions();
+      await Promise.all([loadModerationQuestions(), loadModerationAnswers()]);
       break;
     case "security":
       await Promise.all([loadSecuritySummary(), loadSecurityLogs()]);

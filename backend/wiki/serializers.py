@@ -66,6 +66,26 @@ class UserPublicSerializer(serializers.ModelSerializer):
             "date_joined",
         ]
 
+    def _can_view_profile_fields(self, instance) -> bool:
+        if self.context.get("include_private_profile"):
+            return True
+
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        return bool(
+            user
+            and user.is_authenticated
+            and (user.pk == instance.pk or user.role in {User.Role.ADMIN, User.Role.SUPERADMIN})
+        )
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if not self._can_view_profile_fields(instance):
+            data["school_name"] = ""
+            data["avatar_url"] = ""
+            data["bio"] = ""
+        return data
+
 
 class UserAdminSerializer(serializers.ModelSerializer):
     class Meta:

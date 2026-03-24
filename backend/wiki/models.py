@@ -487,6 +487,7 @@ class CompetitionPracticeLinkProposal(TimeStampedModel):
 
 class Question(TimeStampedModel):
     class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
         OPEN = "open", "Open"
         CLOSED = "closed", "Closed"
         HIDDEN = "hidden", "Hidden"
@@ -509,6 +510,7 @@ class Question(TimeStampedModel):
 
 class Answer(TimeStampedModel):
     class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
         VISIBLE = "visible", "Visible"
         HIDDEN = "hidden", "Hidden"
 

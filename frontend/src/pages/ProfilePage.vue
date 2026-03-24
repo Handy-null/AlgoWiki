@@ -217,7 +217,7 @@
           <article class="history-row" v-for="item in myAnswers" :key="item.id">
             <strong>{{ item.question_title || `Question #${item.question}` }}</strong>
             <div class="meta">
-              {{ item.is_accepted ? "Accepted" : "Not Accepted" }} | {{ item.question_status }} | {{ formatTime(item.created_at) }}
+              {{ formatModerationStatus(item.status) }} | {{ item.is_accepted ? "Accepted" : "Not Accepted" }} | {{ formatTime(item.created_at) }}
             </div>
           </article>
           <button v-if="myAnswersMeta.next" class="btn" @click="loadMoreMyAnswers">

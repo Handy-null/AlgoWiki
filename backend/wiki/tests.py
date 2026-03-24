@@ -210,8 +210,13 @@ class ImageUploadApiTests(APITestCase):
             password="Password123",
             role=User.Role.NORMAL,
         )
-        token = Token.objects.create(user=self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+        self.user_token = Token.objects.create(user=self.user)
+        self.admin = User.objects.create_user(
+            username="upload_admin",
+            password="Password123",
+            role=User.Role.ADMIN,
+        )
+        self.admin_token = Token.objects.create(user=self.admin)
         self.temp_media_dir = tempfile.TemporaryDirectory()
         self.override = override_settings(MEDIA_ROOT=self.temp_media_dir.name, MEDIA_URL="/media/")
         self.override.enable()
@@ -220,7 +225,21 @@ class ImageUploadApiTests(APITestCase):
         self.override.disable()
         self.temp_media_dir.cleanup()
 
-    def test_authenticated_user_can_upload_image(self):
+    def test_normal_user_cannot_upload_image(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.user_token.key}")
+        image_bytes = (
+            b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01"
+            b"\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00"
+            b"\x00\x00\nIDATx\x9cc`\x00\x00\x00\x02\x00\x01\xe5'\xd4"
+            b"\xa2\x00\x00\x00\x00IEND\xaeB`\x82"
+        )
+        upload = SimpleUploadedFile("tiny.png", image_bytes, content_type="image/png")
+        response = self.client.post("/api/uploads/image/", {"image": upload}, format="multipart")
+        self.assertEqual(response.status_code, 403)
+        self.assertIn("Only admins can upload images", response.data["detail"])
+
+    def test_admin_user_can_upload_image(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
         image_bytes = (
             b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01"
             b"\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00"
@@ -239,6 +258,7 @@ class ImageUploadApiTests(APITestCase):
         self.assertTrue(stored.exists())
 
     def test_upload_rejects_non_image_extension(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
         bad_file = SimpleUploadedFile("notes.txt", b"not-image", content_type="text/plain")
         response = self.client.post("/api/uploads/image/", {"image": bad_file}, format="multipart")
         self.assertEqual(response.status_code, 400)
@@ -596,7 +616,7 @@ class RolePermissionTests(APITestCase):
         self.normal_user.refresh_from_db()
         self.assertTrue(self.normal_user.is_banned)
 
-    def test_school_user_can_approve_revision_in_school_scope(self):
+    def test_school_user_cannot_approve_revision_even_in_school_scope(self):
         article = Article.objects.create(
             title="Contest Article",
             summary="init",
@@ -621,11 +641,11 @@ class RolePermissionTests(APITestCase):
             {"review_note": "ok"},
             format="json",
         )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 404)
         proposal.refresh_from_db()
         article.refresh_from_db()
-        self.assertEqual(proposal.status, RevisionProposal.Status.APPROVED)
-        self.assertEqual(article.title, "Contest Article Updated")
+        self.assertEqual(proposal.status, RevisionProposal.Status.PENDING)
+        self.assertEqual(article.title, "Contest Article")
 
     def test_school_user_cannot_approve_revision_in_public_scope(self):
         article = Article.objects.create(
@@ -796,6 +816,138 @@ class QuestionSecurityTests(APITestCase):
         ids = {item["id"] for item in response.data.get("results", response.data)}
         self.assertEqual(ids, {self.question.id})
 
+    def test_normal_user_created_question_requires_admin_review(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.author_token.key}")
+        create_response = self.client.post(
+            "/api/questions/",
+            {"title": "Pending question", "content_md": "please review", "category": self.category.id},
+            format="json",
+        )
+        self.assertEqual(create_response.status_code, 201)
+        self.assertEqual(create_response.data["status"], Question.Status.PENDING)
+        question_id = create_response.data["id"]
+
+        self.client.credentials()
+        public_response = self.client.get("/api/questions/")
+        public_ids = {item["id"] for item in public_response.data.get("results", public_response.data)}
+        self.assertNotIn(question_id, public_ids)
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.author_token.key}")
+        own_response = self.client.get("/api/questions/")
+        own_ids = {item["id"] for item in own_response.data.get("results", own_response.data)}
+        self.assertIn(question_id, own_ids)
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
+        approve_response = self.client.post(f"/api/questions/{question_id}/approve/", format="json")
+        self.assertEqual(approve_response.status_code, 200)
+
+        self.client.credentials()
+        visible_response = self.client.get("/api/questions/")
+        visible_ids = {item["id"] for item in visible_response.data.get("results", visible_response.data)}
+        self.assertIn(question_id, visible_ids)
+
+    def test_author_editing_visible_question_reverts_to_pending(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.author_token.key}")
+        response = self.client.patch(
+            f"/api/questions/{self.question.id}/",
+            {"title": "Need help updated"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["status"], Question.Status.PENDING)
+
+        self.question.refresh_from_db()
+        self.assertEqual(self.question.status, Question.Status.PENDING)
+
+        self.client.credentials()
+        public_response = self.client.get("/api/questions/")
+        public_ids = {item["id"] for item in public_response.data.get("results", public_response.data)}
+        self.assertNotIn(self.question.id, public_ids)
+
+
+class AnswerModerationTests(APITestCase):
+    def setUp(self):
+        self.category = Category.objects.create(name="QA", slug="qa")
+        self.question_author = User.objects.create_user(
+            username="qa_author",
+            password="Password123",
+            role=User.Role.NORMAL,
+        )
+        self.responder = User.objects.create_user(
+            username="qa_responder",
+            password="Password123",
+            role=User.Role.NORMAL,
+        )
+        self.admin = User.objects.create_user(
+            username="qa_admin",
+            password="Password123",
+            role=User.Role.ADMIN,
+        )
+        self.author_token = Token.objects.create(user=self.question_author)
+        self.responder_token = Token.objects.create(user=self.responder)
+        self.admin_token = Token.objects.create(user=self.admin)
+        self.question = Question.objects.create(
+            title="Open question",
+            content_md="question body",
+            author=self.question_author,
+            category=self.category,
+            status=Question.Status.OPEN,
+        )
+        self.answer = Answer.objects.create(
+            question=self.question,
+            author=self.responder,
+            content_md="visible answer",
+            status=Answer.Status.VISIBLE,
+        )
+
+    def test_normal_user_created_answer_requires_admin_review(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.responder_token.key}")
+        create_response = self.client.post(
+            "/api/answers/",
+            {"question": self.question.id, "content_md": "pending answer"},
+            format="json",
+        )
+        self.assertEqual(create_response.status_code, 201)
+        self.assertEqual(create_response.data["status"], Answer.Status.PENDING)
+        answer_id = create_response.data["id"]
+
+        self.client.credentials()
+        public_response = self.client.get("/api/answers/", {"question": self.question.id})
+        public_ids = {item["id"] for item in public_response.data.get("results", public_response.data)}
+        self.assertNotIn(answer_id, public_ids)
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.responder_token.key}")
+        owner_response = self.client.get("/api/answers/", {"question": self.question.id})
+        owner_ids = {item["id"] for item in owner_response.data.get("results", owner_response.data)}
+        self.assertIn(answer_id, owner_ids)
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
+        approve_response = self.client.post(f"/api/answers/{answer_id}/approve/", format="json")
+        self.assertEqual(approve_response.status_code, 200)
+
+        self.client.credentials()
+        visible_response = self.client.get("/api/answers/", {"question": self.question.id})
+        visible_ids = {item["id"] for item in visible_response.data.get("results", visible_response.data)}
+        self.assertIn(answer_id, visible_ids)
+
+    def test_author_editing_visible_answer_reverts_to_pending(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.responder_token.key}")
+        response = self.client.patch(
+            f"/api/answers/{self.answer.id}/",
+            {"content_md": "edited answer"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["status"], Answer.Status.PENDING)
+
+        self.answer.refresh_from_db()
+        self.assertEqual(self.answer.status, Answer.Status.PENDING)
+
+        self.client.credentials()
+        public_response = self.client.get("/api/answers/", {"question": self.question.id})
+        public_ids = {item["id"] for item in public_response.data.get("results", public_response.data)}
+        self.assertNotIn(self.answer.id, public_ids)
+
 
 class ArticleCommentFlowTests(APITestCase):
     def setUp(self):
@@ -951,6 +1103,24 @@ class ArticleCommentFlowTests(APITestCase):
         self.assertEqual(pending_a.status, ArticleComment.Status.HIDDEN)
         self.assertEqual(pending_b.status, ArticleComment.Status.HIDDEN)
 
+    def test_author_editing_visible_comment_reverts_to_pending(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
+        response = self.client.patch(
+            f"/api/comments/{self.parent.id}/",
+            {"content": "edited content"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["status"], ArticleComment.Status.PENDING)
+
+        self.parent.refresh_from_db()
+        self.assertEqual(self.parent.status, ArticleComment.Status.PENDING)
+
+        self.client.credentials()
+        public_response = self.client.get("/api/comments/", {"article": self.article_a.id})
+        public_ids = {item["id"] for item in public_response.data.get("results", public_response.data)}
+        self.assertNotIn(self.parent.id, public_ids)
+
 
 class ProfileAndMineEndpointsTests(APITestCase):
     def setUp(self):
@@ -1073,6 +1243,9 @@ class ProfileAndMineEndpointsTests(APITestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn("profile_settings", response.data)
+        self.assertEqual(response.data["user"]["school_name"], "Algo University")
+        self.assertEqual(response.data["user"]["bio"], "Competitive programming learner")
+        self.assertEqual(response.data["user"]["avatar_url"], "https://example.com/avatar.png")
         self.assertEqual(response.data["profile_settings"]["school_name"], "Algo University")
         self.user.refresh_from_db()
         self.assertEqual(self.user.school_name, "Algo University")
@@ -1080,11 +1253,34 @@ class ProfileAndMineEndpointsTests(APITestCase):
         self.assertEqual(self.user.avatar_url, "https://example.com/avatar.png")
 
     def test_get_me_contains_profile_settings(self):
+        self.user.school_name = "Algo University"
+        self.user.bio = "Competitive programming learner"
+        self.user.avatar_url = "https://example.com/avatar.png"
+        self.user.save(update_fields=["school_name", "bio", "avatar_url"])
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
         response = self.client.get("/api/me/")
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["user"]["school_name"], "Algo University")
+        self.assertEqual(response.data["user"]["bio"], "Competitive programming learner")
+        self.assertEqual(response.data["user"]["avatar_url"], "https://example.com/avatar.png")
         self.assertIn("profile_settings", response.data)
         self.assertEqual(response.data["profile_settings"]["email"], "student@example.com")
+
+    def test_public_question_author_profile_fields_are_hidden(self):
+        self.other.school_name = "Hidden University"
+        self.other.bio = "Should stay private"
+        self.other.avatar_url = "https://example.com/hidden.png"
+        self.other.save(update_fields=["school_name", "bio", "avatar_url"])
+
+        response = self.client.get("/api/questions/")
+        self.assertEqual(response.status_code, 200)
+        items = response.data.get("results", response.data)
+        question_payload = next(item for item in items if item["id"] == self.other_question.id)
+
+        self.assertEqual(question_payload["author"]["username"], self.other.username)
+        self.assertEqual(question_payload["author"]["school_name"], "")
+        self.assertEqual(question_payload["author"]["bio"], "")
+        self.assertEqual(question_payload["author"]["avatar_url"], "")
 
     def test_patch_me_rejects_duplicate_email(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
@@ -1674,7 +1870,7 @@ class IssueTicketAdminTests(APITestCase):
         self.assertNotIn(self.normal_user.id, ids)
         self.assertNotIn(self.banned_admin.id, ids)
 
-    def test_school_assignee_can_handle_assigned_ticket_but_cannot_reassign(self):
+    def test_school_assignee_cannot_change_ticket_status(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.school_token.key}")
 
         list_response = self.client.get("/api/issues/", {"scope": "assigned"})
@@ -1688,10 +1884,10 @@ class IssueTicketAdminTests(APITestCase):
             {"status": "in_progress", "resolution_note": "started"},
             format="json",
         )
-        self.assertEqual(update_response.status_code, 200)
+        self.assertEqual(update_response.status_code, 403)
         self.ticket_assigned.refresh_from_db()
-        self.assertEqual(self.ticket_assigned.status, IssueTicket.Status.IN_PROGRESS)
-        self.assertEqual(self.ticket_assigned.resolution_note, "started")
+        self.assertEqual(self.ticket_assigned.status, IssueTicket.Status.OPEN)
+        self.assertEqual(self.ticket_assigned.resolution_note, "")
 
         reassign_response = self.client.post(
             f"/api/issues/{self.ticket_assigned.id}/set_status/",
@@ -1711,6 +1907,8 @@ class IssueTicketAdminTests(APITestCase):
 
     def test_ticket_author_can_edit_own_ticket(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.author_a_token.key}")
+        self.ticket_assigned.resolution_note = "existing note"
+        self.ticket_assigned.save(update_fields=["resolution_note", "updated_at"])
         response = self.client.patch(
             f"/api/issues/{self.ticket_assigned.id}/",
             {"title": "updated by author"},
@@ -1719,6 +1917,9 @@ class IssueTicketAdminTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.ticket_assigned.refresh_from_db()
         self.assertEqual(self.ticket_assigned.title, "updated by author")
+        self.assertEqual(self.ticket_assigned.status, IssueTicket.Status.PENDING)
+        self.assertIsNone(self.ticket_assigned.assignee_id)
+        self.assertEqual(self.ticket_assigned.resolution_note, "")
 
     def test_only_manager_can_delete_ticket(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.author_a_token.key}")
@@ -1755,7 +1956,7 @@ class IssueTicketAdminTests(APITestCase):
         self.assertEqual(self.ticket_unassigned.assignee_id, self.school_assignee.id)
         self.assertEqual(self.ticket_assigned.resolution_note, "bulk process")
 
-    def test_bulk_set_status_for_school_user_cannot_reassign(self):
+    def test_bulk_set_status_for_school_user_is_forbidden(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.school_token.key}")
         response = self.client.post(
             "/api/issues/bulk-set-status/",
@@ -1766,10 +1967,7 @@ class IssueTicketAdminTests(APITestCase):
             },
             format="json",
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["success"], 0)
-        self.assertEqual(response.data["failed"], 1)
-        self.assertIn("Only admins can change assignee.", response.data["results"][0]["detail"])
+        self.assertEqual(response.status_code, 403)
 
         self.ticket_assigned.refresh_from_db()
         self.assertNotEqual(self.ticket_assigned.status, IssueTicket.Status.RESOLVED)
@@ -1844,8 +2042,11 @@ class IssueTicketAdminTests(APITestCase):
             {"visibility": IssueTicket.Visibility.PRIVATE},
             format="json",
         )
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("Private tickets cannot stay assigned to school reviewers.", str(response.data))
+        self.assertEqual(response.status_code, 200)
+        self.ticket_assigned.refresh_from_db()
+        self.assertEqual(self.ticket_assigned.visibility, IssueTicket.Visibility.PRIVATE)
+        self.assertEqual(self.ticket_assigned.status, IssueTicket.Status.PENDING)
+        self.assertIsNone(self.ticket_assigned.assignee_id)
 
 
 class CompetitionPracticeLinkApiTests(APITestCase):
@@ -2395,7 +2596,7 @@ class RevisionBulkReviewTests(APITestCase):
         self.assertEqual(self.public_article.content_md, "new public content")
         self.assertEqual(self.school_article.content_md, "new school content")
 
-    def test_school_bulk_review_only_handles_school_scope_proposals(self):
+    def test_school_bulk_review_is_forbidden(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.school_token.key}")
         response = self.client.post(
             "/api/revisions/bulk-review/",
@@ -2406,14 +2607,12 @@ class RevisionBulkReviewTests(APITestCase):
             },
             format="json",
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["success"], 1)
-        self.assertEqual(response.data["failed"], 1)
+        self.assertEqual(response.status_code, 403)
 
         self.public_proposal.refresh_from_db()
         self.school_proposal.refresh_from_db()
         self.assertEqual(self.public_proposal.status, RevisionProposal.Status.PENDING)
-        self.assertEqual(self.school_proposal.status, RevisionProposal.Status.REJECTED)
+        self.assertEqual(self.school_proposal.status, RevisionProposal.Status.PENDING)
 
     def test_bulk_review_rejects_invalid_action(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
@@ -2765,7 +2964,7 @@ class NotificationFlowTests(APITestCase):
         response = self.client.get("/api/notifications/")
         self.assertIn(response.status_code, (401, 403))
 
-    def test_answer_create_notifies_question_author(self):
+    def test_answer_create_stays_pending_until_admin_review(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.responder_token.key}")
         response = self.client.post(
             "/api/answers/",
@@ -2773,13 +2972,8 @@ class NotificationFlowTests(APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, 201)
-        self.assertTrue(
-            UserNotification.objects.filter(
-                user=self.author,
-                title__contains="新回答",
-                target_type="Answer",
-            ).exists()
-        )
+        self.assertEqual(response.data["status"], Answer.Status.PENDING)
+        self.assertFalse(UserNotification.objects.filter(user=self.author, target_type="Answer").exists())
 
     def test_revision_review_notifies_proposer(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")

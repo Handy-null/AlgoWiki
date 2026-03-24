@@ -14,6 +14,7 @@
         <input class="input" v-model="filters.search" placeholder="搜索问题" @keyup.enter="loadQuestions()" />
         <select class="select" v-model="filters.status" @change="loadQuestions()">
           <option value="">全部状态</option>
+          <option value="pending">pending</option>
           <option value="open">open</option>
           <option value="closed">closed</option>
         </select>
@@ -79,7 +80,7 @@
           <div class="qa-actions" v-if="canToggleStatus">
             <button class="btn" @click="startEditQuestion" v-if="canEditQuestion && !questionEdit.editing">编辑问题</button>
             <button v-if="selectedQuestion.status === 'open'" class="btn" @click="closeQuestion">关闭问题</button>
-            <button v-else class="btn" @click="reopenQuestion">重开问题</button>
+            <button v-else-if="selectedQuestion.status === 'closed'" class="btn" @click="reopenQuestion">重开问题</button>
             <button class="btn" @click="removeQuestion">删除问题</button>
           </div>
           <section class="answer-form" v-if="questionEdit.editing">
@@ -109,6 +110,7 @@
               <div class="meta">
                 {{ answer.author.username }} · {{ formatTime(answer.created_at) }}
                 <span class="pill" v-if="answer.is_accepted">已采纳</span>
+                <span class="pill" v-if="answer.status !== 'visible'">{{ formatAnswerStatus(answer.status) }}</span>
               </div>
               <section
                 v-if="answerEdit.id !== answer.id"
@@ -220,7 +222,9 @@ const canToggleStatus = computed(() => {
   if (!selectedQuestion.value || !auth.user) return false;
   return auth.isManager || selectedQuestion.value.author.id === auth.user.id;
 });
-const canAcceptAnswer = computed(() => canToggleStatus.value);
+const canAcceptAnswer = computed(
+  () => canToggleStatus.value && ["open", "closed"].includes(selectedQuestion.value?.status || "")
+);
 const canEditQuestion = computed(() => {
   if (!selectedQuestion.value || !auth.user) return false;
   return auth.isManager || selectedQuestion.value.author.id === auth.user.id;
@@ -269,9 +273,18 @@ function formatTime(value) {
 function formatQuestionStatus(status) {
   const map = {
     pending: "审核中",
-    open: "open",
-    closed: "closed",
-    hidden: "hidden",
+    open: "开放",
+    closed: "已关闭",
+    hidden: "已隐藏",
+  };
+  return map[status] || status || "-";
+}
+
+function formatAnswerStatus(status) {
+  const map = {
+    pending: "审核中",
+    visible: "已展示",
+    hidden: "已隐藏",
   };
   return map[status] || status || "-";
 }
@@ -532,8 +545,8 @@ async function saveEditedQuestion() {
       title: questionEdit.title.trim(),
       content_md: questionEdit.content_md,
     };
-    await api.patch(`/questions/${selectedQuestion.value.id}/`, payload);
-    ui.success("问题已更新");
+    const { data } = await api.patch(`/questions/${selectedQuestion.value.id}/`, payload);
+    ui.success(data?.status === "pending" ? "问题已更新，等待管理员重新审核" : "问题已更新");
     cancelEditQuestion();
     await loadQuestions(1, false);
   } catch (error) {
@@ -559,10 +572,10 @@ async function saveEditedAnswer(answer) {
     return;
   }
   try {
-    await api.patch(`/answers/${answer.id}/`, {
+    const { data } = await api.patch(`/answers/${answer.id}/`, {
       content_md: answerEdit.content_md,
     });
-    ui.success("回答已更新");
+    ui.success(data?.status === "pending" ? "回答已更新，等待管理员重新审核" : "回答已更新");
     cancelEditAnswer();
     await loadAnswers(selectedQuestion.value.id, 1, false);
   } catch (error) {
@@ -592,7 +605,7 @@ async function createQuestion() {
     if (created) {
       await selectQuestion(created);
     }
-    ui.success("问题已提交");
+    ui.success(data?.status === "pending" ? "问题已提交，等待管理员审核" : "问题已提交");
   } catch (error) {
     ui.error(getErrorText(error, "提交问题失败"));
   }
@@ -605,7 +618,7 @@ async function createAnswer() {
   }
 
   try {
-    await api.post("/answers/", {
+    const { data } = await api.post("/answers/", {
       question: selectedQuestion.value.id,
       content_md: answerForm.content_md,
     });
@@ -613,7 +626,7 @@ async function createAnswer() {
     cancelEditAnswer();
     await loadAnswers(selectedQuestion.value.id, 1, false);
     await loadQuestions(1, false);
-    ui.success("回答已提交");
+    ui.success(data?.status === "pending" ? "回答已提交，等待管理员审核" : "回答已提交");
   } catch (error) {
     ui.error(getErrorText(error, "提交回答失败"));
   }

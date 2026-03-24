@@ -421,6 +421,14 @@ class ImageUploadView(APIView):
     max_bytes = 8 * 1024 * 1024
 
     def post(self, request):
+        if not is_manager(request.user):
+            return Response(
+                {
+                    "detail": "Only admins can upload images to the server. Please use external Markdown image links."
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         serializer = ImageUploadSerializer(
             data=request.data,
             context={
@@ -471,7 +479,13 @@ class RegisterView(APIView):
             detail="user registered",
         )
         return Response(
-            {"token": token.key, "user": UserPublicSerializer(user).data},
+            {
+                "token": token.key,
+                "user": UserPublicSerializer(
+                    user,
+                    context={"request": request, "include_private_profile": True},
+                ).data,
+            },
             status=status.HTTP_201_CREATED,
         )
 
@@ -487,7 +501,10 @@ class LoginView(APIView):
         return Response(
             {
                 "token": payload["token"],
-                "user": UserPublicSerializer(payload["user"]).data,
+                "user": UserPublicSerializer(
+                    payload["user"],
+                    context={"request": request, "include_private_profile": True},
+                ).data,
             }
         )
 
@@ -529,7 +546,10 @@ class MeView(APIView):
 
             return Response(
                 {
-                    "user": UserPublicSerializer(user).data,
+                    "user": UserPublicSerializer(
+                        user,
+                        context={"request": request, "include_private_profile": True},
+                    ).data,
                     "profile_settings": UserProfileUpdateSerializer(user).data,
                     "stats": stats,
                     "recent_events": ContributionEventSerializer(recent_events, many=True).data,
@@ -549,7 +569,10 @@ class MeView(APIView):
         serializer.save()
         return Response(
             {
-                "user": UserPublicSerializer(request.user).data,
+                "user": UserPublicSerializer(
+                    request.user,
+                    context={"request": request, "include_private_profile": True},
+                ).data,
                 "profile_settings": UserProfileUpdateSerializer(request.user).data,
             }
         )
@@ -1645,7 +1668,7 @@ class ArticleCommentViewSet(viewsets.ModelViewSet):
         if self.action == "bulk_hide":
             return [AdminOrSuperAdmin()]
         if self.action in {"approve", "reject", "bulk_review"}:
-            return [AuthenticatedAndNotBanned()]
+            return [AdminOrSuperAdmin()]
         if self.action in {"list", "retrieve"}:
             return [AllowAny()]
         return [AuthenticatedAndNotBanned()]
@@ -1743,9 +1766,22 @@ class ArticleCommentViewSet(viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         comment = self.get_object()
-        if comment.author_id != request.user.id and not is_manager(request.user):
+        partial = kwargs.pop("partial", False)
+        manager = is_manager(request.user)
+        if comment.author_id != request.user.id and not manager:
             return Response({"detail": "You cannot edit this comment."}, status=status.HTTP_403_FORBIDDEN)
-        return super().update(request, *args, **kwargs)
+
+        serializer = self.get_serializer(comment, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        next_status = comment.status if manager else ArticleComment.Status.PENDING
+        serializer.save(status=next_status)
+        log_event(
+            request.user,
+            ContributionEvent.EventType.ADMIN if manager else ContributionEvent.EventType.COMMENT,
+            comment,
+            {"action": "update_comment", "status": next_status, "article_id": comment.article_id},
+        )
+        return Response(serializer.data)
 
     def destroy(self, request, *args, **kwargs):
         comment = self.get_object()
@@ -1771,7 +1807,7 @@ class ArticleCommentViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def _can_review_comment(self, reviewer, comment) -> bool:
-        return can_moderate_category(reviewer, comment.article.category)
+        return is_manager(reviewer)
 
     def _apply_review_action(self, *, comment, reviewer, action, review_note=""):
         if not self._can_review_comment(reviewer, comment):
@@ -1973,11 +2009,6 @@ class RevisionProposalViewSet(viewsets.ModelViewSet):
 
         if is_manager(user):
             pass
-        elif user.role == User.Role.SCHOOL:
-            queryset = queryset.filter(
-                Q(proposer=user)
-                | Q(article__category__moderation_scope=Category.ModerationScope.SCHOOL)
-            )
         else:
             queryset = queryset.filter(proposer=user)
 
@@ -2117,7 +2148,7 @@ class RevisionProposalViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def _apply_review_action(self, proposal, reviewer, *, action, review_note=""):
-        if not can_moderate_category(reviewer, proposal.article.category):
+        if not is_manager(reviewer):
             return False, status.HTTP_403_FORBIDDEN, "No permission to review this proposal."
         if proposal.status != RevisionProposal.Status.PENDING:
             return False, status.HTTP_400_BAD_REQUEST, "Proposal is already reviewed."
@@ -2189,7 +2220,7 @@ class RevisionProposalViewSet(viewsets.ModelViewSet):
             return Response({"detail": detail}, status=error_status)
         return Response(self.get_serializer(proposal).data)
 
-    @action(detail=False, methods=["post"], permission_classes=[AuthenticatedAndNotBanned], url_path="bulk-review")
+    @action(detail=False, methods=["post"], permission_classes=[AdminOrSuperAdmin], url_path="bulk-review")
     def bulk_review(self, request):
         raw_ids = request.data.get("ids")
         if not isinstance(raw_ids, list) or not raw_ids:
@@ -2263,6 +2294,11 @@ class IssueTicketViewSet(viewsets.ModelViewSet):
     serializer_class = IssueTicketSerializer
     queryset = IssueTicket.objects.select_related("author", "assignee", "related_article").all()
     permission_classes = [AuthenticatedAndNotBanned]
+
+    def get_permissions(self):
+        if self.action in {"set_status", "bulk_set_status"}:
+            return [AdminOrSuperAdmin()]
+        return super().get_permissions()
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -2374,8 +2410,7 @@ class IssueTicketViewSet(viewsets.ModelViewSet):
         resolution_note=UNSET,
     ):
         manager = is_manager(operator)
-        school_assignee = operator.role == User.Role.SCHOOL and ticket.assignee_id == operator.id
-        if not manager and not school_assignee:
+        if not manager:
             return False, status.HTTP_403_FORBIDDEN, "No permission to update this ticket."
 
         if new_status not in dict(IssueTicket.Status.choices):
@@ -2384,8 +2419,6 @@ class IssueTicketViewSet(viewsets.ModelViewSet):
 
         assign_to_given = assign_to is not UNSET
         assignee_id_for_event = ticket.assignee_id
-        if assign_to_given and not manager:
-            return False, status.HTTP_403_FORBIDDEN, "Only admins can change assignee."
 
         if assign_to_given:
             assign_text = str(assign_to).strip().lower() if assign_to is not None else ""
@@ -2433,10 +2466,7 @@ class IssueTicketViewSet(viewsets.ModelViewSet):
             payload["assign_to"] = assignee_id_for_event
         if resolution_note_given:
             payload["resolution_note"] = ticket.resolution_note
-        event_type = ContributionEvent.EventType.ADMIN if manager else ContributionEvent.EventType.ISSUE
-        if school_assignee:
-            payload["action"] = "school_update_issue_status"
-        log_event(operator, event_type, ticket, payload)
+        log_event(operator, ContributionEvent.EventType.ADMIN, ticket, payload)
 
         if ticket.author_id != operator.id:
             create_notification(
@@ -2462,14 +2492,15 @@ class IssueTicketViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", False)
         ticket = self.get_object()
+        manager = is_manager(request.user)
 
-        if not is_manager(request.user) and ticket.author_id != request.user.id:
+        if not manager and ticket.author_id != request.user.id:
             return Response({"detail": "No permission to edit this ticket."}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = self.get_serializer(ticket, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         next_visibility = serializer.validated_data.get("visibility", ticket.visibility)
-        if (
+        if manager and (
             next_visibility == IssueTicket.Visibility.PRIVATE
             and ticket.assignee_id
             and ticket.assignee
@@ -2479,9 +2510,21 @@ class IssueTicketViewSet(viewsets.ModelViewSet):
                 {"detail": "Private tickets cannot stay assigned to school reviewers."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        serializer.save()
-        event_type = ContributionEvent.EventType.ADMIN if is_manager(request.user) else ContributionEvent.EventType.ISSUE
-        log_event(request.user, event_type, ticket, {"action": "update_issue"})
+        save_kwargs = {}
+        event_type = ContributionEvent.EventType.ADMIN if manager else ContributionEvent.EventType.ISSUE
+        event_payload = {"action": "update_issue"}
+        if not manager:
+            save_kwargs.update(
+                {
+                    "status": IssueTicket.Status.PENDING,
+                    "assignee": None,
+                    "resolution_note": "",
+                }
+            )
+            event_payload["status"] = IssueTicket.Status.PENDING
+            event_payload["requires_review"] = True
+        serializer.save(**save_kwargs)
+        log_event(request.user, event_type, ticket, event_payload)
         return Response(serializer.data)
 
     def partial_update(self, request, *args, **kwargs):
@@ -2495,7 +2538,7 @@ class IssueTicketViewSet(viewsets.ModelViewSet):
         log_event(request.user, ContributionEvent.EventType.ADMIN, ticket, {"action": "delete_issue"})
         return super().destroy(request, *args, **kwargs)
 
-    @action(detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned])
+    @action(detail=True, methods=["post"], permission_classes=[AdminOrSuperAdmin])
     def set_status(self, request, pk=None):
         ticket = self.get_object()
         assign_to = request.data.get("assign_to", UNSET) if "assign_to" in request.data else UNSET
@@ -2513,7 +2556,7 @@ class IssueTicketViewSet(viewsets.ModelViewSet):
             return Response({"detail": detail}, status=error_status)
         return Response(self.get_serializer(ticket).data)
 
-    @action(detail=False, methods=["post"], permission_classes=[AuthenticatedAndNotBanned], url_path="bulk-set-status")
+    @action(detail=False, methods=["post"], permission_classes=[AdminOrSuperAdmin], url_path="bulk-set-status")
     def bulk_set_status(self, request):
         raw_ids = request.data.get("ids")
         if not isinstance(raw_ids, list) or not raw_ids:
@@ -2731,7 +2774,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.select_related("author", "category").annotate(answers_count=Count("answers"))
 
     def get_permissions(self):
-        if self.action == "bulk_moderate":
+        if self.action in {"approve", "reject", "bulk_moderate"}:
             return [AdminOrSuperAdmin()]
         if self.action in {"list", "retrieve"}:
             return [AllowAny()]
@@ -2743,14 +2786,23 @@ class QuestionViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         user = self.request.user
         manager = is_manager(user)
-        if not manager:
-            queryset = queryset.exclude(status=Question.Status.HIDDEN)
-
         mine_only = self.request.query_params.get("mine") == "1"
-        if mine_only:
+        status_filter = self.request.query_params.get("status")
+        status_filter = status_filter.strip() if isinstance(status_filter, str) else ""
+
+        if manager:
+            pass
+        elif mine_only:
             if not user.is_authenticated:
                 return queryset.none()
             queryset = queryset.filter(author=user)
+        elif user.is_authenticated:
+            queryset = queryset.filter(
+                Q(status__in=[Question.Status.OPEN, Question.Status.CLOSED])
+                | Q(author=user, status=Question.Status.PENDING)
+            )
+        else:
+            queryset = queryset.filter(status__in=[Question.Status.OPEN, Question.Status.CLOSED])
 
         if manager:
             author_filter = self.request.query_params.get("author")
@@ -2761,9 +2813,15 @@ class QuestionViewSet(viewsets.ModelViewSet):
                 else:
                     queryset = queryset.filter(author__username__icontains=author_filter)
 
-        status_filter = self.request.query_params.get("status")
         if status_filter in dict(Question.Status.choices):
-            queryset = queryset.filter(status=status_filter)
+            if manager or mine_only:
+                queryset = queryset.filter(status=status_filter)
+            elif status_filter in {Question.Status.OPEN, Question.Status.CLOSED}:
+                queryset = queryset.filter(status=status_filter)
+            elif status_filter == Question.Status.PENDING and user.is_authenticated:
+                queryset = queryset.filter(author=user, status=Question.Status.PENDING)
+            else:
+                queryset = queryset.none()
 
         category = self.request.query_params.get("category")
         if category:
@@ -2793,39 +2851,119 @@ class QuestionViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        question = serializer.save(author=request.user)
-        log_event(request.user, ContributionEvent.EventType.QUESTION, question)
+        next_status = Question.Status.OPEN if is_manager(request.user) else Question.Status.PENDING
+        question = serializer.save(author=request.user, status=next_status)
+        log_event(
+            request.user,
+            ContributionEvent.EventType.QUESTION,
+            question,
+            {"action": "create_question", "status": next_status},
+        )
         return Response(self.get_serializer(question).data, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
         question = self.get_object()
-        if question.author_id != request.user.id and not is_manager(request.user):
+        partial = kwargs.pop("partial", False)
+        manager = is_manager(request.user)
+        if question.author_id != request.user.id and not manager:
             return Response({"detail": "No permission."}, status=status.HTTP_403_FORBIDDEN)
-        response = super().update(request, *args, **kwargs)
-        log_event(request.user, ContributionEvent.EventType.QUESTION, question, {"action": "update_question"})
-        return response
+
+        serializer = self.get_serializer(question, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        next_status = question.status if manager else Question.Status.PENDING
+        serializer.save(status=next_status)
+        log_event(
+            request.user,
+            ContributionEvent.EventType.ADMIN if manager else ContributionEvent.EventType.QUESTION,
+            question,
+            {"action": "update_question", "status": next_status},
+        )
+        return Response(serializer.data)
 
     def _apply_question_moderation(self, question, operator, action):
         action = (action or "").strip().lower()
-        if question.author_id != operator.id and not is_manager(operator):
-            return False, status.HTTP_403_FORBIDDEN, "No permission."
+        manager = is_manager(operator)
 
         if action == "close":
+            if question.status not in {Question.Status.OPEN, Question.Status.CLOSED}:
+                return False, status.HTTP_400_BAD_REQUEST, "Only reviewed questions can be closed."
+            if question.author_id != operator.id and not manager:
+                return False, status.HTTP_403_FORBIDDEN, "No permission."
             question.status = Question.Status.CLOSED
             question.save(update_fields=["status", "updated_at"])
-            log_event(operator, ContributionEvent.EventType.QUESTION, question, {"action": "close_question"})
+            log_event(
+                operator,
+                ContributionEvent.EventType.ADMIN if manager else ContributionEvent.EventType.QUESTION,
+                question,
+                {"action": "close_question"},
+            )
             return True, status.HTTP_200_OK, None
 
         if action == "reopen":
+            if question.status not in {Question.Status.OPEN, Question.Status.CLOSED}:
+                return False, status.HTTP_400_BAD_REQUEST, "Only reviewed questions can be reopened."
+            if question.author_id != operator.id and not manager:
+                return False, status.HTTP_403_FORBIDDEN, "No permission."
             question.status = Question.Status.OPEN
             question.save(update_fields=["status", "updated_at"])
-            log_event(operator, ContributionEvent.EventType.QUESTION, question, {"action": "reopen_question"})
+            log_event(
+                operator,
+                ContributionEvent.EventType.ADMIN if manager else ContributionEvent.EventType.QUESTION,
+                question,
+                {"action": "reopen_question"},
+            )
+            return True, status.HTTP_200_OK, None
+
+        if action == "approve":
+            if not manager:
+                return False, status.HTTP_403_FORBIDDEN, "Only admins can approve questions."
+            if question.status != Question.Status.PENDING:
+                return False, status.HTTP_400_BAD_REQUEST, "Question is not pending review."
+            question.status = Question.Status.OPEN
+            question.save(update_fields=["status", "updated_at"])
+            log_event(operator, ContributionEvent.EventType.ADMIN, question, {"action": "approve_question"})
+            if question.author_id != operator.id:
+                create_notification(
+                    user=question.author,
+                    actor=operator,
+                    target=question,
+                    title=f"你的问题已通过审核：{question.title}",
+                    content="问题现在已对外展示。",
+                    link="/questions",
+                )
+            return True, status.HTTP_200_OK, None
+
+        if action == "reject":
+            if not manager:
+                return False, status.HTTP_403_FORBIDDEN, "Only admins can reject questions."
+            if question.status != Question.Status.PENDING:
+                return False, status.HTTP_400_BAD_REQUEST, "Question is not pending review."
+            question.status = Question.Status.HIDDEN
+            question.save(update_fields=["status", "updated_at"])
+            log_event(operator, ContributionEvent.EventType.ADMIN, question, {"action": "reject_question"})
+            if question.author_id != operator.id:
+                create_notification(
+                    user=question.author,
+                    actor=operator,
+                    target=question,
+                    title=f"你的问题未通过审核：{question.title}",
+                    content="请修改后重新提交。",
+                    link="/profile",
+                    level=UserNotification.Level.WARNING,
+                )
             return True, status.HTTP_200_OK, None
 
         if action == "hide":
+            if question.author_id != operator.id and not manager:
+                return False, status.HTTP_403_FORBIDDEN, "No permission."
             question.status = Question.Status.HIDDEN
             question.save(update_fields=["status", "updated_at"])
-            log_event(operator, ContributionEvent.EventType.QUESTION, question, {"action": "hide_question"})
+            log_event(
+                operator,
+                ContributionEvent.EventType.ADMIN if manager else ContributionEvent.EventType.QUESTION,
+                question,
+                {"action": "hide_question"},
+            )
             return True, status.HTTP_200_OK, None
 
         return False, status.HTTP_400_BAD_REQUEST, "Invalid moderation action."
@@ -2853,6 +2991,22 @@ class QuestionViewSet(viewsets.ModelViewSet):
             return Response({"detail": detail}, status=error_status)
         return Response(self.get_serializer(question).data)
 
+    @action(detail=True, methods=["post"], permission_classes=[AdminOrSuperAdmin])
+    def approve(self, request, pk=None):
+        question = self.get_object()
+        ok, error_status, detail = self._apply_question_moderation(question, request.user, "approve")
+        if not ok:
+            return Response({"detail": detail}, status=error_status)
+        return Response(self.get_serializer(question).data)
+
+    @action(detail=True, methods=["post"], permission_classes=[AdminOrSuperAdmin])
+    def reject(self, request, pk=None):
+        question = self.get_object()
+        ok, error_status, detail = self._apply_question_moderation(question, request.user, "reject")
+        if not ok:
+            return Response({"detail": detail}, status=error_status)
+        return Response(self.get_serializer(question).data)
+
     @action(detail=False, methods=["post"], permission_classes=[AdminOrSuperAdmin], url_path="bulk-moderate")
     def bulk_moderate(self, request):
         raw_ids = request.data.get("ids")
@@ -2873,9 +3027,9 @@ class QuestionViewSet(viewsets.ModelViewSet):
                 ids.append(question_id)
 
         action_name = str(request.data.get("action", "")).strip().lower()
-        if action_name not in {"close", "reopen", "hide"}:
+        if action_name not in {"approve", "reject", "close", "reopen", "hide"}:
             return Response(
-                {"detail": "action must be close, reopen or hide."},
+                {"detail": "action must be approve, reject, close, reopen or hide."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -2925,6 +3079,8 @@ class AnswerViewSet(viewsets.ModelViewSet):
     queryset = Answer.objects.select_related("author", "question", "question__author").all()
 
     def get_permissions(self):
+        if self.action in {"approve", "reject", "bulk_moderate"}:
+            return [AdminOrSuperAdmin()]
         if self.action in {"list", "retrieve"}:
             return [AllowAny()]
         if self.action == "mine":
@@ -2938,8 +3094,38 @@ class AnswerViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(question_id=question_id)
 
         user = self.request.user
-        if not is_manager(user):
+        manager = is_manager(user)
+        status_filter = self.request.query_params.get("status")
+        status_filter = status_filter.strip() if isinstance(status_filter, str) else ""
+
+        if manager:
+            author_filter = self.request.query_params.get("author")
+            if author_filter:
+                author_filter = author_filter.strip()
+                if author_filter.isdigit():
+                    queryset = queryset.filter(author_id=int(author_filter))
+                else:
+                    queryset = queryset.filter(author__username__icontains=author_filter)
+        elif user.is_authenticated:
+            queryset = queryset.filter(
+                Q(status=Answer.Status.VISIBLE) | Q(author=user, status=Answer.Status.PENDING)
+            )
+        else:
             queryset = queryset.filter(status=Answer.Status.VISIBLE)
+
+        if status_filter in dict(Answer.Status.choices):
+            if manager:
+                queryset = queryset.filter(status=status_filter)
+            elif status_filter == Answer.Status.VISIBLE:
+                queryset = queryset.filter(status=Answer.Status.VISIBLE)
+            elif status_filter == Answer.Status.PENDING and user.is_authenticated:
+                queryset = queryset.filter(author=user, status=Answer.Status.PENDING)
+            else:
+                queryset = queryset.none()
+
+        search = self.request.query_params.get("search")
+        if search:
+            queryset = queryset.filter(content_md__icontains=search.strip())
 
         order = self.request.query_params.get("order")
         if order == "latest":
@@ -2954,9 +3140,15 @@ class AnswerViewSet(viewsets.ModelViewSet):
         question = serializer.validated_data["question"]
         if question.status != Question.Status.OPEN:
             return Response({"detail": "Question is closed."}, status=status.HTTP_400_BAD_REQUEST)
-        answer = serializer.save(author=request.user)
-        log_event(request.user, ContributionEvent.EventType.ANSWER, answer, {"question_id": question.id})
-        if question.author_id != request.user.id:
+        next_status = Answer.Status.VISIBLE if is_manager(request.user) else Answer.Status.PENDING
+        answer = serializer.save(author=request.user, status=next_status)
+        log_event(
+            request.user,
+            ContributionEvent.EventType.ANSWER,
+            answer,
+            {"action": "create_answer", "question_id": question.id, "status": next_status},
+        )
+        if answer.status == Answer.Status.VISIBLE and question.author_id != request.user.id:
             create_notification(
                 user=question.author,
                 actor=request.user,
@@ -2969,11 +3161,79 @@ class AnswerViewSet(viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         answer = self.get_object()
-        if answer.author_id != request.user.id and not is_manager(request.user):
+        partial = kwargs.pop("partial", False)
+        manager = is_manager(request.user)
+        if answer.author_id != request.user.id and not manager:
             return Response({"detail": "No permission to edit this answer."}, status=status.HTTP_403_FORBIDDEN)
-        response = super().update(request, *args, **kwargs)
-        log_event(request.user, ContributionEvent.EventType.ANSWER, answer, {"action": "update_answer"})
-        return response
+        serializer = self.get_serializer(answer, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        save_kwargs = {}
+        if not manager:
+            save_kwargs["status"] = Answer.Status.PENDING
+            if answer.is_accepted:
+                save_kwargs["is_accepted"] = False
+        serializer.save(**save_kwargs)
+        log_event(
+            request.user,
+            ContributionEvent.EventType.ADMIN if manager else ContributionEvent.EventType.ANSWER,
+            answer,
+            {
+                "action": "update_answer",
+                "status": save_kwargs.get("status", answer.status),
+                "is_accepted": answer.is_accepted,
+            },
+        )
+        return Response(serializer.data)
+
+    def _apply_answer_moderation(self, answer, operator, action):
+        action = (action or "").strip().lower()
+        if not is_manager(operator):
+            return False, status.HTTP_403_FORBIDDEN, "Only admins can moderate answers."
+
+        if action == "approve":
+            if answer.status != Answer.Status.PENDING:
+                return False, status.HTTP_400_BAD_REQUEST, "Answer is not pending review."
+            answer.status = Answer.Status.VISIBLE
+            answer.save(update_fields=["status", "updated_at"])
+            log_event(operator, ContributionEvent.EventType.ADMIN, answer, {"action": "approve_answer"})
+            if answer.author_id != operator.id:
+                create_notification(
+                    user=answer.author,
+                    actor=operator,
+                    target=answer,
+                    title=f"你的回答已通过审核：{answer.question.title}",
+                    content="回答现在已对外展示。",
+                    link="/questions",
+                )
+            return True, status.HTTP_200_OK, None
+
+        if action == "reject":
+            if answer.status != Answer.Status.PENDING:
+                return False, status.HTTP_400_BAD_REQUEST, "Answer is not pending review."
+            answer.status = Answer.Status.HIDDEN
+            answer.is_accepted = False
+            answer.save(update_fields=["status", "is_accepted", "updated_at"])
+            log_event(operator, ContributionEvent.EventType.ADMIN, answer, {"action": "reject_answer"})
+            if answer.author_id != operator.id:
+                create_notification(
+                    user=answer.author,
+                    actor=operator,
+                    target=answer,
+                    title=f"你的回答未通过审核：{answer.question.title}",
+                    content="请修改后重新提交。",
+                    link="/profile",
+                    level=UserNotification.Level.WARNING,
+                )
+            return True, status.HTTP_200_OK, None
+
+        if action == "hide":
+            answer.status = Answer.Status.HIDDEN
+            answer.is_accepted = False
+            answer.save(update_fields=["status", "is_accepted", "updated_at"])
+            log_event(operator, ContributionEvent.EventType.ADMIN, answer, {"action": "hide_answer"})
+            return True, status.HTTP_200_OK, None
+
+        return False, status.HTTP_400_BAD_REQUEST, "Invalid moderation action."
 
     def destroy(self, request, *args, **kwargs):
         answer = self.get_object()
@@ -2988,6 +3248,8 @@ class AnswerViewSet(viewsets.ModelViewSet):
     def accept(self, request, pk=None):
         answer = self.get_object()
         question = answer.question
+        if answer.status != Answer.Status.VISIBLE:
+            return Response({"detail": "Only visible answers can be accepted."}, status=status.HTTP_400_BAD_REQUEST)
         if question.author_id != request.user.id and not is_manager(request.user):
             return Response({"detail": "No permission."}, status=status.HTTP_403_FORBIDDEN)
 
@@ -3007,6 +3269,78 @@ class AnswerViewSet(viewsets.ModelViewSet):
                 link="/questions",
             )
         return Response(self.get_serializer(answer).data)
+
+    @action(detail=True, methods=["post"], permission_classes=[AdminOrSuperAdmin])
+    def approve(self, request, pk=None):
+        answer = self.get_object()
+        ok, error_status, detail = self._apply_answer_moderation(answer, request.user, "approve")
+        if not ok:
+            return Response({"detail": detail}, status=error_status)
+        return Response(self.get_serializer(answer).data)
+
+    @action(detail=True, methods=["post"], permission_classes=[AdminOrSuperAdmin])
+    def reject(self, request, pk=None):
+        answer = self.get_object()
+        ok, error_status, detail = self._apply_answer_moderation(answer, request.user, "reject")
+        if not ok:
+            return Response({"detail": detail}, status=error_status)
+        return Response(self.get_serializer(answer).data)
+
+    @action(detail=False, methods=["post"], permission_classes=[AdminOrSuperAdmin], url_path="bulk-moderate")
+    def bulk_moderate(self, request):
+        raw_ids = request.data.get("ids")
+        if not isinstance(raw_ids, list) or not raw_ids:
+            return Response({"detail": "ids must be a non-empty list."}, status=status.HTTP_400_BAD_REQUEST)
+        if len(raw_ids) > 200:
+            return Response({"detail": "Too many ids, max is 200."}, status=status.HTTP_400_BAD_REQUEST)
+
+        ids = []
+        for raw_id in raw_ids:
+            try:
+                answer_id = int(raw_id)
+            except (TypeError, ValueError):
+                return Response({"detail": "ids must contain integers."}, status=status.HTTP_400_BAD_REQUEST)
+            if answer_id <= 0:
+                return Response({"detail": "ids must contain positive integers."}, status=status.HTTP_400_BAD_REQUEST)
+            if answer_id not in ids:
+                ids.append(answer_id)
+
+        action_name = str(request.data.get("action", "")).strip().lower()
+        if action_name not in {"approve", "reject", "hide"}:
+            return Response(
+                {"detail": "action must be approve, reject or hide."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        answer_map = {
+            item.id: item
+            for item in self.get_queryset()
+            .filter(id__in=ids)
+            .select_related("author", "question", "question__author")
+        }
+        results = []
+        success_count = 0
+        for answer_id in ids:
+            answer = answer_map.get(answer_id)
+            if not answer:
+                results.append({"id": answer_id, "success": False, "detail": "Answer not found or inaccessible."})
+                continue
+
+            ok, _, detail = self._apply_answer_moderation(answer, request.user, action_name)
+            if ok:
+                success_count += 1
+                results.append({"id": answer_id, "success": True, "status": answer.status})
+            else:
+                results.append({"id": answer_id, "success": False, "detail": detail})
+
+        return Response(
+            {
+                "total": len(ids),
+                "success": success_count,
+                "failed": len(ids) - success_count,
+                "results": results,
+            }
+        )
 
     @action(detail=False, methods=["get"], permission_classes=[AuthenticatedAndNotBanned])
     def mine(self, request):
@@ -3797,7 +4131,7 @@ class CompetitionPracticeLinkProposalViewSet(viewsets.ModelViewSet):
             )
         return True, status.HTTP_200_OK, None
 
-    @action(detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned])
+    @action(detail=True, methods=["post"], permission_classes=[AdminOrSuperAdmin])
     def approve(self, request, pk=None):
         try:
             proposal = self.get_object()
@@ -3813,7 +4147,7 @@ class CompetitionPracticeLinkProposalViewSet(viewsets.ModelViewSet):
         except DatabaseError as exc:
             return schema_outdated_response(exc)
 
-    @action(detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned])
+    @action(detail=True, methods=["post"], permission_classes=[AdminOrSuperAdmin])
     def reject(self, request, pk=None):
         try:
             proposal = self.get_object()
@@ -4157,7 +4491,7 @@ class UserManagementViewSet(viewsets.ReadOnlyModelViewSet):
             token = search.strip()
             queryset = queryset.filter(Q(username__icontains=token) | Q(school_name__icontains=token))
         queryset = queryset.order_by("role", "username")[:200]
-        return Response(UserPublicSerializer(queryset, many=True).data)
+        return Response(UserPublicSerializer(queryset, many=True, context={"request": request}).data)
 
 
 class UserNotificationViewSet(viewsets.ReadOnlyModelViewSet):
@@ -4517,7 +4851,9 @@ class AdminOverviewView(APIView):
                         "tickets_in_progress": ticket_status_map.get(IssueTicket.Status.IN_PROGRESS, 0),
                         "tickets_resolved": ticket_status_map.get(IssueTicket.Status.RESOLVED, 0),
                         "revisions_pending": revision_status_map.get(RevisionProposal.Status.PENDING, 0),
+                        "questions_pending": Question.objects.filter(status=Question.Status.PENDING).count(),
                         "questions_open": Question.objects.filter(status=Question.Status.OPEN).count(),
+                        "answers_pending": Answer.objects.filter(status=Answer.Status.PENDING).count(),
                         "answers_total": Answer.objects.count(),
                     },
                     "announcements": {
