@@ -214,6 +214,7 @@ def parse_datetime_query(value: str, *, end_of_day: bool = False):
 INVALID_EXPORT_FILENAME_CHARS = re.compile(r'[\\/:*?"<>|]+')
 MARKDOWN_IMAGE_PATTERN = re.compile(r'!\[[^\]]*]\(([^)\n]+)\)')
 MARKDOWN_LINK_PATTERN = re.compile(r"\[([^\]]+)\]\(([^)\n]+)\)")
+COMPETITION_CALENDAR_FINISHED_RETENTION_DAYS = 30
 
 
 def sanitize_export_filename(value: str, fallback: str = "article") -> str:
@@ -334,6 +335,12 @@ def markdown_line_to_plain_text(line: str) -> str:
     value = re.sub(r"[*_~`>#]", "", value)
     value = re.sub(r"\s+", " ", value).strip()
     return value
+
+
+def filter_visible_competition_calendar_events(queryset, *, now=None):
+    reference_now = now or timezone.now()
+    cutoff = reference_now - timedelta(days=COMPETITION_CALENDAR_FINISHED_RETENTION_DAYS)
+    return queryset.filter(end_time__gte=cutoff)
 
 
 class HealthCheckView(APIView):
@@ -4172,7 +4179,8 @@ class CompetitionCalendarEventViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [AllowAny]
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        now = timezone.now()
+        queryset = filter_visible_competition_calendar_events(super().get_queryset(), now=now)
 
         requested_sites = []
         raw_sites = self.request.query_params.get("sites", "")
@@ -4189,7 +4197,6 @@ class CompetitionCalendarEventViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(source_site__in=normalized_sites)
 
         status_filter = self.request.query_params.get("status")
-        now = timezone.now()
         if status_filter == "ongoing":
             queryset = queryset.filter(start_time__lte=now, end_time__gt=now)
         elif status_filter == "upcoming":
@@ -4234,7 +4241,7 @@ class CompetitionCalendarEventViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=["get"], permission_classes=[AllowAny])
     def taxonomy(self, request):
         try:
-            queryset = CompetitionCalendarEvent.objects.all()
+            queryset = filter_visible_competition_calendar_events(CompetitionCalendarEvent.objects.all())
             count_map = {
                 item["source_site"]: item["count"]
                 for item in queryset.values("source_site").annotate(count=Count("id"))

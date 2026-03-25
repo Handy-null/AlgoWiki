@@ -69,8 +69,8 @@ html[data-theme="modern"] {
   --pill-text: var(--accent);
   --label-bg: rgba(141, 153, 172, 0.18);
   --label-text: #8d99ac;
-  --link: #2f66ff;
-  --link-visited: #6a45c7;
+  --link: #2563eb;
+  --link-visited: #1d4ed8;
   --code-inline-bg: rgba(15, 23, 42, 0.08);
   --code-inline-text: #1f2937;
   --table-head-bg: rgba(244, 248, 255, 0.92);
@@ -174,8 +174,8 @@ html[data-theme="academic"] {
   --pill-text: #191919;
   --label-bg: rgba(109, 97, 80, 0.12);
   --label-text: #7c6d5c;
-  --link: #4e3b23;
-  --link-visited: #795c3b;
+  --link: #2563eb;
+  --link-visited: #1d4ed8;
   --code-inline-bg: rgba(68, 57, 45, 0.08);
   --code-inline-text: #3a2e22;
   --table-head-bg: rgba(245, 239, 230, 0.92);
@@ -279,8 +279,8 @@ html[data-theme="geek"] {
   --pill-text: #ffffff;
   --label-bg: rgba(17, 17, 17, 0.08);
   --label-text: #111111;
-  --link: #0d57d8;
-  --link-visited: #5d2bd8;
+  --link: #2563eb;
+  --link-visited: #1d4ed8;
   --code-inline-bg: rgba(17, 17, 17, 0.08);
   --code-inline-text: #111111;
   --table-head-bg: rgba(255, 244, 194, 0.9);

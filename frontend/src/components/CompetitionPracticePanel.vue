@@ -477,6 +477,19 @@ onMounted(async () => {
 .practice-source-link {
   color: var(--link);
   text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-word;
+}
+
+.practice-source-link:visited,
+.table-link:visited {
+  color: var(--link-visited);
+}
+
+.table-link {
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
   word-break: break-word;
 }
 

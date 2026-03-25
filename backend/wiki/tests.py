@@ -3171,6 +3171,16 @@ class CompetitionCalendarApiTests(APITestCase):
             end_time=now - timedelta(days=2),
             duration_seconds=7200,
         )
+        self.old_finished = CompetitionCalendarEvent.objects.create(
+            source_site=CompetitionCalendarEvent.SourceSite.NOWCODER,
+            source_id="nc-finished-old",
+            title="Nowcoder Finished Old",
+            organizer="Nowcoder",
+            url="https://ac.nowcoder.com/acm/contest/999",
+            start_time=now - timedelta(days=45, hours=2),
+            end_time=now - timedelta(days=45),
+            duration_seconds=7200,
+        )
 
     def test_public_calendar_list_supports_site_filter(self):
         response = self.client.get("/api/competition-calendar/", {"sites": "codeforces,luogu"})
@@ -3197,6 +3207,17 @@ class CompetitionCalendarApiTests(APITestCase):
         self.assertEqual(count_map["codeforces"], 1)
         self.assertEqual(count_map["atcoder"], 1)
         self.assertEqual(count_map["luogu"], 1)
+        self.assertEqual(count_map["nowcoder"], 0)
+
+    def test_calendar_list_hides_finished_items_older_than_30_days(self):
+        response = self.client.get("/api/competition-calendar/")
+        self.assertEqual(response.status_code, 200)
+        items = response.data.get("results", response.data)
+        source_ids = {item["source_id"] for item in items}
+        self.assertIn(self.ongoing.source_id, source_ids)
+        self.assertIn(self.upcoming.source_id, source_ids)
+        self.assertIn(self.finished.source_id, source_ids)
+        self.assertNotIn(self.old_finished.source_id, source_ids)
 
 
 class CompetitionCalendarSyncCommandTests(APITestCase):

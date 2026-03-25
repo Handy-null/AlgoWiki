@@ -52,8 +52,16 @@
         @keyup.enter="openLink(item.url)"
       >
         <div class="name-col">
-          <h3>{{ item.name }}</h3>
-          <p class="meta">{{ formatDomain(item.url) }}</p>
+          <a
+            class="friendly-anchor"
+            :href="normalizeUrl(item.url)"
+            target="_blank"
+            rel="noopener noreferrer"
+            @click.stop
+          >
+            <h3>{{ item.name }}</h3>
+            <p class="friendly-anchor-domain">{{ formatDomain(item.url) }}</p>
+          </a>
         </div>
         <div class="desc-col">
           <section class="desc-markdown markdown" v-html="renderMarkdown(item.description || '')"></section>
@@ -381,9 +389,27 @@ onMounted(async () => {
   border-right: 1px solid var(--hairline);
 }
 
-.name-col h3 {
+.friendly-anchor {
+  display: grid;
+  gap: 6px;
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.friendly-anchor:visited {
+  color: var(--link-visited);
+}
+
+.friendly-anchor h3 {
   font-size: 24px;
   margin-bottom: 4px;
+}
+
+.friendly-anchor-domain {
+  margin: 0;
+  color: inherit;
+  opacity: 0.88;
 }
 
 .desc-markdown {
