@@ -1,13 +1,28 @@
 import axios from "axios";
 
+const METHOD_OVERRIDE_HEADER = "X-HTTP-Method-Override";
+const OVERRIDDEN_METHODS = new Set(["put", "patch", "delete"]);
+
 const api = axios.create({
   baseURL: "/api",
   timeout: 15000,
 });
 
 api.interceptors.request.use((config) => {
+  const method = String(config.method || "get").toLowerCase();
+  if (OVERRIDDEN_METHODS.has(method)) {
+    config.headers = {
+      ...(config.headers || {}),
+      [METHOD_OVERRIDE_HEADER]: method.toUpperCase(),
+    };
+    config.method = "post";
+  }
+
   const token = localStorage.getItem("algowiki_token");
   if (token) {
+    config.headers = {
+      ...(config.headers || {}),
+    };
     config.headers.Authorization = `Token ${token}`;
   }
   return config;

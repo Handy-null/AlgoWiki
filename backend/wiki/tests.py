@@ -813,6 +813,18 @@ class QuestionSecurityTests(APITestCase):
         deleted_ids = {item["id"] for item in deleted_response.data.get("results", deleted_response.data)}
         self.assertIn(self.question.id, deleted_ids)
 
+    def test_owner_delete_via_method_override_hides_question(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.author_token.key}")
+        response = self.client.post(
+            f"/api/questions/{self.question.id}/",
+            {},
+            format="json",
+            HTTP_X_HTTP_METHOD_OVERRIDE="DELETE",
+        )
+        self.assertEqual(response.status_code, 204)
+        self.question.refresh_from_db()
+        self.assertEqual(self.question.status, Question.Status.HIDDEN)
+
     def test_questions_list_mine_filter(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.author_token.key}")
         response = self.client.get("/api/questions/", {"mine": "1"})
@@ -3307,6 +3319,42 @@ class CompetitionScheduleApiTests(APITestCase):
         self.assertEqual(entry.competition_time_range, "")
         self.assertEqual(entry.competition_type, "CCPC 区域赛调整")
         self.assertEqual(entry.location, "Online")
+        self.assertEqual(entry.qq_group, "")
+        self.assertIsNone(entry.announcement)
+
+    def test_school_user_can_patch_schedule_via_method_override_header(self):
+        entry = CompetitionScheduleEntry.objects.create(
+            event_date=timezone.localdate() + timedelta(days=7),
+            competition_time_range="09:00-17:00",
+            competition_type="CCPC 区域赛",
+            location="Main Campus",
+            qq_group="123456",
+            announcement=self.notice,
+            created_by=self.school,
+            updated_by=self.school,
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.school_token.key}")
+        response = self.client.post(
+            f"/api/competition-schedules/{entry.id}/",
+            {
+                "event_date": (timezone.localdate() + timedelta(days=9)).isoformat(),
+                "competition_time_range": "",
+                "competition_type": "CCPC 区域赛覆写",
+                "location": "Updated Campus",
+                "qq_group": "",
+                "announcement": None,
+            },
+            format="json",
+            HTTP_X_HTTP_METHOD_OVERRIDE="PATCH",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        entry.refresh_from_db()
+        self.assertEqual(entry.event_date.isoformat(), response.data["event_date"])
+        self.assertEqual(entry.competition_time_range, "")
+        self.assertEqual(entry.competition_type, "CCPC 区域赛覆写")
+        self.assertEqual(entry.location, "Updated Campus")
         self.assertEqual(entry.qq_group, "")
         self.assertIsNone(entry.announcement)
 

@@ -9,6 +9,21 @@ from .request_context import normalize_request_id, reset_request_id, set_request
 request_logger = logging.getLogger("algowiki.request")
 
 
+class HttpMethodOverrideMiddleware:
+    ALLOWED_METHODS = {"PUT", "PATCH", "DELETE"}
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if request.method == "POST":
+            override = (request.META.get("HTTP_X_HTTP_METHOD_OVERRIDE", "") or "").strip().upper()
+            if override in self.ALLOWED_METHODS:
+                request.method = override
+                request.META["REQUEST_METHOD"] = override
+        return self.get_response(request)
+
+
 class RequestContextMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
