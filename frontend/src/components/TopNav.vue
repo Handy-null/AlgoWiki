@@ -7,7 +7,12 @@
         <span></span>
       </button>
 
-      <RouterLink class="brand" :to="{ name: 'home' }">AlgoWiki</RouterLink>
+      <RouterLink class="brand" :to="{ name: 'home' }" aria-label="返回 AlgoWiki 首页">
+        <span class="brand-mark">
+          <SiteLogo decorative />
+        </span>
+        <span class="brand-wordmark">AlgoWiki</span>
+      </RouterLink>
 
       <nav class="desktop-nav">
         <RouterLink class="nav-link" v-for="item in primaryNav" :key="item.name" :to="item.to">{{ item.name }}</RouterLink>
@@ -154,6 +159,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 
 import api from "../services/api";
+import SiteLogo from "./SiteLogo.vue";
 import { useAuthStore } from "../stores/auth";
 import { useThemeStore } from "../stores/theme";
 
@@ -440,6 +446,9 @@ onBeforeUnmount(() => {
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
   font-family: var(--font-display);
   font-weight: 700;
   font-size: clamp(38px, 2.7vw, 46px);
@@ -447,6 +456,20 @@ onBeforeUnmount(() => {
   white-space: nowrap;
   min-width: 0;
   color: var(--text-strong);
+}
+
+.brand-mark {
+  width: clamp(38px, 2.8vw, 46px);
+  height: clamp(38px, 2.8vw, 46px);
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand-wordmark {
+  display: inline-block;
+  transform: translateY(1px);
 }
 
 .desktop-nav {
@@ -818,6 +841,11 @@ onBeforeUnmount(() => {
     font-size: 32px;
   }
 
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+  }
+
   .desktop-nav {
     display: none;
   }
@@ -910,6 +938,12 @@ onBeforeUnmount(() => {
 
   .brand {
     font-size: 24px;
+    gap: 8px;
+  }
+
+  .brand-mark {
+    width: 28px;
+    height: 28px;
   }
 
   .actions {
