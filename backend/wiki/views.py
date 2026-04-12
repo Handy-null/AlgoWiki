@@ -2,6 +2,7 @@ import re
 import csv
 import json
 import io
+import logging
 import os
 import shutil
 import zipfile
@@ -14,7 +15,7 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.core.files.storage import FileSystemStorage
 from django.db import DatabaseError, connection, transaction
-from django.db.models import Count, Max, Prefetch, PROTECT, Q
+from django.db.models import Count, Max, Prefetch, PROTECT, Q, Sum
 from django.db.models.functions import TruncDate
 from django.utils.dateparse import parse_date, parse_datetime
 from django.utils import timezone
@@ -29,6 +30,7 @@ from .models import (
     Announcement,
     AnnouncementRead,
     Answer,
+    AssistantProviderConfig,
     Article,
     ArticleComment,
     ArticleStar,
@@ -52,9 +54,11 @@ from .models import (
     UserNotification,
     User,
 )
-from .permissions import AuthenticatedAndNotBanned, AdminOrSuperAdmin, can_moderate_category
+from .permissions import AuthenticatedAndNotBanned, AdminOrSuperAdmin, SuperAdminOnly, can_moderate_category
 from .security import record_password_history, record_security_event
 from .throttles import (
+    AssistantAnonRateThrottle,
+    AssistantUserRateThrottle,
     ContentCreateRateThrottle,
     ContentDeleteRateThrottle,
     ContentUpdateRateThrottle,
@@ -111,7 +115,29 @@ from .serializers import (
     UserProfileSettingsSerializer,
     UserProfileUpdateSerializer,
     UserPublicSerializer,
+    AssistantChatRequestSerializer,
+    AssistantInteractionLogSerializer,
+    AssistantProviderConfigSerializer,
+    AssistantPublicConfigSerializer,
 )
+from .assistant import (
+    AssistantProviderError,
+    append_source_hint_to_answer,
+    apply_brattish_tone_to_answer,
+    strip_assistant_self_reference,
+    build_competition_format_digest,
+    build_original_problem_site_digest,
+    build_recent_competition_digest,
+    check_daily_limits,
+    clear_public_corpus_cache,
+    create_interaction_log,
+    get_active_assistant_config,
+    get_public_assistant_payload,
+    invoke_assistant_completion,
+    search_public_corpus,
+)
+
+api_logger = logging.getLogger("algowiki.api")
 
 
 def is_manager(user) -> bool:
@@ -4348,6 +4374,363 @@ class HeaderNavigationItemViewSet(
             {"action": f"move_header_navigation_item_{direction}"},
         )
         return Response(self.get_serializer(item).data)
+
+
+class AssistantProviderConfigViewSet(viewsets.ModelViewSet):
+    serializer_class = AssistantProviderConfigSerializer
+    queryset = AssistantProviderConfig.objects.select_related("created_by", "updated_by").all()
+
+    def get_permissions(self):
+        if self.action in {"list", "retrieve", "stats"}:
+            return [AdminOrSuperAdmin()]
+        return [SuperAdminOnly()]
+
+    def perform_create(self, serializer):
+        config = serializer.save(created_by=self.request.user, updated_by=self.request.user)
+        log_event(
+            self.request.user,
+            ContributionEvent.EventType.ADMIN,
+            config,
+            {"action": "create_assistant_provider_config"},
+        )
+
+    def perform_update(self, serializer):
+        config = serializer.save(updated_by=self.request.user)
+        log_event(
+            self.request.user,
+            ContributionEvent.EventType.ADMIN,
+            config,
+            {"action": "update_assistant_provider_config"},
+        )
+
+    def perform_destroy(self, instance):
+        log_event(
+            self.request.user,
+            ContributionEvent.EventType.ADMIN,
+            instance,
+            {"action": "delete_assistant_provider_config"},
+        )
+        was_default = instance.is_default
+        instance.delete()
+        if was_default:
+            replacement = AssistantProviderConfig.objects.filter(is_enabled=True).order_by("id").first()
+            if replacement:
+                replacement.is_default = True
+                replacement.save(update_fields=["is_default", "is_enabled", "updated_at"])
+
+    @action(detail=True, methods=["post"], permission_classes=[SuperAdminOnly], url_path="set-default")
+    def set_default(self, request, pk=None):
+        config = self.get_object()
+        config.is_default = True
+        config.is_enabled = True
+        config.updated_by = request.user
+        config.save(update_fields=["is_default", "is_enabled", "updated_by", "updated_at"])
+        log_event(
+            request.user,
+            ContributionEvent.EventType.ADMIN,
+            config,
+            {"action": "set_default_assistant_provider_config"},
+        )
+        return Response(self.get_serializer(config).data)
+
+    @action(detail=True, methods=["post"], permission_classes=[SuperAdminOnly], url_path="test-connection")
+    def test_connection(self, request, pk=None):
+        config = self.get_object()
+        test_started_at = timezone.now()
+        try:
+            response = invoke_assistant_completion(
+                config=config,
+                message="请仅回复：连接成功",
+                history=[],
+                sources=[
+                    {
+                        "title": "连接测试",
+                        "url": "/manage/assistant",
+                        "excerpt": "这是一条站内 AI 助手连接测试消息。请仅回复“连接成功”。",
+                    }
+                ],
+            )
+            config.last_tested_at = timezone.now()
+            config.last_test_success = True
+            config.last_test_message = (response.get("content") or "连接成功")[:255]
+            config.updated_by = request.user
+            config.save(
+                update_fields=[
+                    "last_tested_at",
+                    "last_test_success",
+                    "last_test_message",
+                    "updated_by",
+                    "updated_at",
+                ]
+            )
+            log_event(
+                request.user,
+                ContributionEvent.EventType.ADMIN,
+                config,
+                {
+                    "action": "test_assistant_provider_config",
+                    "success": True,
+                    "response_ms": int((timezone.now() - test_started_at).total_seconds() * 1000),
+                },
+            )
+            return Response(
+                {
+                    "detail": "Connection succeeded.",
+                    "response_preview": config.last_test_message,
+                    "model": response.get("model") or config.model_name,
+                }
+            )
+        except AssistantProviderError as exc:
+            config.last_tested_at = timezone.now()
+            config.last_test_success = False
+            config.last_test_message = str(exc)[:255]
+            config.updated_by = request.user
+            config.save(
+                update_fields=[
+                    "last_tested_at",
+                    "last_test_success",
+                    "last_test_message",
+                    "updated_by",
+                    "updated_at",
+                ]
+            )
+            log_event(
+                request.user,
+                ContributionEvent.EventType.ADMIN,
+                config,
+                {
+                    "action": "test_assistant_provider_config",
+                    "success": False,
+                    "status_code": exc.status_code,
+                },
+            )
+            return Response({"detail": str(exc)}, status=exc.status_code)
+
+    @action(detail=False, methods=["get"], permission_classes=[AdminOrSuperAdmin], url_path="stats")
+    def stats(self, request):
+        now = timezone.now()
+        day_start = now - timedelta(hours=24)
+        week_start = now - timedelta(days=7)
+        configs = list(self.get_queryset())
+        totals = {
+            "last_24h_requests": 0,
+            "last_24h_success": 0,
+            "last_24h_tokens": 0,
+            "last_7d_requests": 0,
+            "last_7d_tokens": 0,
+        }
+        per_config = []
+        for config in configs:
+            last_24h = config.interaction_logs.filter(created_at__gte=day_start)
+            last_7d = config.interaction_logs.filter(created_at__gte=week_start)
+            last_24h_requests = last_24h.count()
+            last_24h_success = last_24h.filter(success=True).count()
+            last_24h_tokens = int(last_24h.aggregate(total=Sum("total_tokens")).get("total") or 0)
+            last_7d_requests = last_7d.count()
+            last_7d_tokens = int(last_7d.aggregate(total=Sum("total_tokens")).get("total") or 0)
+            totals["last_24h_requests"] += last_24h_requests
+            totals["last_24h_success"] += last_24h_success
+            totals["last_24h_tokens"] += last_24h_tokens
+            totals["last_7d_requests"] += last_7d_requests
+            totals["last_7d_tokens"] += last_7d_tokens
+            per_config.append(
+                {
+                    "id": config.id,
+                    "label": config.label,
+                    "assistant_name": config.assistant_name,
+                    "provider": config.provider,
+                    "model_name": config.model_name,
+                    "is_enabled": config.is_enabled,
+                    "is_default": config.is_default,
+                    "last_24h_requests": last_24h_requests,
+                    "last_24h_success": last_24h_success,
+                    "last_24h_tokens": last_24h_tokens,
+                    "last_7d_requests": last_7d_requests,
+                    "last_7d_tokens": last_7d_tokens,
+                }
+            )
+        return Response(
+            {
+                "totals": totals,
+                "per_config": per_config,
+            }
+        )
+
+
+class AssistantPublicConfigView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        payload = get_public_assistant_payload(get_active_assistant_config())
+        serializer = AssistantPublicConfigSerializer(payload)
+        return Response(serializer.data)
+
+
+class AssistantChatView(APIView):
+    permission_classes = [AllowAny]
+
+    def get_throttles(self):
+        if self.request.user and self.request.user.is_authenticated:
+            return [AssistantUserRateThrottle()]
+        return [AssistantAnonRateThrottle()]
+
+    def post(self, request):
+        serializer = AssistantChatRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        message = serializer.validated_data["message"]
+        history = serializer.validated_data.get("history") or []
+        session_id = serializer.validated_data.get("session_id", "")
+        current_path = serializer.validated_data.get("current_path", "")
+        current_title = serializer.validated_data.get("current_title", "")
+        config = get_active_assistant_config()
+        if not config or not config.show_launcher:
+            create_interaction_log(
+                request=request,
+                config=config,
+                success=False,
+                prompt_chars=len(message),
+                session_id=session_id,
+                error_message="assistant disabled",
+            )
+            return Response({"detail": "AI assistant is currently unavailable."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        started_at = timezone.now()
+        try:
+            check_daily_limits(config)
+            special = build_recent_competition_digest(message)
+            if not special:
+                special = build_competition_format_digest(
+                    message,
+                    current_path=current_path,
+                    current_title=current_title,
+                )
+            if not special:
+                special = build_original_problem_site_digest(
+                    message,
+                    current_path=current_path,
+                    current_title=current_title,
+                )
+            if special:
+                answer = strip_assistant_self_reference(
+                    special["answer"],
+                    assistant_name=config.assistant_name,
+                )
+                answer = apply_brattish_tone_to_answer(
+                    answer,
+                    seed_text=f"{message}\n{special['model']}",
+                )
+                sources = special["sources"]
+                answer = append_source_hint_to_answer(answer, sources)
+                usage = special["usage"]
+                create_interaction_log(
+                    request=request,
+                    config=config,
+                    success=True,
+                    prompt_chars=len(message),
+                    response_chars=len(answer),
+                    prompt_tokens=usage.get("prompt_tokens", 0),
+                    completion_tokens=usage.get("completion_tokens", 0),
+                    total_tokens=usage.get("total_tokens", 0),
+                    source_count=len(sources),
+                    response_ms=int((timezone.now() - started_at).total_seconds() * 1000),
+                    session_id=session_id,
+                )
+                return Response(
+                    {
+                        "assistant_name": config.assistant_name,
+                        "answer": answer,
+                        "sources": sources,
+                        "model": special["model"],
+                        "usage": usage,
+                    }
+                )
+
+            sources = search_public_corpus(
+                message,
+                limit=4,
+                current_path=current_path,
+                current_title=current_title,
+            )
+            if not sources:
+                answer = apply_brattish_tone_to_answer(
+                    "站内当前没有足够信息回答这个问题。你可以换个更具体的问法。",
+                    seed_text=message,
+                )
+                create_interaction_log(
+                    request=request,
+                    config=config,
+                    success=True,
+                    prompt_chars=len(message),
+                    response_chars=len(answer),
+                    source_count=0,
+                    response_ms=int((timezone.now() - started_at).total_seconds() * 1000),
+                    session_id=session_id,
+                )
+                return Response(
+                    {
+                        "assistant_name": config.assistant_name,
+                        "answer": answer,
+                        "sources": [],
+                        "model": config.model_name,
+                        "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+                    }
+                )
+
+            result = invoke_assistant_completion(
+                config=config,
+                message=message,
+                history=history,
+                sources=sources,
+            )
+            raw_answer = (result.get("content") or "").strip() or "站内当前没有足够信息回答这个问题。"
+            raw_answer = strip_assistant_self_reference(raw_answer, assistant_name=config.assistant_name)
+            answer = apply_brattish_tone_to_answer(raw_answer, seed_text=message)
+            usage = result.get("usage") or {}
+            answer = append_source_hint_to_answer(answer, sources)
+            create_interaction_log(
+                request=request,
+                config=config,
+                success=True,
+                prompt_chars=len(message),
+                response_chars=len(answer),
+                prompt_tokens=usage.get("prompt_tokens", 0),
+                completion_tokens=usage.get("completion_tokens", 0),
+                total_tokens=usage.get("total_tokens", 0),
+                source_count=len(sources),
+                response_ms=int((timezone.now() - started_at).total_seconds() * 1000),
+                session_id=session_id,
+            )
+            return Response(
+                {
+                    "assistant_name": config.assistant_name,
+                    "answer": answer,
+                    "sources": [
+                        {
+                            "source_type": item["source_type"],
+                            "source_id": item["source_id"],
+                            "title": item["title"],
+                            "url": item["url"],
+                            "excerpt": item["excerpt"],
+                        }
+                        for item in sources
+                    ],
+                    "model": result.get("model") or config.model_name,
+                    "usage": usage,
+                }
+            )
+        except AssistantProviderError as exc:
+            create_interaction_log(
+                request=request,
+                config=config,
+                success=False,
+                prompt_chars=len(message),
+                source_count=0,
+                response_ms=int((timezone.now() - started_at).total_seconds() * 1000),
+                session_id=session_id,
+                error_message=str(exc),
+            )
+            api_logger.warning("Assistant chat failed status=%s detail=%s", exc.status_code, str(exc))
+            return Response({"detail": str(exc)}, status=exc.status_code)
 
 
 class FriendlyLinkViewSet(viewsets.ModelViewSet):

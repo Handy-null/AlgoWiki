@@ -184,10 +184,11 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch } from "vue";
+import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
-import api from "../services/api";
+import { useRequestControllers } from "../composables/useRequestControllers";
+import api, { isRequestCanceled } from "../services/api";
 import { renderMarkdown } from "../services/markdown";
 import { useAuthStore } from "../stores/auth";
 import { useUiStore } from "../stores/ui";
@@ -211,6 +212,7 @@ const emit = defineEmits(["deleted"]);
 const auth = useAuthStore();
 const ui = useUiStore();
 const router = useRouter();
+const requests = useRequestControllers();
 
 const embeddedMode = computed(() => Boolean(props.embedded));
 const articleId = computed(() => {
@@ -285,7 +287,7 @@ function normalizeAnchorText(text) {
     .slice(0, 64);
 }
 
-function buildRenderedContent(content) {
+function buildRenderedContent(content, articleData = null) {
   const html = renderMarkdown(content || "");
   const parser = new DOMParser();
   const doc = parser.parseFromString(`<div id=\"__root\">${html}</div>`, "text/html");
@@ -293,13 +295,16 @@ function buildRenderedContent(content) {
   const headings = root ? [...root.querySelectorAll("h1, h2, h3, h4, h5, h6")] : [];
 
   const idMap = new Map();
+  const embeddedPrefix =
+    embeddedMode.value && articleData?.id ? `article-${String(articleData.id).trim()}-` : "";
   const flatTocItems = headings.map((heading) => {
     const text = heading.textContent || "";
     const base = normalizeAnchorText(text) || "section";
     const count = idMap.get(base) || 0;
     const nextCount = count + 1;
     idMap.set(base, nextCount);
-    const id = nextCount === 1 ? base : `${base}-${nextCount}`;
+    const normalizedId = nextCount === 1 ? base : `${base}-${nextCount}`;
+    const id = embeddedPrefix ? `${embeddedPrefix}${normalizedId}` : normalizedId;
 
     heading.id = id;
     return {
@@ -312,6 +317,16 @@ function buildRenderedContent(content) {
   tocTree.value = pruneOverviewToc(buildTocTree(flatTocItems));
   tocExpandedIds.value = collectDefaultExpandedIds(tocTree.value);
   renderedHtml.value = root ? root.innerHTML : html;
+}
+
+async function scrollToRouteHash() {
+  if (embeddedMode.value || !route.hash) return;
+  await nextTick();
+  window.setTimeout(() => {
+    const anchorId = decodeURIComponent(String(route.hash || "").replace(/^#/, ""));
+    if (!anchorId) return;
+    document.getElementById(anchorId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 80);
 }
 
 function buildTocTree(items) {
@@ -476,7 +491,8 @@ function applyArticleData(data) {
   }
   article.value = data;
   contributorsExpanded.value = false;
-  buildRenderedContent(data.content_md);
+  buildRenderedContent(data.content_md, data);
+  void scrollToRouteHash();
   syncEditForm(data);
   if (data.__demo) {
     comments.value = Array.isArray(data.demo_comments) ? data.demo_comments : [];
@@ -495,14 +511,21 @@ async function loadArticle() {
       return;
     }
   }
+  const controller = requests.replace("article");
   try {
-    const { data } = await api.get(`/articles/${id}/`);
+    const { data } = await api.get(`/articles/${id}/`, {
+      signal: controller.signal,
+    });
+    if (!requests.isCurrent("article", controller)) return;
     applyArticleData(data);
   } catch (error) {
+    if (isRequestCanceled(error) || !requests.isCurrent("article", controller)) return;
     if (props.articleData && String(props.articleData.id) === String(id)) {
       return;
     }
     ui.error(getErrorText(error, "条目加载失败"));
+  } finally {
+    requests.release("article", controller);
   }
 }
 
@@ -515,23 +538,31 @@ function syncEditForm(data) {
 async function loadComments() {
   const id = articleId.value;
   if (!id) {
+    requests.cancel("comments");
     comments.value = [];
     return;
   }
   if (props.articleData?.__demo) {
+    requests.cancel("comments");
     comments.value = Array.isArray(props.articleData.demo_comments) ? props.articleData.demo_comments : [];
     return;
   }
+  const controller = requests.replace("comments");
   try {
     const { data } = await api.get("/comments/", {
       params: { article: id },
+      signal: controller.signal,
     });
+    if (!requests.isCurrent("comments", controller)) return;
     comments.value = data.results || data;
     if (replyingToCommentId.value && !comments.value.some((item) => item.id === replyingToCommentId.value)) {
       replyingToCommentId.value = null;
     }
   } catch (error) {
+    if (isRequestCanceled(error) || !requests.isCurrent("comments", controller)) return;
     ui.error(getErrorText(error, "评论加载失败"));
+  } finally {
+    requests.release("comments", controller);
   }
 }
 
@@ -751,6 +782,13 @@ watch(
   },
   { immediate: true }
 );
+
+watch(
+  () => route.hash,
+  () => {
+    void scrollToRouteHash();
+  }
+);
 </script>
 
 <style scoped>
@@ -937,6 +975,7 @@ watch(
   min-width: 0;
   grid-column: 2;
   grid-row: 1;
+  font-size: 90%;
 }
 
 .article-layout:not(.embedded-mode) .article-main {
@@ -955,7 +994,7 @@ watch(
 }
 
 .article-header h1 {
-  font-size: clamp(34px, 5vw, 54px);
+  font-size: clamp(31px, 4.5vw, 49px);
 }
 
 .article-actions {
@@ -1054,7 +1093,7 @@ watch(
 .article-summary {
   margin: 8px 0 16px;
   color: var(--text-soft);
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .article-demo-pill {
@@ -1068,11 +1107,11 @@ watch(
   background: color-mix(in srgb, var(--accent) 7%, var(--surface-soft));
   color: var(--text-soft);
   padding: 10px 12px;
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .article-markdown {
-  font-size: clamp(1.02rem, 0.95rem + 0.3vw, 1.16rem);
+  font-size: clamp(0.92rem, 0.855rem + 0.27vw, 1.04rem);
 }
 
 .panel-block {
@@ -1245,11 +1284,11 @@ watch(
   }
 
   .article-markdown {
-    font-size: 17px;
+    font-size: 15px;
   }
 
   .article-header h1 {
-    font-size: clamp(26px, 8.4vw, 34px);
+    font-size: clamp(23px, 7.6vw, 31px);
     line-height: 1.14;
   }
 
@@ -1297,7 +1336,7 @@ watch(
   }
 
   .article-header h1 {
-    font-size: clamp(24px, 9vw, 30px);
+    font-size: clamp(22px, 8.1vw, 27px);
   }
 
   .article-actions {

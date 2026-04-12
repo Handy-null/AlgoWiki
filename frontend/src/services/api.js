@@ -8,6 +8,15 @@ const api = axios.create({
   timeout: 15000,
 });
 
+export function isRequestCanceled(error) {
+  return (
+    axios.isCancel(error) ||
+    error?.code === "ERR_CANCELED" ||
+    error?.name === "CanceledError" ||
+    error?.message === "canceled"
+  );
+}
+
 function looksLikeHtmlDocument(value) {
   const text = String(value || "").trim().toLowerCase();
   if (!text) return false;
@@ -15,6 +24,9 @@ function looksLikeHtmlDocument(value) {
 }
 
 function normalizeServerError(error) {
+  if (isRequestCanceled(error)) {
+    return error;
+  }
   const response = error?.response;
   if (!response) {
     error.message = "Network error. Please retry shortly.";
@@ -105,6 +117,9 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    if (isRequestCanceled(error)) {
+      throw error;
+    }
     const config = error?.config;
     if (!config) throw normalizeServerError(error);
 
@@ -150,6 +165,9 @@ api.interceptors.response.use(
     config.__retryCount = retryCount + 1;
     const retryDelayMs = Math.min(1600, 400 * 2 ** retryCount);
     await new Promise((resolve) => window.setTimeout(resolve, retryDelayMs));
+    if (isRequestCanceled(error)) {
+      throw error;
+    }
     return api.request(config);
   }
 );

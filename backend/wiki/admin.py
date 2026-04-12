@@ -5,6 +5,8 @@ from .models import (
     Announcement,
     AnnouncementRead,
     Answer,
+    AssistantInteractionLog,
+    AssistantProviderConfig,
     Article,
     ArticleComment,
     ArticleStar,
@@ -322,6 +324,44 @@ class HeaderNavigationItemAdmin(admin.ModelAdmin):
     list_display = ("id", "key", "title", "display_order", "is_visible", "updated_at")
     list_filter = ("is_visible", "key")
     search_fields = ("key", "title")
+
+
+@admin.register(AssistantProviderConfig)
+class AssistantProviderConfigAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "label",
+        "assistant_name",
+        "provider",
+        "model_name",
+        "is_enabled",
+        "is_default",
+        "show_launcher",
+        "updated_at",
+        "last_tested_at",
+        "last_test_success",
+    )
+    list_filter = ("provider", "is_enabled", "is_default", "show_launcher", "last_test_success")
+    search_fields = ("label", "assistant_name", "model_name", "base_url")
+    exclude = ("api_key_encrypted",)
+
+
+@admin.register(AssistantInteractionLog)
+class AssistantInteractionLogAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "config",
+        "provider",
+        "model_name",
+        "user",
+        "success",
+        "total_tokens",
+        "source_count",
+        "response_ms",
+        "created_at",
+    )
+    list_filter = ("provider", "success", "created_at")
+    search_fields = ("model_name", "session_id", "ip_address", "error_message")
 
 
 @admin.register(ContributionEvent)

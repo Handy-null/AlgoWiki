@@ -229,12 +229,14 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
-import api from "../services/api";
+import { useRequestControllers } from "../composables/useRequestControllers";
+import api, { isRequestCanceled } from "../services/api";
 import { useAuthStore } from "../stores/auth";
 import { useUiStore } from "../stores/ui";
 
 const auth = useAuthStore();
 const ui = useUiStore();
+const requests = useRequestControllers();
 const FILTER_ALL = "all";
 const practiceSourceUrl =
   "https://github.com/hh2048/XCPC/tree/main/04%20-%20%E5%8E%86%E5%B9%B4XCPC%E8%B5%9B%E4%BA%8B%E8%A1%A5%E9%A2%98%E9%93%BE%E6%8E%A5%E6%95%B4%E7%90%86";
@@ -302,11 +304,11 @@ function nextPageFromUrl(value) {
   }
 }
 
-async function fetchAll(path, params = {}) {
+async function fetchAll(path, params = {}, signal) {
   const result = [];
   let page = 1;
   while (page) {
-    const { data } = await api.get(path, { params: { ...params, page } });
+    const { data } = await api.get(path, { params: { ...params, page }, signal });
     if (Array.isArray(data)) {
       result.push(...data);
       break;
@@ -333,21 +335,38 @@ function buildParams() {
 }
 
 async function loadTaxonomy() {
-  const { data } = await api.get("/competition-practice-links/taxonomy/");
-  taxonomy.count = Number(data?.count || 0);
-  taxonomy.years = (Array.isArray(data?.years) ? data.years : []).map(Number).filter(Number.isFinite);
-  taxonomy.sources = Array.isArray(data?.sources) ? data.sources : [];
+  const controller = requests.replace("taxonomy");
+  try {
+    const { data } = await api.get("/competition-practice-links/taxonomy/", {
+      signal: controller.signal,
+    });
+    if (!requests.isCurrent("taxonomy", controller)) return;
+    taxonomy.count = Number(data?.count || 0);
+    taxonomy.years = (Array.isArray(data?.years) ? data.years : []).map(Number).filter(Number.isFinite);
+    taxonomy.sources = Array.isArray(data?.sources) ? data.sources : [];
+  } catch (error) {
+    if (isRequestCanceled(error) || !requests.isCurrent("taxonomy", controller)) return;
+    throw error;
+  } finally {
+    requests.release("taxonomy", controller);
+  }
 }
 
 async function loadRows() {
+  const controller = requests.replace("rows");
   loadingRows.value = true;
   try {
-    rows.value = await fetchAll("/competition-practice-links/", buildParams());
+    const nextRows = await fetchAll("/competition-practice-links/", buildParams(), controller.signal);
+    if (!requests.isCurrent("rows", controller)) return;
+    rows.value = nextRows;
   } catch (error) {
+    if (isRequestCanceled(error) || !requests.isCurrent("rows", controller)) return;
     rows.value = [];
     ui.error(getErrorText(error, "补题链接加载失败"));
   } finally {
-    loadingRows.value = false;
+    if (requests.release("rows", controller)) {
+      loadingRows.value = false;
+    }
   }
 }
 
@@ -416,14 +435,20 @@ async function submitProposal() {
 
 async function loadProposals() {
   if (!auth.isManager) return;
+  const controller = requests.replace("proposals");
   loadingProposals.value = true;
   try {
-    proposals.value = await fetchAll("/competition-practice-proposals/", { status: "pending" });
+    const nextRows = await fetchAll("/competition-practice-proposals/", { status: "pending" }, controller.signal);
+    if (!requests.isCurrent("proposals", controller)) return;
+    proposals.value = nextRows;
   } catch (error) {
+    if (isRequestCanceled(error) || !requests.isCurrent("proposals", controller)) return;
     proposals.value = [];
     ui.error(getErrorText(error, "审核列表加载失败"));
   } finally {
-    loadingProposals.value = false;
+    if (requests.release("proposals", controller)) {
+      loadingProposals.value = false;
+    }
   }
 }
 

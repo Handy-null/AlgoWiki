@@ -248,15 +248,20 @@
 
 <script setup>
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
+import { useRequestControllers } from "../composables/useRequestControllers";
 import { DEMO_QA_QUESTIONS } from "../content/demoContent";
-import api from "../services/api";
+import api, { isRequestCanceled } from "../services/api";
 import { renderMarkdown } from "../services/markdown";
 import { useAuthStore } from "../stores/auth";
 import { useUiStore } from "../stores/ui";
 
 const auth = useAuthStore();
 const ui = useUiStore();
+const route = useRoute();
+const router = useRouter();
+const requests = useRequestControllers();
 
 const questions = ref([]);
 const selectedQuestion = ref(null);
@@ -275,6 +280,7 @@ const answerEdit = reactive({
   id: null,
   content_md: "",
 });
+const pendingQuestionId = ref(null);
 
 const filters = reactive({
   scope: "all",
@@ -672,16 +678,38 @@ function buildAnswerParams(questionId, page = 1) {
   };
 }
 
-function clearQuestionSelection() {
+function normalizePositiveId(value) {
+  const normalized = Number.parseInt(String(value || "").trim(), 10);
+  return Number.isInteger(normalized) && normalized > 0 ? normalized : null;
+}
+
+function syncQuestionQuery(questionId) {
+  const normalizedId = normalizePositiveId(questionId);
+  const currentId = normalizePositiveId(route.query.question);
+  if ((normalizedId || null) === (currentId || null)) {
+    return;
+  }
+
+  const nextQuery = { ...route.query };
+  if (normalizedId) nextQuery.question = String(normalizedId);
+  else delete nextQuery.question;
+  router.replace({ name: route.name, query: nextQuery }).catch(() => {});
+}
+
+function clearQuestionSelection(syncRoute = true) {
+  requests.cancel("answers");
   selectedQuestion.value = null;
   answers.value = [];
   answerPagination.count = 0;
   answerPagination.next = "";
   cancelEditQuestion();
   cancelEditAnswer();
+  if (syncRoute) {
+    syncQuestionQuery(null);
+  }
 }
 
-async function loadAnswerPreview(item) {
+async function loadAnswerPreview(item, signal) {
   if (!item?.id || answerPreviewMap[item.id]) return;
   try {
     const { data } = await api.get("/answers/", {
@@ -690,6 +718,7 @@ async function loadAnswerPreview(item) {
         page: 1,
         order: "accepted_first",
       },
+      signal,
     });
     const list = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
     const best = list[0];
@@ -701,7 +730,8 @@ async function loadAnswerPreview(item) {
       };
       return;
     }
-  } catch {
+  } catch (error) {
+    if (isRequestCanceled(error)) throw error;
     // Keep cards usable when preview requests fail.
   }
   answerPreviewMap[item.id] = {
@@ -711,9 +741,9 @@ async function loadAnswerPreview(item) {
   };
 }
 
-async function primeAnswerPreviews(items) {
+async function primeAnswerPreviews(items, signal) {
   const targets = items.filter((item) => item && !item.__demo).slice(0, 8);
-  await Promise.all(targets.map((item) => loadAnswerPreview(item)));
+  await Promise.all(targets.map((item) => loadAnswerPreview(item, signal)));
 }
 
 function mergeQuestions(existing, incoming) {
@@ -726,6 +756,7 @@ function mergeQuestions(existing, incoming) {
 
 async function loadAnsweredQuestions(page = 1, append = false) {
   if (!auth.isAuthenticated) {
+    requests.cancel("questions");
     questions.value = [];
     questionPagination.count = 0;
     questionPagination.next = "";
@@ -733,10 +764,12 @@ async function loadAnsweredQuestions(page = 1, append = false) {
     return;
   }
 
+  const controller = requests.replace("questions");
   const safePage = normalizePageValue(page, 1);
   try {
     const { data } = await api.get("/answers/mine/", {
       params: { page: safePage, order: "latest" },
+      signal: controller.signal,
     });
     const answerItems = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
     const previewMap = new Map();
@@ -749,13 +782,17 @@ async function loadAnsweredQuestions(page = 1, append = false) {
     const details = await Promise.all(
       [...previewMap.keys()].map(async (questionId) => {
         try {
-          const response = await api.get(`/questions/${questionId}/`);
+          const response = await api.get(`/questions/${questionId}/`, {
+            signal: controller.signal,
+          });
           return response.data;
-        } catch {
+        } catch (error) {
+          if (isRequestCanceled(error)) throw error;
           return null;
         }
       })
     );
+    if (!requests.isCurrent("questions", controller)) return;
 
     const items = details
       .filter(Boolean)
@@ -789,10 +826,13 @@ async function loadAnsweredQuestions(page = 1, append = false) {
     }
     await selectQuestion(target);
   } catch (error) {
+    if (isRequestCanceled(error) || !requests.isCurrent("questions", controller)) return;
     if (safePage !== 1 && isInvalidPageError(error)) {
       return loadAnsweredQuestions(1, false);
     }
     ui.error(getErrorText(error, "已回答问题加载失败"));
+  } finally {
+    requests.release("questions", controller);
   }
 }
 
@@ -802,9 +842,14 @@ async function loadQuestions(page = 1, append = false) {
     return;
   }
 
+  const controller = requests.replace("questions");
   const safePage = normalizePageValue(page, 1);
   try {
-    const { data } = await api.get("/questions/", { params: buildQuestionParams(safePage) });
+    const { data } = await api.get("/questions/", {
+      params: buildQuestionParams(safePage),
+      signal: controller.signal,
+    });
+    if (!requests.isCurrent("questions", controller)) return;
     const items = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
     questions.value = append ? mergeQuestions(questions.value, items) : sortQuestionList(items);
     questionPagination.count = Number(data?.count || questions.value.length);
@@ -819,9 +864,16 @@ async function loadQuestions(page = 1, append = false) {
       return;
     }
 
-    await primeAnswerPreviews(questions.value);
+    await primeAnswerPreviews(questions.value, controller.signal);
+    if (!requests.isCurrent("questions", controller)) return;
 
     if (append) return;
+    if (pendingQuestionId.value) {
+      await applyRouteQuestionQuery(pendingQuestionId.value);
+      if (selectedQuestion.value?.id === pendingQuestionId.value) {
+        return;
+      }
+    }
 
     const currentId = selectedQuestion.value?.id;
     const target = currentId ? questions.value.find((item) => String(item.id) === String(currentId)) : questions.value[0];
@@ -832,20 +884,80 @@ async function loadQuestions(page = 1, append = false) {
 
     await selectQuestion(target);
   } catch (error) {
+    if (isRequestCanceled(error) || !requests.isCurrent("questions", controller)) return;
     if (safePage !== 1 && isInvalidPageError(error)) {
       return loadQuestions(1, false);
     }
     ui.error(getErrorText(error, "问题列表加载失败"));
+  } finally {
+    requests.release("questions", controller);
   }
 }
 
-async function selectQuestion(item) {
+async function applyRouteQuestionQuery(rawQuestionId) {
+  pendingQuestionId.value = normalizePositiveId(rawQuestionId);
+  if (!pendingQuestionId.value) {
+    requests.cancel("question-detail");
+    return;
+  }
+
+  if (normalizePositiveId(selectedQuestion.value?.id) === pendingQuestionId.value) {
+    requests.cancel("question-detail");
+    pendingQuestionId.value = null;
+    return;
+  }
+
+  const localTarget =
+    questions.value.find((item) => Number(item.id) === pendingQuestionId.value) ||
+    displayQuestions.value.find((item) => Number(item.id) === pendingQuestionId.value);
+  if (localTarget) {
+    requests.cancel("question-detail");
+    await selectQuestion(localTarget, { syncRoute: false });
+    pendingQuestionId.value = null;
+    return;
+  }
+
+  if (!questions.value.length) {
+    requests.cancel("question-detail");
+    return;
+  }
+
+  const controller = requests.replace("question-detail");
+  try {
+    const { data } = await api.get(`/questions/${pendingQuestionId.value}/`, {
+      signal: controller.signal,
+    });
+    if (!requests.isCurrent("question-detail", controller)) return;
+    if (!data?.id) {
+      pendingQuestionId.value = null;
+      return;
+    }
+    questions.value = sortQuestionList(mergeQuestions(questions.value, [data]));
+    await primeAnswerPreviews([data], controller.signal);
+    if (!requests.isCurrent("question-detail", controller)) return;
+    const inserted = questions.value.find((item) => Number(item.id) === pendingQuestionId.value) || data;
+    await selectQuestion(inserted, { syncRoute: false });
+  } catch (error) {
+    if (isRequestCanceled(error) || !requests.isCurrent("question-detail", controller)) return;
+    // Ignore deep links to questions that are not publicly reachable.
+  } finally {
+    if (requests.release("question-detail", controller)) {
+      pendingQuestionId.value = null;
+    }
+  }
+}
+
+async function selectQuestion(item, options = {}) {
+  const { syncRoute = true } = options;
   if (!item) {
     clearQuestionSelection();
     return;
   }
   try {
     selectedQuestion.value = item;
+    if (syncRoute) {
+      syncQuestionQuery(item.id);
+    }
     cancelEditQuestion();
     cancelEditAnswer();
     if (isDemoQuestion(item)) {
@@ -870,18 +982,26 @@ async function toggleQuestion(item) {
 }
 
 async function loadAnswers(questionId, page = 1, append = false) {
+  const controller = requests.replace("answers");
   const safePage = normalizePageValue(page, 1);
   try {
-    const { data } = await api.get("/answers/", { params: buildAnswerParams(questionId, safePage) });
+    const { data } = await api.get("/answers/", {
+      params: buildAnswerParams(questionId, safePage),
+      signal: controller.signal,
+    });
+    if (!requests.isCurrent("answers", controller)) return;
     const items = data.results || data;
     answers.value = append ? [...answers.value, ...items] : items;
     answerPagination.count = data.count || answers.value.length;
     answerPagination.next = data.next || "";
   } catch (error) {
+    if (isRequestCanceled(error) || !requests.isCurrent("answers", controller)) return;
     if (safePage !== 1 && isInvalidPageError(error)) {
       return loadAnswers(questionId, 1, false);
     }
     throw error;
+  } finally {
+    requests.release("answers", controller);
   }
 }
 
@@ -1206,9 +1326,18 @@ watch(
   }
 );
 
+watch(
+  () => route.query.question,
+  async (value) => {
+    await applyRouteQuestionQuery(value);
+  },
+  { immediate: true }
+);
+
 onMounted(async () => {
   restoreQuestionDraft(false);
   await loadQuestions();
+  await applyRouteQuestionQuery(route.query.question);
 });
 </script>
 

@@ -5,6 +5,9 @@ from .views import (
     AnnouncementViewSet,
     AdminOverviewView,
     AnswerViewSet,
+    AssistantChatView,
+    AssistantProviderConfigViewSet,
+    AssistantPublicConfigView,
     ArticleCommentViewSet,
     ArticleViewSet,
     CategoryViewSet,
@@ -70,9 +73,12 @@ router.register(r"competition-schedules", CompetitionScheduleEntryViewSet, basen
 router.register(r"competition-practice-links", CompetitionPracticeLinkViewSet, basename="competition-practice-link")
 router.register(r"competition-practice-proposals", CompetitionPracticeLinkProposalViewSet, basename="competition-practice-proposal")
 router.register(r"competition-zone-sections", CompetitionZoneSectionViewSet, basename="competition-zone-section")
+router.register(r"assistant-configs", AssistantProviderConfigViewSet, basename="assistant-config")
 
 urlpatterns = [
     path("health/", HealthCheckView.as_view(), name="health"),
+    path("assistant/config/", AssistantPublicConfigView.as_view(), name="assistant-public-config"),
+    path("assistant/chat/", AssistantChatView.as_view(), name="assistant-chat"),
     path("uploads/image/", ImageUploadView.as_view(), name="upload-image"),
     path("auth/register-challenge/", RegisterChallengeView.as_view(), name="auth-register-challenge"),
     path("auth/register-email-code/", RegisterEmailCodeView.as_view(), name="auth-register-email-code"),

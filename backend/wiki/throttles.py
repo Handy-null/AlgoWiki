@@ -59,3 +59,11 @@ class ContentUpdateRateThrottle(UserRateThrottle):
 
 class ContentDeleteRateThrottle(UserRateThrottle):
     scope = "content_delete"
+
+
+class AssistantAnonRateThrottle(AnonRateThrottle):
+    scope = "assistant_anon"
+
+
+class AssistantUserRateThrottle(UserRateThrottle):
+    scope = "assistant_user"

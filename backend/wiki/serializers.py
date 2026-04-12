@@ -20,6 +20,8 @@ from .models import (
     Announcement,
     AnnouncementRead,
     Answer,
+    AssistantInteractionLog,
+    AssistantProviderConfig,
     Article,
     ArticleComment,
     ArticleStar,
@@ -814,6 +816,8 @@ class LoginSerializer(serializers.Serializer):
         clear_login_failures(username, client_ip)
         Token.objects.filter(user=user).delete()
         token = Token.objects.create(user=user)
+        user.last_login = timezone.now()
+        user.save(update_fields=["last_login"])
         record_security_event(
             event_type=SecurityAuditLog.EventType.LOGIN_SUCCESS,
             request=request,
@@ -1696,6 +1700,185 @@ class ContributionEventSerializer(serializers.ModelSerializer):
             "payload",
             "created_at",
         ]
+
+
+class AssistantProviderConfigSerializer(serializers.ModelSerializer):
+    provider_label = serializers.CharField(source="get_provider_display", read_only=True)
+    has_api_key = serializers.SerializerMethodField()
+    api_key_masked = serializers.SerializerMethodField()
+    api_key_input = serializers.CharField(write_only=True, required=False, allow_blank=True, trim_whitespace=True)
+    created_by = UserPublicSerializer(read_only=True)
+    updated_by = UserPublicSerializer(read_only=True)
+
+    class Meta:
+        model = AssistantProviderConfig
+        fields = [
+            "id",
+            "label",
+            "assistant_name",
+            "provider",
+            "provider_label",
+            "base_url",
+            "model_name",
+            "has_api_key",
+            "api_key_masked",
+            "api_key_input",
+            "is_enabled",
+            "is_default",
+            "show_launcher",
+            "temperature",
+            "max_output_tokens",
+            "request_timeout_seconds",
+            "welcome_message",
+            "suggested_questions",
+            "system_prompt",
+            "daily_request_limit",
+            "daily_token_limit",
+            "last_tested_at",
+            "last_test_success",
+            "last_test_message",
+            "created_by",
+            "updated_by",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "provider_label",
+            "has_api_key",
+            "api_key_masked",
+            "last_tested_at",
+            "last_test_success",
+            "last_test_message",
+            "created_by",
+            "updated_by",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_has_api_key(self, obj):
+        return obj.has_api_key
+
+    def get_api_key_masked(self, obj):
+        return obj.api_key_masked
+
+    def validate_label(self, value):
+        value = (value or "").strip()
+        if not value:
+            raise serializers.ValidationError("Config label is required.")
+        return value[:80]
+
+    def validate_assistant_name(self, value):
+        value = (value or "").strip()
+        if not value:
+            raise serializers.ValidationError("Assistant name is required.")
+        return value[:80]
+
+    def validate_base_url(self, value):
+        value = (value or "").strip()
+        if not value:
+            raise serializers.ValidationError("Base URL is required.")
+        return value.rstrip("/")
+
+    def validate_model_name(self, value):
+        value = (value or "").strip()
+        if not value:
+            raise serializers.ValidationError("Model name is required.")
+        return value[:120]
+
+    def validate_temperature(self, value):
+        if value < 0 or value > 2:
+            raise serializers.ValidationError("Temperature must be between 0 and 2.")
+        return value
+
+    def validate_suggested_questions(self, value):
+        normalized = []
+        for item in value or []:
+            text = str(item or "").strip()
+            if text and text not in normalized:
+                normalized.append(text[:80])
+        return normalized[:6]
+
+    def validate_welcome_message(self, value):
+        return (value or "").strip()
+
+    def validate_system_prompt(self, value):
+        return (value or "").strip()
+
+    def create(self, validated_data):
+        api_key_input = validated_data.pop("api_key_input", "")
+        instance = super().create(validated_data)
+        if api_key_input:
+            instance.set_api_key(api_key_input)
+            instance.save(update_fields=["api_key_encrypted", "updated_at"])
+        return instance
+
+    def update(self, instance, validated_data):
+        api_key_input = validated_data.pop("api_key_input", None)
+        instance = super().update(instance, validated_data)
+        if api_key_input is not None and str(api_key_input).strip():
+            instance.set_api_key(api_key_input)
+            instance.save(update_fields=["api_key_encrypted", "updated_at"])
+        return instance
+
+
+class AssistantInteractionLogSerializer(serializers.ModelSerializer):
+    user = UserPublicSerializer(read_only=True)
+    config_label = serializers.CharField(source="config.label", read_only=True)
+
+    class Meta:
+        model = AssistantInteractionLog
+        fields = [
+            "id",
+            "config",
+            "config_label",
+            "user",
+            "session_id",
+            "provider",
+            "model_name",
+            "prompt_chars",
+            "response_chars",
+            "prompt_tokens",
+            "completion_tokens",
+            "total_tokens",
+            "source_count",
+            "response_ms",
+            "success",
+            "error_message",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+
+class AssistantPublicConfigSerializer(serializers.Serializer):
+    enabled = serializers.BooleanField()
+    assistant_name = serializers.CharField()
+    welcome_message = serializers.CharField()
+    suggested_questions = serializers.ListField(child=serializers.CharField(), allow_empty=True)
+
+
+class AssistantChatHistoryItemSerializer(serializers.Serializer):
+    role = serializers.ChoiceField(choices=["user", "assistant"])
+    content = serializers.CharField(allow_blank=False, max_length=1500)
+
+
+class AssistantChatRequestSerializer(serializers.Serializer):
+    message = serializers.CharField(allow_blank=False, max_length=1500)
+    session_id = serializers.CharField(required=False, allow_blank=True, max_length=64)
+    history = AssistantChatHistoryItemSerializer(many=True, required=False)
+    current_path = serializers.CharField(required=False, allow_blank=True, max_length=255)
+    current_title = serializers.CharField(required=False, allow_blank=True, max_length=120)
+
+    def validate_message(self, value):
+        value = (value or "").strip()
+        if not value:
+            raise serializers.ValidationError("Message cannot be empty.")
+        return value
+
+    def validate_current_path(self, value):
+        return (value or "").strip()[:255]
+
+    def validate_current_title(self, value):
+        return (value or "").strip()[:120]
 
 
 class UserNotificationSerializer(serializers.ModelSerializer):

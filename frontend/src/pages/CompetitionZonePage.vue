@@ -2,7 +2,11 @@
   <section class="competition-zone">
     <header class="zone-header">
       <h1>{{ activeSection?.title || "赛事专区" }}</h1>
-      <p>{{ activeSectionDescription }}</p>
+      <section
+        v-if="activeBuiltinView !== 'calendar'"
+        class="zone-description markdown"
+        v-html="activeSectionDescriptionHtml"
+      ></section>
     </header>
 
     <section v-if="activeBuiltinView === 'schedule'" class="zone-block">
@@ -51,23 +55,44 @@
 
       <div v-if="loadingSchedules" class="meta">赛事时刻表加载中...</div>
       <div v-else-if="!scheduleRows.length" class="meta">当前年份暂无赛事时刻表。</div>
-      <div v-else class="table-list">
-        <article v-for="row in scheduleRows" :key="row.id" class="table-row" :class="{ 'table-row--muted': row.is_past }">
-          <div class="table-main">
-            <strong>{{ row.competition_type || "-" }}</strong>
-            <p class="meta">{{ formatDate(row.event_date) }} · {{ row.competition_time_range || "-" }} · {{ row.location || "-" }}</p>
-            <p class="meta">QQ群：{{ row.qq_group || "-" }}</p>
-          </div>
-          <div class="table-actions">
-            <button v-if="row.announcement" type="button" class="btn btn-mini" @click="openNoticeFromSchedule(row)">
-              {{ row.announcement_title || "查看公告" }}
-            </button>
-            <template v-if="canManageCompetition">
-              <button type="button" class="btn btn-mini" @click="startEditSchedule(row)">编辑</button>
-              <button type="button" class="btn btn-mini" @click="removeSchedule(row)">删除</button>
-            </template>
-          </div>
-        </article>
+      <div v-else class="schedule-table-wrap">
+        <table class="schedule-table">
+          <thead>
+            <tr>
+              <th>日期</th>
+              <th>比赛时间</th>
+              <th>比赛名称</th>
+              <th>地点</th>
+              <th>QQ群或链接</th>
+              <th>关联公告</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in scheduleRows" :key="row.id" :class="{ 'schedule-row--muted': row.is_past }">
+              <td>{{ formatDate(row.event_date) }}</td>
+              <td>{{ row.competition_time_range || "-" }}</td>
+              <td class="schedule-table__title">{{ row.competition_type || "-" }}</td>
+              <td>{{ row.location || "-" }}</td>
+              <td>{{ row.qq_group || "-" }}</td>
+              <td>
+                <button v-if="row.announcement" type="button" class="btn btn-mini" @click="openNoticeFromSchedule(row)">
+                  {{ row.announcement_title || "查看公告" }}
+                </button>
+                <span v-else class="meta">-</span>
+              </td>
+              <td>
+                <div class="table-actions">
+                  <template v-if="canManageCompetition">
+                    <button type="button" class="btn btn-mini" @click="startEditSchedule(row)">编辑</button>
+                    <button type="button" class="btn btn-mini" @click="removeSchedule(row)">删除</button>
+                  </template>
+                  <span v-else class="meta">-</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </section>
 
@@ -205,9 +230,10 @@
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
+import { useRequestControllers } from "../composables/useRequestControllers";
 import { useCompetitionZoneNav } from "../composables/useCompetitionZoneNav";
 import CompetitionPracticePanel from "../components/CompetitionPracticePanel.vue";
-import api from "../services/api";
+import api, { isRequestCanceled } from "../services/api";
 import { renderMarkdown } from "../services/markdown";
 import { useAuthStore } from "../stores/auth";
 import { useUiStore } from "../stores/ui";
@@ -219,6 +245,7 @@ const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
 const ui = useUiStore();
+const requests = useRequestControllers();
 const { competitionZoneNav, loadCompetitionZoneNav } = useCompetitionZoneNav();
 
 const FALLBACK_ZONE_SECTIONS = [
@@ -255,6 +282,12 @@ const activeSectionDescription = computed(() => {
     practice: "整理补题链接与练习入口。",
   };
   return mapping[activeBuiltinView.value] || "当前分区为管理员可配置的自定义页面。";
+});
+const activeSectionDescriptionHtml = computed(() => {
+  if (activeBuiltinView.value === "schedule") {
+    return renderMarkdown("更全面的群聊收集以及比赛榜单可跳转到 [ACMer.info](https://acmer.info/)");
+  }
+  return renderMarkdown(activeSectionDescription.value || "");
 });
 
 const scheduleYears = ref([new Date().getFullYear()]);
@@ -300,13 +333,40 @@ function normalizeZoneTab(value) {
   const key = String(value || "").trim();
   return resolvedZoneSections.value.some((item) => item.key === key) ? key : resolvedZoneSections.value[0]?.key || "calendar";
 }
+function normalizePositiveId(value) {
+  const normalized = Number.parseInt(String(value || "").trim(), 10);
+  return Number.isInteger(normalized) && normalized > 0 ? normalized : null;
+}
 function findSectionKeyByBuiltinView(builtinView, fallbackKey = "calendar") {
   return resolvedZoneSections.value.find((item) => item.target_type === "builtin" && item.builtin_view === builtinView)?.key || fallbackKey;
 }
 function syncZoneTabToRoute(tab) {
   const normalized = normalizeZoneTab(tab);
-  if (String(route.query.tab || "").trim() === normalized) return;
-  router.replace({ name: "competitions", query: { ...route.query, tab: normalized } });
+  const nextQuery = { ...route.query, tab: normalized };
+  if (normalized !== findSectionKeyByBuiltinView("notice", "notice")) delete nextQuery.notice;
+  if (normalized !== findSectionKeyByBuiltinView("qa", "qa")) delete nextQuery.question;
+  if (
+    String(route.query.tab || "").trim() === String(nextQuery.tab || "").trim() &&
+    String(route.query.notice || "").trim() === String(nextQuery.notice || "").trim() &&
+    String(route.query.question || "").trim() === String(nextQuery.question || "").trim()
+  ) {
+    return;
+  }
+  router.replace({ name: "competitions", query: nextQuery }).catch(() => {});
+}
+function syncNoticeQuery(noticeId) {
+  const normalizedId = normalizePositiveId(noticeId);
+  const nextQuery = { ...route.query, tab: findSectionKeyByBuiltinView("notice", "notice") };
+  if (normalizedId) nextQuery.notice = String(normalizedId);
+  else delete nextQuery.notice;
+  delete nextQuery.question;
+  if (
+    String(route.query.tab || "").trim() === String(nextQuery.tab || "").trim() &&
+    String(route.query.notice || "").trim() === String(nextQuery.notice || "").trim()
+  ) {
+    return;
+  }
+  router.replace({ name: "competitions", query: nextQuery }).catch(() => {});
 }
 function getErrorText(error, fallback = "操作失败") {
   const payload = error?.response?.data;
@@ -329,11 +389,11 @@ function nextPageFromUrl(url) {
     return null;
   }
 }
-async function fetchAll(path, params = {}) {
+async function fetchAll(path, params = {}, signal) {
   const rows = [];
   let page = 1;
   while (page) {
-    const { data } = await api.get(path, { params: { ...params, page } });
+    const { data } = await api.get(path, { params: { ...params, page }, signal });
     rows.push(...extractRows(data));
     page = Array.isArray(data) ? null : nextPageFromUrl(data?.next);
   }
@@ -366,21 +426,36 @@ function resetScheduleForm() {
   scheduleForm.announcement = "";
 }
 async function loadScheduleYears() {
-  const rows = await fetchAll("/competition-schedules/");
-  const years = rows.map((item) => Number(String(item.event_date || "").slice(0, 4))).filter(Number.isFinite);
-  scheduleYears.value = [...new Set(years)].sort((a, b) => b - a);
-  if (!scheduleYears.value.length) scheduleYears.value = [new Date().getFullYear()];
-  if (!scheduleYears.value.includes(Number(activeScheduleYear.value))) activeScheduleYear.value = scheduleYears.value[0];
+  const controller = requests.replace("schedule-years");
+  try {
+    const rows = await fetchAll("/competition-schedules/", {}, controller.signal);
+    if (!requests.isCurrent("schedule-years", controller)) return;
+    const years = rows.map((item) => Number(String(item.event_date || "").slice(0, 4))).filter(Number.isFinite);
+    scheduleYears.value = [...new Set(years)].sort((a, b) => b - a);
+    if (!scheduleYears.value.length) scheduleYears.value = [new Date().getFullYear()];
+    if (!scheduleYears.value.includes(Number(activeScheduleYear.value))) activeScheduleYear.value = scheduleYears.value[0];
+  } catch (error) {
+    if (isRequestCanceled(error) || !requests.isCurrent("schedule-years", controller)) return;
+    throw error;
+  } finally {
+    requests.release("schedule-years", controller);
+  }
 }
 async function loadSchedules() {
+  const controller = requests.replace("schedules");
   loadingSchedules.value = true;
   try {
-    scheduleRows.value = await fetchAll("/competition-schedules/", { year: Number(activeScheduleYear.value) });
+    const nextRows = await fetchAll("/competition-schedules/", { year: Number(activeScheduleYear.value) }, controller.signal);
+    if (!requests.isCurrent("schedules", controller)) return;
+    scheduleRows.value = nextRows;
   } catch (error) {
+    if (isRequestCanceled(error) || !requests.isCurrent("schedules", controller)) return;
     scheduleRows.value = [];
     ui.error(getErrorText(error, "赛事时刻表加载失败"));
   } finally {
-    loadingSchedules.value = false;
+    if (requests.release("schedules", controller)) {
+      loadingSchedules.value = false;
+    }
   }
 }
 function startEditSchedule(row) {
@@ -434,11 +509,22 @@ async function removeSchedule(row) {
   }
 }
 async function loadNoticeTaxonomy() {
-  const { data } = await api.get("/competition-notices/taxonomy/");
-  const incoming = Array.isArray(data?.series) ? data.series : [];
-  seriesOptions.value = incoming.length
-    ? incoming.map((item) => ({ ...item, name: SERIES_LABELS[item.key] || item.name || item.key }))
-    : [{ key: "icpc", name: "ICPC", years: [new Date().getFullYear()] }, { key: "ccpc", name: "CCPC", years: [new Date().getFullYear()] }];
+  const controller = requests.replace("notice-taxonomy");
+  try {
+    const { data } = await api.get("/competition-notices/taxonomy/", {
+      signal: controller.signal,
+    });
+    if (!requests.isCurrent("notice-taxonomy", controller)) return;
+    const incoming = Array.isArray(data?.series) ? data.series : [];
+    seriesOptions.value = incoming.length
+      ? incoming.map((item) => ({ ...item, name: SERIES_LABELS[item.key] || item.name || item.key }))
+      : [{ key: "icpc", name: "ICPC", years: [new Date().getFullYear()] }, { key: "ccpc", name: "CCPC", years: [new Date().getFullYear()] }];
+  } catch (error) {
+    if (isRequestCanceled(error) || !requests.isCurrent("notice-taxonomy", controller)) return;
+    throw error;
+  } finally {
+    requests.release("notice-taxonomy", controller);
+  }
 }
 function normalizeNoticeForm() {
   if (!isSeriesWithYear(noticeForm.series)) {
@@ -459,38 +545,92 @@ function normalizeNoticeFilter() {
 }
 async function loadNoticeOptions() {
   if (!canManageCompetition.value) return;
+  const controller = requests.replace("notice-options");
   try {
-    noticeOptions.value = await fetchAll("/competition-notices/", { include_hidden: 1, order: "oldest" });
-  } catch {
+    const nextOptions = await fetchAll("/competition-notices/", { include_hidden: 1, order: "oldest" }, controller.signal);
+    if (!requests.isCurrent("notice-options", controller)) return;
+    noticeOptions.value = nextOptions;
+  } catch (error) {
+    if (isRequestCanceled(error) || !requests.isCurrent("notice-options", controller)) return;
     noticeOptions.value = [];
+  } finally {
+    requests.release("notice-options", controller);
   }
 }
 async function loadNotices() {
+  const controller = requests.replace("notices");
   loadingNotices.value = true;
   try {
     const params = { include_hidden: canManageCompetition.value ? 1 : 0 };
     if (activeSeries.value !== FILTER_ALL) params.series = activeSeries.value;
     if (needsYearStage.value && activeNoticeYear.value !== FILTER_ALL) params.year = Number(activeNoticeYear.value);
     if (activeStage.value && activeStage.value !== FILTER_ALL) params.stage = activeStage.value;
-    noticeRows.value = await fetchAll("/competition-notices/", params);
+    const nextRows = await fetchAll("/competition-notices/", params, controller.signal);
+    if (!requests.isCurrent("notices", controller)) return;
+    noticeRows.value = nextRows;
     activeNoticeId.value = noticeRows.value.find((item) => item.id === pendingNoticeId.value)?.id || noticeRows.value[0]?.id || null;
     pendingNoticeId.value = null;
   } catch (error) {
+    if (isRequestCanceled(error) || !requests.isCurrent("notices", controller)) return;
     noticeRows.value = [];
     activeNoticeId.value = null;
     ui.error(getErrorText(error, "赛事公告加载失败"));
   } finally {
-    loadingNotices.value = false;
+    if (requests.release("notices", controller)) {
+      loadingNotices.value = false;
+    }
   }
 }
-function openNoticeDetail(id) { activeNoticeId.value = id; }
+async function applyRouteNoticeQuery(rawNoticeId) {
+  const noticeId = normalizePositiveId(rawNoticeId);
+  pendingNoticeId.value = noticeId;
+  if (!noticeId) {
+    requests.cancel("notice-detail");
+    return;
+  }
+
+  const existing = noticeRows.value.find((item) => Number(item.id) === noticeId);
+  if (existing) {
+    requests.cancel("notice-detail");
+    activeNoticeId.value = existing.id;
+    pendingNoticeId.value = null;
+    return;
+  }
+
+  const controller = requests.replace("notice-detail");
+  try {
+    const { data } = await api.get(`/competition-notices/${noticeId}/`, {
+      signal: controller.signal,
+    });
+    if (!requests.isCurrent("notice-detail", controller)) return;
+    if (!data?.id) {
+      pendingNoticeId.value = null;
+      return;
+    }
+    if (data.series) activeSeries.value = data.series;
+    if (data.year) activeNoticeYear.value = Number(data.year);
+    if (data.stage) activeStage.value = normalizeStageValue(data.stage);
+    if (activeBuiltinView.value === "notice") {
+      await loadNotices();
+    }
+  } catch (error) {
+    if (isRequestCanceled(error) || !requests.isCurrent("notice-detail", controller)) return;
+    pendingNoticeId.value = null;
+  } finally {
+    requests.release("notice-detail", controller);
+  }
+}
+function openNoticeDetail(id) {
+  activeNoticeId.value = id;
+  syncNoticeQuery(id);
+}
 function openNoticeFromSchedule(row) {
   activeTab.value = findSectionKeyByBuiltinView("notice", "notice");
-  syncZoneTabToRoute(activeTab.value);
   if (row.announcement_series) activeSeries.value = row.announcement_series;
   if (row.announcement_year) activeNoticeYear.value = Number(row.announcement_year);
   if (row.announcement_stage) activeStage.value = normalizeStageValue(row.announcement_stage);
   pendingNoticeId.value = Number(row.announcement);
+  syncNoticeQuery(row.announcement);
   loadNotices();
 }
 function resetNoticeForm() {
@@ -558,6 +698,25 @@ watch(() => resolvedZoneSections.value, () => { const normalized = normalizeZone
 watch(() => activeScheduleYear.value, () => { if (activeBuiltinView.value === "schedule") loadSchedules(); });
 watch(() => activeSeries.value, () => { normalizeNoticeFilter(); if (activeBuiltinView.value === "notice") loadNotices(); });
 watch(() => [activeNoticeYear.value, activeStage.value, activeBuiltinView.value], () => { if (activeBuiltinView.value === "notice") loadNotices(); });
+watch(
+  () => activeBuiltinView.value,
+  async (value) => {
+    if (value === "notice" && pendingNoticeId.value) {
+      await applyRouteNoticeQuery(pendingNoticeId.value);
+    }
+  }
+);
+watch(
+  () => route.query.notice,
+  async (value) => {
+    if (activeBuiltinView.value !== "notice" && String(route.query.tab || "").trim() !== findSectionKeyByBuiltinView("notice", "notice")) {
+      pendingNoticeId.value = normalizePositiveId(value);
+      return;
+    }
+    await applyRouteNoticeQuery(value);
+  },
+  { immediate: true }
+);
 
 onMounted(async () => {
   await loadCompetitionZoneNav();
@@ -568,6 +727,7 @@ onMounted(async () => {
     await Promise.all([loadScheduleYears(), loadNoticeTaxonomy(), loadNoticeOptions()]);
     resetNoticeForm();
     await Promise.all([loadSchedules(), loadNotices()]);
+    await applyRouteNoticeQuery(route.query.notice);
   } catch (error) {
     ui.error(getErrorText(error, "赛事专区初始化失败"));
   }
@@ -578,11 +738,14 @@ onMounted(async () => {
 .competition-zone { width: min(1440px, 100%); margin: 0 auto; display: grid; gap: 20px; }
 .zone-header { display: grid; gap: 6px; }
 .zone-header h1 { font-size: clamp(32px, 3vw, 44px); }
-.zone-header p, .meta { color: var(--muted); }
+.zone-description { color: var(--muted); }
+.zone-description :deep(p) { margin: 0; }
+.zone-description :deep(a) { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+.meta { color: var(--muted); }
 .zone-block { display: grid; gap: 16px; }
 .toolbar, .action-row, .table-actions, .year-tabs, .chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .toolbar { justify-content: space-between; }
-.editor-card, .list-card, .detail-card, .notice-filter, .table-list { border-top: 1px solid color-mix(in srgb, var(--hairline) 84%, transparent); padding-top: 18px; }
+.editor-card, .list-card, .detail-card, .notice-filter, .schedule-table-wrap { border-top: 1px solid color-mix(in srgb, var(--hairline) 84%, transparent); padding-top: 18px; }
 .form-grid { display: grid; gap: 10px; }
 .form-grid--schedule { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .form-grid--notice { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -591,13 +754,41 @@ onMounted(async () => {
 .notice-main { min-width: 0; display: grid; gap: 16px; }
 .notice-filter { position: sticky; top: 88px; display: grid; gap: 12px; }
 .filter-label { font-size: 13px; color: var(--text-quiet); }
-.table-row, .notice-row { display: grid; gap: 8px; padding: 14px 0; border-bottom: 1px solid color-mix(in srgb, var(--hairline) 84%, transparent); }
-.table-row { grid-template-columns: minmax(0, 1fr) auto; }
 .notice-row { grid-template-columns: minmax(0, 1fr) auto; }
-.table-row--muted { opacity: 0.72; }
 .notice-main-btn { border: 0; background: transparent; text-align: left; padding: 0; display: grid; gap: 4px; }
 .notice-row--active { box-shadow: inset 3px 0 0 color-mix(in srgb, var(--accent) 24%, transparent); padding-left: 12px; }
 .notice-textarea { min-height: 180px; }
+.schedule-table-wrap { overflow-x: auto; }
+.schedule-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.schedule-table th,
+.schedule-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--hairline) 84%, transparent);
+  text-align: left;
+  vertical-align: middle;
+}
+.schedule-table th {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-quiet);
+  white-space: nowrap;
+}
+.schedule-table td {
+  font-size: 15px;
+}
+.schedule-table__title {
+  font-weight: 700;
+  color: var(--text);
+  min-width: 220px;
+}
+.schedule-row--muted {
+  opacity: 0.72;
+}
 @media (max-width: 960px) { .notice-layout { grid-template-columns: 1fr; } .notice-filter { position: static; } }
-@media (max-width: 720px) { .form-grid--schedule, .form-grid--notice, .table-row, .notice-row { grid-template-columns: 1fr; } }
+@media (max-width: 720px) { .form-grid--schedule, .form-grid--notice, .notice-row { grid-template-columns: 1fr; } }
 </style>

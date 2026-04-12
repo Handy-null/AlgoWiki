@@ -1,6 +1,8 @@
 import uuid
 from datetime import timedelta
 
+from cryptography.fernet import Fernet, InvalidToken
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
@@ -821,6 +823,7 @@ class HeaderNavigationItem(TimeStampedModel):
         HOME = "home", "Home"
         COMPETITION_WIKI = "competition-wiki", "Competition Wiki"
         COMPETITIONS = "competitions", "Competition Zone"
+        QUESTIONS = "questions", "Q&A"
         ABOUT = "about", "About AlgoWiki"
         FRIENDLY_LINKS = "friendly-links", "Friendly Links"
 
@@ -834,6 +837,121 @@ class HeaderNavigationItem(TimeStampedModel):
 
     def __str__(self) -> str:
         return self.title
+
+
+class AssistantProviderConfig(TimeStampedModel):
+    class Provider(models.TextChoices):
+        DEEPSEEK = "deepseek", "DeepSeek"
+
+    label = models.CharField(max_length=80)
+    assistant_name = models.CharField(max_length=80, default="AlgoWiki 助手")
+    provider = models.CharField(max_length=20, choices=Provider.choices, default=Provider.DEEPSEEK, db_index=True)
+    base_url = models.URLField(max_length=500, default="https://api.deepseek.com")
+    model_name = models.CharField(max_length=120, default="deepseek-chat")
+    api_key_encrypted = models.TextField(blank=True)
+    is_enabled = models.BooleanField(default=True, db_index=True)
+    is_default = models.BooleanField(default=False, db_index=True)
+    show_launcher = models.BooleanField(default=True)
+    temperature = models.FloatField(default=0.3)
+    max_output_tokens = models.PositiveIntegerField(default=1024)
+    request_timeout_seconds = models.PositiveSmallIntegerField(default=30)
+    welcome_message = models.TextField(blank=True)
+    suggested_questions = models.JSONField(default=list, blank=True)
+    system_prompt = models.TextField(blank=True)
+    daily_request_limit = models.PositiveIntegerField(default=0)
+    daily_token_limit = models.PositiveIntegerField(default=0)
+    last_tested_at = models.DateTimeField(null=True, blank=True)
+    last_test_success = models.BooleanField(null=True, blank=True)
+    last_test_message = models.CharField(max_length=255, blank=True)
+    created_by = models.ForeignKey(
+        "User",
+        related_name="created_assistant_provider_configs",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    updated_by = models.ForeignKey(
+        "User",
+        related_name="updated_assistant_provider_configs",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        ordering = ["-is_default", "label", "id"]
+
+    def __str__(self) -> str:
+        return f"{self.label} ({self.model_name})"
+
+    @staticmethod
+    def _get_cipher() -> Fernet:
+        return Fernet(settings.AI_ASSISTANT_ENCRYPTION_KEY.encode("utf-8"))
+
+    @property
+    def has_api_key(self) -> bool:
+        return bool((self.api_key_encrypted or "").strip())
+
+    @property
+    def api_key_masked(self) -> str:
+        return "****************" if self.has_api_key else ""
+
+    def set_api_key(self, raw_value: str) -> None:
+        value = str(raw_value or "").strip()
+        if not value:
+            self.api_key_encrypted = ""
+            return
+        self.api_key_encrypted = self._get_cipher().encrypt(value.encode("utf-8")).decode("utf-8")
+
+    def get_api_key(self) -> str:
+        if not self.has_api_key:
+            return ""
+        try:
+            return self._get_cipher().decrypt(self.api_key_encrypted.encode("utf-8")).decode("utf-8")
+        except (InvalidToken, ValueError, TypeError):
+            return ""
+
+    def save(self, *args, **kwargs):
+        if self.is_default:
+            self.is_enabled = True
+        super().save(*args, **kwargs)
+        if self.is_default:
+            AssistantProviderConfig.objects.exclude(pk=self.pk).filter(is_default=True).update(is_default=False)
+
+
+class AssistantInteractionLog(models.Model):
+    config = models.ForeignKey(
+        AssistantProviderConfig,
+        related_name="interaction_logs",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    user = models.ForeignKey(
+        "User",
+        related_name="assistant_interaction_logs",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    session_id = models.CharField(max_length=64, blank=True, db_index=True)
+    provider = models.CharField(max_length=20, blank=True, db_index=True)
+    model_name = models.CharField(max_length=120, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True, db_index=True)
+    user_agent = models.CharField(max_length=255, blank=True)
+    prompt_chars = models.PositiveIntegerField(default=0)
+    response_chars = models.PositiveIntegerField(default=0)
+    prompt_tokens = models.PositiveIntegerField(default=0)
+    completion_tokens = models.PositiveIntegerField(default=0)
+    total_tokens = models.PositiveIntegerField(default=0)
+    source_count = models.PositiveIntegerField(default=0)
+    response_ms = models.PositiveIntegerField(default=0)
+    success = models.BooleanField(default=True, db_index=True)
+    error_message = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
 
 
 class ContributionEvent(models.Model):

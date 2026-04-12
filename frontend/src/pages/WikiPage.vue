@@ -1,45 +1,46 @@
 ﻿<template>
   <section class="wiki-layout">
     <aside class="wiki-toc">
-      <div class="wiki-toc-section-head">
-        <span>当前章节目录</span>
-        <span class="toc-count">{{ chapterTocVisibleItems.length }}</span>
-      </div>
-      <div v-if="currentCategory || chapterTocVisibleItems.length" class="toc-chapter-list">
-        <div class="toc-chapter-entry toc-chapter-entry--active">
-          <div class="toc-chapter-row">
-            <span class="toc-toggle toc-toggle--placeholder"></span>
-            <div class="toc-link toc-link--active toc-link--static">
-              {{ formatCategoryLabel(currentCategory?.name) || currentThemeName }}
-            </div>
-          </div>
-
-          <div class="toc-children toc-children--current">
-            <div
-              v-for="node in chapterTocVisibleItems"
-              :key="node.id"
-              class="toc-sub-row"
-              :class="tocLevelClass(node)"
-              :style="{ '--toc-indent': `${node.depth * 18}px` }"
+      <section class="wiki-toc-block">
+        <div class="wiki-toc-section-head wiki-toc-section-head--primary">
+          <span class="wiki-toc-title-wrap">
+            <span class="wiki-toc-title-icon" aria-hidden="true"></span>
+            <span>当前章节目录</span>
+          </span>
+          <span class="toc-count">{{ chapterTocVisibleItems.length }}</span>
+        </div>
+        <div v-if="chapterTocVisibleItems.length" class="toc-chapter-list">
+          <div
+            v-for="node in chapterTocVisibleItems"
+            :key="node.id"
+            class="toc-sub-row toc-sub-row--chapter"
+            :class="[
+              tocLevelClass(node),
+              {
+                'toc-sub-row--active': node.anchorId === activeChapterAnchorId,
+                'toc-sub-row--branch': node.hasChildren,
+                'toc-sub-row--root': node.depth === 0,
+              },
+            ]"
+            :style="{ '--toc-indent': `${node.depth * 16}px` }"
+          >
+            <button
+              v-if="node.hasChildren"
+              class="toc-toggle"
+              type="button"
+              @click.stop="toggleTocExpand(node.id)"
             >
-              <button
-                v-if="node.hasChildren"
-                class="toc-toggle"
-                type="button"
-                @click.stop="toggleTocExpand(node.id)"
-              >
-                {{ node.isExpanded ? "▾" : "▸" }}
-              </button>
-              <span v-else class="toc-toggle toc-toggle--placeholder"></span>
-              <button class="toc-sub-link" type="button" @click="handleTocNodeClick(node)">
-                {{ node.text }}
-              </button>
-            </div>
-            <p v-if="!chapterTocVisibleItems.length" class="meta">当前章节暂无子目录。</p>
+              {{ node.isExpanded ? "⌄" : "›" }}
+            </button>
+            <span v-else class="toc-toggle toc-toggle--placeholder"></span>
+            <button class="toc-sub-link" type="button" @click="handleTocNodeClick(node)">
+              {{ node.text }}
+            </button>
           </div>
         </div>
-      </div>
-      <p v-else class="meta">当前章节暂无子目录。</p>
+        <p v-else class="meta">当前章节暂无子目录。</p>
+      </section>
+
     </aside>
 
     <main class="wiki-main">
@@ -87,7 +88,9 @@
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 
+import { useRequestControllers } from "../composables/useRequestControllers";
 import api from "../services/api";
+import { isRequestCanceled } from "../services/api";
 import { DEMO_WIKI_CATEGORY, buildDemoWikiArticle } from "../content/demoContent";
 import ArticlePage from "./ArticlePage.vue";
 import { useAuthStore } from "../stores/auth";
@@ -97,6 +100,7 @@ const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
 const ui = useUiStore();
+const requests = useRequestControllers();
 
 const categories = ref([]);
 const articles = ref([]);
@@ -171,17 +175,36 @@ const chapterArticles = computed(() => {
 });
 const chapterTocTree = computed(() => buildChapterTocTree(chapterArticles.value));
 const chapterTocExpandedIds = ref(new Set());
+const activeChapterAnchorId = ref("");
 const chapterTocVisibleItems = computed(() =>
   flattenVisibleChapterToc(chapterTocTree.value, chapterTocExpandedIds.value)
 );
+const activeChapterRootNode = computed(
+  () => findChapterRootNodeByAnchor(chapterTocTree.value, activeChapterAnchorId.value) || chapterTocTree.value[0] || null
+);
+const activeChapterBranchTitle = computed(() => activeChapterRootNode.value?.text || "当前章节");
+const activeChapterBranchItems = computed(() =>
+  flattenFullChapterBranch(activeChapterRootNode.value?.children || [])
+);
+const categoryDirectoryExpandedIds = ref(new Set());
+const categoryDirectoryTree = computed(() => buildCategoryDirectoryTree(effectiveCategories.value));
+const categoryDirectoryVisibleItems = computed(() =>
+  flattenVisibleCategoryDirectory(categoryDirectoryTree.value, categoryDirectoryExpandedIds.value)
+);
 
 async function loadCategories() {
+  const controller = requests.replace("categories");
   try {
-    const { data } = await api.get("/categories/");
+    const { data } = await api.get("/categories/", {
+      signal: controller.signal,
+    });
+    if (!requests.isCurrent("categories", controller)) return;
     categories.value = data.results || data;
   } catch (error) {
+    if (isRequestCanceled(error) || !requests.isCurrent("categories", controller)) return;
     try {
-      const summary = await loadSummaryFallback();
+      const summary = await loadSummaryFallback(controller.signal);
+      if (!requests.isCurrent("categories", controller)) return;
       categories.value = summary.categories || [];
       if (!fallbackNotices.categories) {
         ui.info("分类接口异常，已使用降级数据");
@@ -190,6 +213,8 @@ async function loadCategories() {
     } catch (fallbackError) {
       notifyLoadError(fallbackError, "分类加载失败，请确认后端服务已启动并执行 migrate");
     }
+  } finally {
+    requests.release("categories", controller);
   }
 }
 
@@ -204,6 +229,7 @@ function buildParams() {
 }
 
 async function loadArticles() {
+  const controller = requests.replace("articles");
   try {
     const params = buildParams();
     const items = [];
@@ -217,7 +243,9 @@ async function loadArticles() {
           page,
           order: "display",
         },
+        signal: controller.signal,
       });
+      if (!requests.isCurrent("articles", controller)) return;
       const pageItems = data.results || data;
       items.push(...pageItems);
       totalCount = Number.isFinite(data?.count) ? data.count : items.length;
@@ -231,8 +259,10 @@ async function loadArticles() {
     articles.value = items;
     pagination.count = totalCount || items.length;
   } catch (error) {
+    if (isRequestCanceled(error) || !requests.isCurrent("articles", controller)) return;
     try {
-      const summary = await loadSummaryFallback();
+      const summary = await loadSummaryFallback(controller.signal);
+      if (!requests.isCurrent("articles", controller)) return;
       const fallbackItems = filterFallbackArticles(summary.featured_articles || []);
       articles.value = fallbackItems;
       pagination.count = fallbackItems.length;
@@ -243,12 +273,14 @@ async function loadArticles() {
     } catch (fallbackError) {
       notifyLoadError(fallbackError, "条目加载失败，请确认后端服务已启动并执行 migrate");
     }
+  } finally {
+    requests.release("articles", controller);
   }
 }
 
-async function loadSummaryFallback() {
+async function loadSummaryFallback(signal) {
   if (fallbackSummary.value) return fallbackSummary.value;
-  const { data } = await api.get("/home/summary/");
+  const { data } = await api.get("/home/summary/", { signal });
   fallbackSummary.value = data;
   return data;
 }
@@ -269,6 +301,15 @@ function stripInlineMarkdown(text) {
     .trim();
 }
 
+function normalizeAnchorText(text) {
+  return String(text || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^\w\u4e00-\u9fa5\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .slice(0, 64);
+}
+
 function parseArticleHeadingLines(contentMd) {
   const lines = String(contentMd || "").split(/\r?\n/);
   const items = [];
@@ -286,16 +327,26 @@ function parseArticleHeadingLines(contentMd) {
   return items;
 }
 
+function normalizeHeadingAnchorId(text, articleId, counts) {
+  const base = normalizeAnchorText(text) || "section";
+  const count = counts.get(base) || 0;
+  const nextCount = count + 1;
+  counts.set(base, nextCount);
+  const normalizedId = nextCount === 1 ? base : `${base}-${nextCount}`;
+  return `article-${articleId}-${normalizedId}`;
+}
+
 function buildHeadingTree(items, articleId) {
   const root = { id: `a-${articleId}-root`, level: 1, text: "", anchorId: `chapter-article-${articleId}`, children: [] };
   const stack = [root];
+  const headingIdCounts = new Map();
 
   for (const item of items) {
     const node = {
       id: `a-${articleId}-h-${item.index}`,
       text: item.text,
       level: item.level,
-      anchorId: `chapter-article-${articleId}`,
+      anchorId: normalizeHeadingAnchorId(item.text, articleId, headingIdCounts),
       children: [],
     };
 
@@ -312,13 +363,7 @@ function buildHeadingTree(items, articleId) {
 }
 
 function buildChapterTocTree(chapterItems) {
-  return chapterItems.map((item) => ({
-    id: `article-${item.id}`,
-    text: item.title,
-    level: 1,
-    anchorId: `chapter-article-${item.id}`,
-    children: buildHeadingTree(parseArticleHeadingLines(item.content_md), item.id),
-  }));
+  return chapterItems.flatMap((item) => buildHeadingTree(parseArticleHeadingLines(item.content_md), item.id));
 }
 
 function findTocNodeById(nodes, targetId) {
@@ -330,6 +375,26 @@ function findTocNodeById(nodes, targetId) {
     }
   }
   return null;
+}
+
+function findChapterNodePathByAnchor(nodes, anchorId, trail = []) {
+  if (!anchorId) return null;
+  for (const node of nodes) {
+    const nextTrail = [...trail, node];
+    if (node.anchorId === anchorId) {
+      return nextTrail;
+    }
+    if (node.children?.length) {
+      const nested = findChapterNodePathByAnchor(node.children, anchorId, nextTrail);
+      if (nested) return nested;
+    }
+  }
+  return null;
+}
+
+function findChapterRootNodeByAnchor(nodes, anchorId) {
+  const path = findChapterNodePathByAnchor(nodes, anchorId);
+  return Array.isArray(path) && path.length ? path[0] : null;
 }
 
 function collectDescendantIds(node, bucket = new Set()) {
@@ -359,8 +424,118 @@ function flattenVisibleChapterToc(nodes, expandedIds, depth = 0, output = []) {
   return output;
 }
 
+function flattenFullChapterBranch(nodes, depth = 0, output = []) {
+  for (const node of nodes) {
+    output.push({
+      id: `branch-${node.id}`,
+      text: node.text,
+      depth,
+      hasChildren: node.children.length > 0,
+      anchorId: node.anchorId,
+    });
+    if (node.children.length) {
+      flattenFullChapterBranch(node.children, depth + 1, output);
+    }
+  }
+  return output;
+}
+
 function buildDefaultExpandedIds(tree) {
-  return new Set();
+  const expanded = new Set();
+
+  function walk(nodes, depth = 0) {
+    for (const node of nodes) {
+      if (node.children.length && depth < 2) {
+        expanded.add(node.id);
+      }
+      if (node.children.length) {
+        walk(node.children, depth + 1);
+      }
+    }
+  }
+
+  walk(tree);
+  return expanded;
+}
+
+function buildCategoryDirectoryTree(list) {
+  const visible = [...list]
+    .filter((item) => item?.is_visible !== false)
+    .sort(sortCategories);
+  const nodesById = new Map(
+    visible.map((item) => [
+      item.id,
+      {
+        id: `category-${item.id}`,
+        categoryId: item.id,
+        slug: item.slug,
+        text: item.name,
+        parent: item.parent,
+        children: [],
+      },
+    ])
+  );
+  const roots = [];
+  for (const item of visible) {
+    const node = nodesById.get(item.id);
+    if (!node) continue;
+    const parentNode = item.parent ? nodesById.get(item.parent) : null;
+    if (parentNode) {
+      parentNode.children.push(node);
+    } else {
+      roots.push(node);
+    }
+  }
+  return roots;
+}
+
+function flattenVisibleCategoryDirectory(nodes, expandedIds, depth = 0, output = []) {
+  for (const node of nodes) {
+    const hasChildren = node.children.length > 0;
+    const isExpanded = expandedIds.has(node.id);
+    const isActive = isCategoryActive({ id: node.categoryId, slug: node.slug });
+    output.push({
+      id: node.id,
+      text: node.text,
+      depth,
+      hasChildren,
+      isExpanded,
+      isActive,
+      categoryId: node.categoryId,
+      slug: node.slug,
+    });
+    if (hasChildren && isExpanded) {
+      flattenVisibleCategoryDirectory(node.children, expandedIds, depth + 1, output);
+    }
+  }
+  return output;
+}
+
+function buildDefaultCategoryExpandedIds(tree) {
+  const expanded = new Set();
+  const activeCategoryId = currentCategory.value?.id || null;
+
+  function walk(nodes) {
+    let branchHasActive = false;
+    for (const node of nodes) {
+      const childHasActive = walk(node.children || []);
+      const isActive = activeCategoryId && Number(node.categoryId) === Number(activeCategoryId);
+      if (node.children.length && (depthShouldExpand(node, node.children) || childHasActive || isActive)) {
+        expanded.add(node.id);
+      }
+      if (isActive || childHasActive) {
+        branchHasActive = true;
+      }
+    }
+    return branchHasActive;
+  }
+
+  walk(tree);
+  return expanded;
+}
+
+function depthShouldExpand(node) {
+  return !node.parent;
 }
 
 function isTocExpanded(id) {
@@ -386,10 +561,12 @@ function toggleTocExpand(id) {
 
 function handleTocNodeClick(node) {
   if (!node) return;
-  if (node.hasChildren) {
-    toggleTocExpand(node.id);
-    return;
+  if (node.hasChildren && !isTocExpanded(node.id)) {
+    const next = new Set(chapterTocExpandedIds.value);
+    next.add(node.id);
+    chapterTocExpandedIds.value = next;
   }
+  activeChapterAnchorId.value = node.anchorId;
   scrollToAnchor(node.anchorId);
 }
 
@@ -409,6 +586,23 @@ function tocLevelClass(node) {
 function isCategoryActive(item) {
   if (!filters.category) return false;
   return filters.category === String(item.id) || filters.category === item.slug;
+}
+
+async function selectCategory(node) {
+  if (!node) return;
+  filters.category = node.slug || String(node.categoryId || "");
+  await syncRoute();
+}
+
+function toggleCategoryExpand(id) {
+  if (!id) return;
+  const next = new Set(categoryDirectoryExpandedIds.value);
+  if (next.has(id)) {
+    next.delete(id);
+  } else {
+    next.add(id);
+  }
+  categoryDirectoryExpandedIds.value = next;
 }
 
 function ensureDefaultCategory() {
@@ -501,6 +695,9 @@ function getErrorText(error, fallback = "操作失败") {
 }
 
 function notifyLoadError(error, fallback) {
+  if (isRequestCanceled(error)) {
+    return;
+  }
   const payload = error?.response?.data;
   const isSchemaOutdated = payload && typeof payload === "object" && payload.code === "schema_outdated";
   if (isSchemaOutdated) {
@@ -523,8 +720,17 @@ watch(
   () => chapterTocTree.value,
   () => {
     chapterTocExpandedIds.value = buildDefaultExpandedIds(chapterTocTree.value);
+    activeChapterAnchorId.value = chapterTocTree.value[0]?.anchorId || "";
   },
   { immediate: true }
+);
+
+watch(
+  () => [categoryDirectoryTree.value, currentCategory.value?.id],
+  () => {
+    categoryDirectoryExpandedIds.value = buildDefaultCategoryExpandedIds(categoryDirectoryTree.value);
+  },
+  { immediate: true, deep: true }
 );
 
 watch(
@@ -810,6 +1016,28 @@ watch(
   background: color-mix(in srgb, var(--accent) 10%, transparent);
   color: var(--accent);
   transform: translateX(2px);
+}
+
+.wiki-directory {
+  display: grid;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid color-mix(in srgb, var(--hairline) 84%, transparent);
+}
+
+.wiki-directory-list {
+  display: grid;
+  gap: 2px;
+}
+
+.wiki-directory-row--active .wiki-directory-link {
+  background: color-mix(in srgb, var(--accent) 11%, var(--surface-strong));
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.wiki-directory-link {
+  font-size: 14px;
 }
 
 .toc-toggle {
@@ -1100,6 +1328,171 @@ watch(
 .chapter-view :deep(.article-layout.embedded-mode .side-panel--right) {
   border-left: 1px solid color-mix(in srgb, var(--hairline) 82%, transparent);
   padding-left: 18px;
+}
+
+.wiki-toc {
+  gap: 18px;
+}
+
+.wiki-toc-block {
+  display: grid;
+  gap: 12px;
+}
+
+.wiki-toc-section-head,
+.wiki-toc-section-head--primary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-soft);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.wiki-toc-title-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-strong);
+}
+
+.wiki-toc-title-icon {
+  position: relative;
+  width: 16px;
+  height: 12px;
+  color: var(--text-quiet);
+  flex: 0 0 auto;
+}
+
+.wiki-toc-title-icon::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 1px;
+  width: 100%;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 5px 0 currentColor, 0 10px 0 currentColor;
+}
+
+.toc-count {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  background: color-mix(in srgb, var(--surface-strong) 96%, white 4%);
+  color: var(--text-quiet);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.toc-chapter-list {
+  display: grid;
+  gap: 4px;
+  max-height: calc(100vh - 240px);
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.toc-sub-row--chapter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding-left: var(--toc-indent, 0);
+}
+
+.toc-sub-row--chapter .toc-toggle {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-quiet);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.toc-sub-row--chapter .toc-toggle:hover {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  color: var(--text-strong);
+}
+
+.toc-sub-row--chapter .toc-toggle--placeholder {
+  opacity: 0;
+}
+
+.toc-sub-row--chapter .toc-sub-link {
+  width: 100%;
+  padding: 9px 14px;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.toc-sub-row--chapter .toc-sub-link:hover {
+  background: color-mix(in srgb, var(--surface-strong) 88%, white 12%);
+  color: var(--text-strong);
+  transform: none;
+}
+
+.toc-sub-row--chapter.toc-sub-row--root .toc-sub-link {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  background: color-mix(in srgb, var(--surface-strong) 94%, white 6%);
+  color: var(--text-strong);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.toc-sub-row--active .toc-sub-link,
+.toc-sub-row--active.toc-sub-row--root .toc-sub-link,
+.wiki-directory-row--active .wiki-directory-link {
+  background: color-mix(in srgb, var(--accent) 10%, white 90%);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.toc-level-1 .toc-sub-link,
+.toc-level-2 .toc-sub-link,
+.toc-level-3 .toc-sub-link,
+.toc-level-4 .toc-sub-link,
+.toc-level-5 .toc-sub-link,
+.toc-level-6 .toc-sub-link {
+  color: var(--text-soft);
+}
+
+.toc-sub-row--root.toc-level-1 .toc-sub-link {
+  color: var(--text-strong);
+}
+
+.wiki-directory {
+  gap: 10px;
+  padding-top: 18px;
+  border-top: 1px solid color-mix(in srgb, var(--hairline) 84%, transparent);
+}
+
+.wiki-directory-list {
+  display: grid;
+  gap: 3px;
+}
+
+.wiki-directory-row {
+  padding-left: var(--toc-indent, 0);
+}
+
+.wiki-directory-link {
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 14px;
 }
 
 @media (max-width: 1200px) {

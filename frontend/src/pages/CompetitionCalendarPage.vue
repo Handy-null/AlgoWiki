@@ -1,20 +1,6 @@
 <template>
   <section class="calendar-page">
     <section class="calendar-controls card">
-      <div class="controls-head">
-        <div>
-          <h2 class="section-title">来源筛选</h2>
-          <p class="meta">点击分类后只显示对应平台的比赛，表格会实时重新分组与排序。</p>
-        </div>
-        <div class="control-actions">
-          <button type="button" class="btn" :disabled="loadingRows || loadingTaxonomy" @click="refreshAll">
-            {{ loadingRows || loadingTaxonomy ? "刷新中..." : "刷新列表" }}
-          </button>
-          <button type="button" class="btn" @click="selectAllSites">全选</button>
-          <button type="button" class="btn" @click="clearSites">清空</button>
-        </div>
-      </div>
-
       <div class="site-filter-grid">
         <button
           v-for="item in sourceOptions"
@@ -22,6 +8,7 @@
           type="button"
           class="site-chip"
           :class="{ 'site-chip--active': isSiteSelected(item.key) }"
+          :aria-pressed="isSiteSelected(item.key)"
           @click="toggleSite(item.key)"
         >
           <span class="site-chip-name">{{ item.name }}</span>
@@ -166,7 +153,8 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 
-import api from "../services/api";
+import { useRequestControllers } from "../composables/useRequestControllers";
+import api, { isRequestCanceled } from "../services/api";
 import { useUiStore } from "../stores/ui";
 
 const ui = useUiStore();
@@ -189,6 +177,7 @@ const loadingTaxonomy = ref(false);
 const selectedSites = ref(defaultSources.map((item) => item.key));
 const nowTick = ref(Date.now());
 let ticker = null;
+const requests = useRequestControllers();
 
 function extractRows(payload) {
   if (Array.isArray(payload)) return payload;
@@ -207,11 +196,11 @@ function nextPageFromUrl(value) {
   }
 }
 
-async function fetchAll(path, params = {}) {
+async function fetchAll(path, params = {}, signal) {
   const merged = [];
   let page = 1;
   while (page) {
-    const { data } = await api.get(path, { params: { ...params, page } });
+    const { data } = await api.get(path, { params: { ...params, page }, signal });
     if (Array.isArray(data)) {
       merged.push(...data);
       break;
@@ -356,15 +345,20 @@ function clearSites() {
 }
 
 async function loadTaxonomy() {
+  const controller = requests.replace("taxonomy");
   loadingTaxonomy.value = true;
   try {
-    const { data } = await api.get("/competition-calendar/taxonomy/");
+    const { data } = await api.get("/competition-calendar/taxonomy/", {
+      signal: controller.signal,
+    });
+    if (!requests.isCurrent("taxonomy", controller)) return;
     taxonomy.value = {
       sources: Array.isArray(data?.sources) ? data.sources : defaultSources,
       count: Number(data?.count || 0),
       latest_sync_at: data?.latest_sync_at || "",
     };
   } catch (error) {
+    if (isRequestCanceled(error) || !requests.isCurrent("taxonomy", controller)) return;
     taxonomy.value = {
       sources: defaultSources,
       count: 0,
@@ -372,19 +366,27 @@ async function loadTaxonomy() {
     };
     ui.error(getErrorText(error, "读取比赛日历来源失败"));
   } finally {
-    loadingTaxonomy.value = false;
+    if (requests.release("taxonomy", controller)) {
+      loadingTaxonomy.value = false;
+    }
   }
 }
 
 async function loadRows() {
+  const controller = requests.replace("rows");
   loadingRows.value = true;
   try {
-    rows.value = await fetchAll("/competition-calendar/", { order: "asc" });
+    const nextRows = await fetchAll("/competition-calendar/", { order: "asc" }, controller.signal);
+    if (!requests.isCurrent("rows", controller)) return;
+    rows.value = nextRows;
   } catch (error) {
+    if (isRequestCanceled(error) || !requests.isCurrent("rows", controller)) return;
     rows.value = [];
     ui.error(getErrorText(error, "读取比赛日历失败"));
   } finally {
-    loadingRows.value = false;
+    if (requests.release("rows", controller)) {
+      loadingRows.value = false;
+    }
   }
 }
 
@@ -429,7 +431,6 @@ onBeforeUnmount(() => {
   padding: 16px;
 }
 
-.controls-head,
 .section-head {
   display: flex;
   justify-content: space-between;
@@ -437,14 +438,7 @@ onBeforeUnmount(() => {
   gap: 16px;
 }
 
-.control-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
 .site-filter-grid {
-  margin-top: 14px;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
@@ -474,13 +468,21 @@ onBeforeUnmount(() => {
 }
 
 .site-chip--active {
-  border-color: transparent;
-  background: color-mix(in srgb, var(--accent) 10%, var(--surface-strong));
-  box-shadow: var(--accent-shadow);
+  border-color: color-mix(in srgb, var(--accent) 62%, transparent);
+  background: color-mix(in srgb, var(--accent) 20%, var(--surface-strong));
+  color: var(--accent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent),
+    var(--accent-shadow);
+}
+
+.site-chip--active:hover {
+  background: color-mix(in srgb, var(--accent) 26%, var(--surface-strong));
+  border-color: color-mix(in srgb, var(--accent) 78%, transparent);
 }
 
 .site-chip-name {
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .table-shell {
@@ -566,17 +568,8 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 760px) {
-  .controls-head,
   .section-head {
     flex-direction: column;
-  }
-
-  .control-actions {
-    width: 100%;
-  }
-
-  .control-actions .btn {
-    width: 100%;
   }
 
   .site-filter-grid {

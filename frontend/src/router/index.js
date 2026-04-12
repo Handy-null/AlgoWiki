@@ -12,22 +12,27 @@ const ProfilePage = () => import("../pages/ProfilePage.vue");
 const ExtraPage = () => import("../pages/ExtraPage.vue");
 const AdminPage = () => import("../pages/AdminPage.vue");
 const AuthPage = () => import("../pages/AuthPage.vue");
+const QaPage = () => import("../pages/QaPage.vue");
 const ReviewPage = () => import("../pages/ReviewPage.vue");
 const RevisionReviewPage = () => import("../pages/RevisionReviewPage.vue");
 
 const manageSections = [
-  { path: "announcements", name: "manage-announcements", section: "announcements" },
   { path: "users", name: "manage-users", section: "users" },
-  { path: "tickets", name: "manage-tickets", section: "tickets" },
-  { path: "pages", name: "manage-pages", section: "pages" },
-  { path: "categories", name: "manage-categories", section: "categories" },
-  { path: "articles", name: "manage-articles", section: "articles" },
-  { path: "article-titles", name: "manage-article-titles", section: "article-titles" },
-  { path: "comments", name: "manage-comments", section: "comments" },
-  { path: "questions", name: "manage-questions", section: "questions" },
-  { path: "answers", name: "manage-answers", section: "answers" },
-  { path: "security", name: "manage-security", section: "security" },
+  { path: "competition-wiki", name: "manage-competition-wiki", section: "competition-wiki" },
+  { path: "competition-zone", name: "manage-competition-zone", section: "competition-zone" },
+  { path: "assistant", name: "manage-assistant", section: "assistant" },
   { path: "events", name: "manage-events", section: "events" },
+  { path: "security", name: "manage-security", section: "security" },
+];
+
+const reviewSections = [
+  { path: "/review", name: "review", section: "revisions" },
+  { path: "/review/practice", name: "review-practice", section: "practice" },
+  { path: "/review/tickets", name: "review-tickets", section: "tickets" },
+  { path: "/review/comments", name: "review-comments", section: "comments" },
+  { path: "/review/tricks", name: "review-tricks", section: "tricks" },
+  { path: "/review/questions", name: "review-questions", section: "questions" },
+  { path: "/review/answers", name: "review-answers", section: "answers" },
 ];
 
 const routes = [
@@ -42,11 +47,7 @@ const routes = [
   { path: "/friendly-links", name: "friendly-links", component: FriendlyLinksPage },
   { path: "/wiki", name: "wiki", component: WikiPage },
   { path: "/wiki/:id", name: "article", component: ArticlePage, props: true },
-  {
-    path: "/questions",
-    name: "questions",
-    redirect: { name: "competitions", query: { tab: "qa" } },
-  },
+  { path: "/questions", name: "questions", component: QaPage },
   { path: "/profile", name: "profile", component: ProfilePage, meta: { requiresAuth: true } },
   {
     path: "/extra/tricks",
@@ -58,7 +59,7 @@ const routes = [
     path: "/manage",
     name: "admin",
     component: AdminPage,
-    props: { section: "overview" },
+    props: { section: "users" },
     meta: { requiresManager: true },
   },
   ...manageSections.map((item) => ({
@@ -76,37 +77,18 @@ const routes = [
     },
     meta: { requiresManager: true },
   },
-  { path: "/review", name: "review", component: ReviewPage, props: { section: "revisions" }, meta: { requiresReviewer: true } },
-  {
-    path: "/review/practice",
-    name: "review-practice",
+  ...reviewSections.map((item) => ({
+    path: item.path,
+    name: item.name,
     component: ReviewPage,
-    props: { section: "practice" },
-    meta: { requiresReviewer: true },
-  },
+    props: { section: item.section },
+    meta: { requiresManager: true },
+  })),
   {
     path: "/review/submissions",
-    name: "review-submissions",
-    component: ReviewPage,
-    props: { section: "submissions" },
-    meta: { requiresReviewer: true },
+    redirect: { name: "review-tickets" },
   },
-  {
-    path: "/review/tricks",
-    name: "review-tricks",
-    component: ReviewPage,
-    props: { section: "tricks" },
-    meta: { requiresReviewer: true },
-  },
-  {
-    path: "/review/tickets",
-    redirect: { name: "review-submissions" },
-  },
-  {
-    path: "/review/comments",
-    redirect: { name: "review-submissions" },
-  },
-  { path: "/review/revisions/:id", name: "review-revision", component: RevisionReviewPage, props: true, meta: { requiresReviewer: true } },
+  { path: "/review/revisions/:id", name: "review-revision", component: RevisionReviewPage, props: true, meta: { requiresManager: true } },
   { path: "/auth", name: "auth", component: AuthPage },
 ];
 
@@ -117,6 +99,11 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
   const auth = useAuthStore();
+
+  if (to.name === "competitions" && String(to.query.tab || "").trim() === "qa") {
+    const questionId = String(to.query.question || "").trim();
+    return questionId ? { name: "questions", query: { question: questionId } } : { name: "questions" };
+  }
 
   if (auth.token && !auth.user) {
     try {
@@ -131,10 +118,6 @@ router.beforeEach(async (to) => {
   }
 
   if (to.meta.requiresManager && !auth.isManager) {
-    return { name: "home" };
-  }
-
-  if (to.meta.requiresReviewer && !auth.isReviewer) {
     return { name: "home" };
   }
 

@@ -83,6 +83,7 @@ function resolveRoute(key) {
     home: { name: "home" },
     "competition-wiki": { name: "wiki", query: { category: "xcpc-sites" } },
     competitions: { name: "competitions", query: { tab: "calendar" } },
+    questions: { name: "questions" },
     about: { name: "extra", params: { slug: "about" } },
     "friendly-links": { name: "friendly-links" },
   };

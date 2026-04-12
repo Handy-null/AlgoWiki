@@ -14,7 +14,6 @@ export const useAuthStore = defineStore("auth", {
     isManager: (state) => ["admin", "superadmin"].includes(state.user?.role),
     isSuperAdmin: (state) => state.user?.role === "superadmin",
     isSchoolOrHigher: (state) => ["school", "admin", "superadmin"].includes(state.user?.role),
-    isReviewer: (state) => ["school", "admin", "superadmin"].includes(state.user?.role),
   },
   actions: {
     applyAuth(token, user) {

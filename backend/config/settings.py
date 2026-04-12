@@ -1,3 +1,5 @@
+import base64
+import hashlib
 import os
 import tempfile
 from pathlib import Path
@@ -275,6 +277,11 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "no-repl
 SERVER_EMAIL = os.getenv("SERVER_EMAIL", DEFAULT_FROM_EMAIL).strip()
 EMAIL_SUBJECT_PREFIX = os.getenv("EMAIL_SUBJECT_PREFIX", f"[{SITE_NAME}] ").strip()
 
+AI_ASSISTANT_ENCRYPTION_KEY = os.getenv("AI_ASSISTANT_ENCRYPTION_KEY", "").strip()
+if not AI_ASSISTANT_ENCRYPTION_KEY:
+    derived_key = hashlib.sha256(SECRET_KEY.encode("utf-8")).digest()
+    AI_ASSISTANT_ENCRYPTION_KEY = base64.urlsafe_b64encode(derived_key).decode("ascii")
+
 DATA_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv("DATA_UPLOAD_MAX_MEMORY_SIZE", str(10 * 1024 * 1024)))
 FILE_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv("FILE_UPLOAD_MAX_MEMORY_SIZE", str(4 * 1024 * 1024)))
 DATA_UPLOAD_MAX_NUMBER_FIELDS = int(os.getenv("DATA_UPLOAD_MAX_NUMBER_FIELDS", "2000"))
@@ -392,6 +399,8 @@ REST_FRAMEWORK = {
         "profile_update": os.getenv("THROTTLE_PROFILE_UPDATE", "3/min"),
         "email_change_request": os.getenv("THROTTLE_EMAIL_CHANGE_REQUEST", "6/hour"),
         "email_change_confirm": os.getenv("THROTTLE_EMAIL_CHANGE_CONFIRM", "12/hour"),
+        "assistant_anon": os.getenv("THROTTLE_ASSISTANT_ANON", "15/hour"),
+        "assistant_user": os.getenv("THROTTLE_ASSISTANT_USER", "60/hour"),
         "content_create": os.getenv("THROTTLE_CONTENT_CREATE", "3/min"),
         "content_update": os.getenv("THROTTLE_CONTENT_UPDATE", "3/min"),
         "content_delete": os.getenv("THROTTLE_CONTENT_DELETE", "3/min"),

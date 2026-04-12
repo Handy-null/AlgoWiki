@@ -31,6 +31,7 @@
                 :href="href"
                 class="nav-link nav-link--dropdown"
                 :class="{ 'nav-link--active': isNavActive(item) }"
+                @mouseenter="openDropdown(item.key)"
                 @click="handleDropdownTriggerClick(item.key, navigate, $event)"
               >
                 {{ item.name }}
@@ -41,7 +42,6 @@
               class="nav-dropdown-panel"
               :class="{ 'nav-dropdown-panel--open': openDropdownKey === item.key }"
               @mouseenter="openDropdown(item.key)"
-              @mouseleave="scheduleCloseDropdown(item.key)"
             >
               <RouterLink
                 v-for="child in item.children"
@@ -136,9 +136,9 @@
                 <RouterLink class="btn btn-mini" :to="{ name: 'profile' }" @click="closeUserPanel">个人中心</RouterLink>
                 <button class="btn btn-mini" @click="logout">退出</button>
               </div>
-              <div v-if="auth.isReviewer || auth.isManager" class="user-admin-links">
+              <div v-if="auth.isManager" class="user-admin-links">
                 <RouterLink
-                  v-if="auth.isReviewer"
+                  v-if="auth.isManager"
                   class="btn btn-mini"
                   :to="{ name: 'review' }"
                   @click="closeUserPanel"
@@ -346,14 +346,14 @@ const competitionSectionNav = computed(() =>
       name: item.title,
       to: { name: "competitions", query: { tab: item.key } },
       kind: "route",
-      routeNames: ["competitions", "competition-calendar", "questions"],
+      routeNames: ["competitions", "competition-calendar"],
       queryTab: item.key,
       extraSlugs: item.builtin_view === "tricks" ? ["tricks"] : [],
       targetType: item.target_type,
       builtinView: item.builtin_view,
       pageSlug: item.page_slug,
     }))
-    .filter((item) => item.name && item.queryTab)
+    .filter((item) => item.name && item.queryTab && item.queryTab !== "qa")
 );
 
 const preferredCompetitionSectionEntry = computed(
@@ -370,23 +370,41 @@ const headerNavConfigMap = computed(() => {
 
 const primaryNav = computed(() => {
   const configuredItems = [
-    { key: "home", defaultName: "首页", to: { name: "home" }, kind: "route", routeNames: ["home"] },
+    {
+      key: "home",
+      defaultName: "首页",
+      defaultDisplayOrder: 10,
+      to: { name: "home" },
+      kind: "route",
+      routeNames: ["home"],
+    },
     {
       ...competitionWikiNav.value,
       defaultName: "竞赛wiki",
+      defaultDisplayOrder: 20,
     },
     {
       key: "competitions",
       defaultName: "赛事专区",
+      defaultDisplayOrder: 30,
       to: preferredCompetitionSectionEntry.value?.to || { name: "competitions", query: { tab: "calendar" } },
       kind: "dropdown",
-      routeNames: ["competitions", "competition-calendar", "questions"],
+      routeNames: ["competitions", "competition-calendar"],
       extraSlugs: ["tricks"],
       children: competitionSectionNav.value,
     },
     {
+      key: "questions",
+      defaultName: "问答",
+      defaultDisplayOrder: 35,
+      to: { name: "questions" },
+      kind: "route",
+      routeNames: ["questions"],
+    },
+    {
       key: "about",
       defaultName: "关于AlgoWiki",
+      defaultDisplayOrder: 40,
       to: { name: "extra", params: { slug: "about" } },
       kind: "route",
       routeNames: ["extra"],
@@ -395,6 +413,7 @@ const primaryNav = computed(() => {
     {
       key: "friendly-links",
       defaultName: "友链",
+      defaultDisplayOrder: 50,
       to: { name: "friendly-links" },
       kind: "route",
       routeNames: ["friendly-links"],
@@ -407,7 +426,7 @@ const primaryNav = computed(() => {
       return {
         ...item,
         name: String(config?.title || item.defaultName || item.name || "").trim(),
-        display_order: Number(config?.display_order || 0),
+        display_order: Number(config?.display_order ?? item.defaultDisplayOrder ?? 0),
         is_visible: config?.is_visible !== false,
       };
     })
@@ -854,17 +873,20 @@ onBeforeUnmount(() => {
 }
 
 .nav-dropdown {
+  --nav-dropdown-hover-pad: 14px;
   position: relative;
   display: flex;
   align-items: stretch;
   width: auto;
   height: 100%;
+  padding-inline: var(--nav-dropdown-hover-pad);
+  margin-inline: calc(var(--nav-dropdown-hover-pad) * -1);
 }
 
 .nav-dropdown::after {
   content: "";
   position: absolute;
-  left: -18px;
+  left: calc(var(--nav-dropdown-hover-pad) - 18px);
   top: 100%;
   width: 228px;
   height: 16px;
@@ -880,7 +902,7 @@ onBeforeUnmount(() => {
 
 .nav-dropdown-panel {
   position: absolute;
-  left: 0;
+  left: var(--nav-dropdown-hover-pad);
   top: calc(100% + 6px);
   min-width: 188px;
   padding: 10px;

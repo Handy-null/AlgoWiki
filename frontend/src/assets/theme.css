@@ -464,6 +464,13 @@ select {
   box-shadow: var(--accent-shadow);
 }
 
+.btn-accent:hover,
+.btn-accent:focus-visible {
+  background: var(--accent-gradient);
+  color: var(--accent-contrast);
+  border-color: transparent;
+}
+
 .btn-danger {
   border-color: transparent;
   background: var(--danger);

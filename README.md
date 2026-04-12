@@ -55,6 +55,13 @@
   - 问答页支持“全部/我的问题”筛选，问题与回答可由作者/管理员在线编辑
   - 问答输入支持本地草稿恢复（提问草稿与按问题区分的回答草稿）
 
+- 站内 AI 助手
+  - 右下角悬浮按钮打开聊天面板，支持拖动位置
+  - 仅基于站内公开内容检索后回答，并返回来源链接
+  - 管理后台新增 `AI 助手` 配置页，支持管理模型、Base URL、限额和欢迎语
+  - 仅超级管理员可新增/修改/删除配置、切换默认配置和更新 API Key
+  - API Key 只会以全星号掩码显示，不会在接口和前端中回显明文
+
 - 个人中心
   - 个人信息展示与编辑（学校、简介、头像）
   - 邮箱验证码注册、邮箱找回密码、个人中心修改/验证邮箱
@@ -149,6 +156,16 @@ DB_PASSWORD=your-password
 - `EMAIL_HOST_PASSWORD=<SMTP 密码>`
 - `EMAIL_USE_SSL=1`
 - `DEFAULT_FROM_EMAIL=AlgoWiki <你的阿里云发信地址>`
+- `AI_ASSISTANT_ENCRYPTION_KEY=<建议显式配置的随机密钥>`
+- `THROTTLE_ASSISTANT_ANON=15/hour`
+- `THROTTLE_ASSISTANT_USER=60/hour`
+
+AI 助手补充说明：
+
+- 若未配置 `AI_ASSISTANT_ENCRYPTION_KEY`，后端会基于 `DJANGO_SECRET_KEY` 派生一把可用密钥
+- 生产环境建议显式配置 `AI_ASSISTANT_ENCRYPTION_KEY`，避免未来更换 `DJANGO_SECRET_KEY` 后无法解密旧的 API Key
+- 当前接入方式为 OpenAI 兼容 `chat/completions` 协议，默认可直接用于 DeepSeek
+- 超级管理员在后台 `/manage/assistant` 中录入 API Key，录入后只显示掩码，不支持明文回看
 
 ### 3. 初始化 MySQL 数据库并导入基础数据
 
@@ -338,6 +355,13 @@ Vite 开发服务器会将 `/api` 代理到 `http://127.0.0.1:8001`。
 - 个人安全概览：`/api/me/security-summary/`（失败登录/锁定/改密统计）
 - 密码修改：`/api/me/change-password/`
 - 管理概览：`/api/admin/overview/`
+- AI 助手：
+  - `/api/assistant/config/`
+  - `/api/assistant/chat/`
+  - `/api/assistant-configs/`
+  - `/api/assistant-configs/stats/`
+  - `/api/assistant-configs/{id}/set-default/`
+  - `/api/assistant-configs/{id}/test-connection/`
 - 个人历史：`/api/questions/mine/`、`/api/answers/mine/`、`/api/comments/mine/`
 - 通知中心：
   - `/api/notifications/`

@@ -2,6 +2,7 @@
   <div class="app-shell" :class="`app-shell--${theme.currentTheme}`">
     <TopNav />
     <ToastStack />
+    <ChatAssistantLauncher />
     <main class="page-shell" :class="{ 'page-shell--flush': isHomeLayout }">
       <RouterView />
     </main>
@@ -18,6 +19,7 @@ import { computed, onBeforeUnmount, onMounted } from "vue";
 import { RouterView } from "vue-router";
 import { useRoute } from "vue-router";
 import AnnouncementModal from "./components/AnnouncementModal.vue";
+import ChatAssistantLauncher from "./components/ChatAssistantLauncher.vue";
 import TopNav from "./components/TopNav.vue";
 import ToastStack from "./components/ToastStack.vue";
 import { useAnnouncementPopup } from "./composables/useAnnouncementPopup";

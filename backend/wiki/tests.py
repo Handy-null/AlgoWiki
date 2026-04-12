@@ -14,11 +14,14 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
 from django.utils import timezone
 
+from .assistant import build_chat_messages_compact, clear_public_corpus_cache
 from .models import (
     Announcement,
     Answer,
     Article,
     ArticleComment,
+    AssistantInteractionLog,
+    AssistantProviderConfig,
     Category,
     CompetitionCalendarEvent,
     CompetitionNotice,
@@ -87,6 +90,7 @@ class AuthApiTests(APITestCase):
         return match.group(1)
 
     def test_login_returns_serialized_user_payload(self):
+        before_login = timezone.now()
         response = self.client.post(
             "/api/auth/login/",
             {"username": "login_user", "password": "Password123"},
@@ -97,6 +101,9 @@ class AuthApiTests(APITestCase):
         self.assertIn("user", response.data)
         self.assertIsInstance(response.data["user"], dict)
         self.assertEqual(response.data["user"]["username"], "login_user")
+        self.user.refresh_from_db()
+        self.assertIsNotNone(self.user.last_login)
+        self.assertGreaterEqual(self.user.last_login, before_login)
         self.assertTrue(
             SecurityAuditLog.objects.filter(
                 event_type=SecurityAuditLog.EventType.LOGIN_SUCCESS,
@@ -4044,6 +4051,370 @@ class CompetitionScheduleApiTests(APITestCase):
         self.assertEqual(entry.location, "Lab 402")
         self.assertEqual(entry.qq_group, "")
         self.assertIsNone(entry.announcement)
+
+
+class AssistantApiTests(APITestCase):
+    def setUp(self):
+        cache.clear()
+        clear_public_corpus_cache()
+
+        self.category = Category.objects.create(name="Assistant", slug="assistant")
+        self.superadmin = User.objects.create_user(
+            username="assistant_superadmin",
+            password="Password123",
+            role=User.Role.SUPERADMIN,
+        )
+        self.admin = User.objects.create_user(
+            username="assistant_admin",
+            password="Password123",
+            role=User.Role.ADMIN,
+        )
+        self.user = User.objects.create_user(
+            username="assistant_user",
+            password="Password123",
+            role=User.Role.NORMAL,
+        )
+        self.superadmin_token = Token.objects.create(user=self.superadmin)
+        self.admin_token = Token.objects.create(user=self.admin)
+        self.user_token = Token.objects.create(user=self.user)
+
+        self.article = Article.objects.create(
+            title="比赛日历入口",
+            summary="赛事专区包含比赛日历和赛事公告。",
+            content_md="在赛事专区可以查看比赛日历表、赛事公告和补题链接。",
+            category=self.category,
+            author=self.superadmin,
+            last_editor=self.superadmin,
+            status=Article.Status.PUBLISHED,
+        )
+
+        self.site_article = Article.objects.create(
+            title="\u5173\u952e\u7f51\u7ad9",
+            summary="\u6536\u96c6\u7ade\u8d5b\u8bad\u7ec3\u4e2d\u5e38\u7528\u7684\u7f51\u7ad9\u3002",
+            content_md=(
+                "## yuantiji.ac\n"
+                "\u539f\u9898\u673a\uff0c\u53ef\u4ee5\u628a\u9898\u9762\u653e\u8fdb\u53bb\u641c\u7d22\uff0c"
+                "\u627e\u5230\u9898\u76ee\u51fa\u5904\u6216\u76f8\u4f3c\u9898\u76ee\u3002"
+            ),
+            category=self.category,
+            author=self.superadmin,
+            last_editor=self.superadmin,
+            status=Article.Status.PUBLISHED,
+        )
+
+        self.lanqiao_article = Article.objects.create(
+            title="比赛介绍｜蓝桥杯",
+            summary="蓝桥杯比赛介绍。",
+            content_md=(
+                "## 比赛介绍\n"
+                "蓝桥杯大赛采用 **OI 赛制**，所有题目按最后一次提交判分，"
+                "支持部分分，分数赛后统一公布。"
+            ),
+            category=self.category,
+            author=self.superadmin,
+            last_editor=self.superadmin,
+            status=Article.Status.PUBLISHED,
+        )
+
+        self.calendar_event = CompetitionCalendarEvent.objects.create(
+            source_site=CompetitionCalendarEvent.SourceSite.CODEFORCES,
+            source_id="assistant-upcoming-online",
+            title="Codeforces Round 999",
+            organizer="Codeforces",
+            url="https://codeforces.com/contest/999",
+            start_time=timezone.now() + timedelta(days=1, hours=2),
+            end_time=timezone.now() + timedelta(days=1, hours=4),
+            duration_seconds=7200,
+        )
+        self.schedule_entry = CompetitionScheduleEntry.objects.create(
+            event_date=timezone.localdate() + timedelta(days=3),
+            competition_time_range="09:00-17:00",
+            competition_type="CCPC 区域赛",
+            location="南京",
+            qq_group="",
+            announcement=None,
+            created_by=self.superadmin,
+            updated_by=self.superadmin,
+        )
+
+        self.config = AssistantProviderConfig.objects.create(
+            label="DeepSeek Production",
+            assistant_name="AlgoWiki 助手",
+            provider=AssistantProviderConfig.Provider.DEEPSEEK,
+            base_url="https://api.deepseek.com",
+            model_name="deepseek-chat",
+            is_enabled=True,
+            is_default=True,
+            show_launcher=True,
+            created_by=self.superadmin,
+            updated_by=self.superadmin,
+            welcome_message="你好，这里是站内助手。",
+            suggested_questions=["比赛日历在哪里看？"],
+        )
+        self.config.set_api_key("sk-test-123")
+        self.config.save(update_fields=["api_key_encrypted", "updated_at"])
+
+    def tearDown(self):
+        clear_public_corpus_cache()
+        super().tearDown()
+
+    def assertHasBrattyTone(self, text):
+        self.assertIn("师兄", text)
+        self.assertTrue(
+            any(marker in text for marker in ("杂鱼", "不会吧", "可别逗我", "就这", "菜", "不让人省心")),
+            msg=f"Expected bratty taunt marker in: {text}",
+        )
+
+    def test_public_config_and_admin_list_never_expose_api_key(self):
+        public_response = self.client.get("/api/assistant/config/")
+        self.assertEqual(public_response.status_code, 200)
+        self.assertTrue(public_response.data["enabled"])
+        self.assertEqual(public_response.data["assistant_name"], "AlgoWiki 助手")
+        self.assertEqual(public_response.data["welcome_message"], "你好，这里是站内助手。")
+        self.assertNotIn("api_key_encrypted", public_response.data)
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
+        admin_response = self.client.get("/api/assistant-configs/")
+        self.assertEqual(admin_response.status_code, 200)
+        items = admin_response.data.get("results", admin_response.data)
+        self.assertEqual(len(items), 1)
+        self.assertTrue(items[0]["has_api_key"])
+        self.assertEqual(items[0]["api_key_masked"], "****************")
+        self.assertNotIn("api_key_encrypted", items[0])
+        self.assertNotIn("api_key_input", items[0])
+
+    def test_chat_system_prompt_uses_brattish_tone(self):
+        messages = build_chat_messages_compact(
+            config=self.config,
+            message="AlgoWiki 是什么？",
+            history=[],
+            sources=[],
+        )
+
+        self.assertTrue(messages)
+        self.assertEqual(messages[0]["role"], "system")
+        self.assertIn("师兄", messages[0]["content"])
+        self.assertIn("雌小鬼", messages[0]["content"])
+        self.assertIn("杂鱼师兄", messages[0]["content"])
+        self.assertNotIn("主人", messages[0]["content"])
+        self.assertNotIn("喵", messages[0]["content"])
+
+    def test_admin_cannot_modify_assistant_config(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
+        patch_response = self.client.patch(
+            f"/api/assistant-configs/{self.config.id}/",
+            {"label": "Changed by admin"},
+            format="json",
+        )
+        self.assertEqual(patch_response.status_code, 403)
+
+        create_response = self.client.post(
+            "/api/assistant-configs/",
+            {
+                "label": "New Config",
+                "assistant_name": "AlgoWiki 助手",
+                "provider": "deepseek",
+                "base_url": "https://api.deepseek.com",
+                "model_name": "deepseek-chat",
+                "api_key_input": "sk-another",
+            },
+            format="json",
+        )
+        self.assertEqual(create_response.status_code, 403)
+
+    def test_superadmin_can_rotate_api_key_without_readback(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.superadmin_token.key}")
+        response = self.client.patch(
+            f"/api/assistant-configs/{self.config.id}/",
+            {
+                "label": "DeepSeek Primary",
+                "api_key_input": "sk-updated-456",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["api_key_masked"], "****************")
+        self.assertNotIn("api_key_input", response.data)
+
+        self.config.refresh_from_db()
+        self.assertEqual(self.config.label, "DeepSeek Primary")
+        self.assertEqual(self.config.get_api_key(), "sk-updated-456")
+
+    def test_chat_endpoint_returns_sources_and_writes_interaction_log(self):
+        with patch(
+            "wiki.views.invoke_assistant_completion",
+            return_value={
+                "content": "比赛日历可以在赛事专区查看，入口位于赛事专区的比赛日历表。",
+                "usage": {"prompt_tokens": 11, "completion_tokens": 22, "total_tokens": 33},
+                "model": "deepseek-chat",
+            },
+        ) as mocked_provider:
+            response = self.client.post(
+                "/api/assistant/chat/",
+                {
+                    "message": "比赛日历在哪里看？",
+                    "history": [],
+                    "session_id": "session-1",
+                },
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("比赛日历", response.data["answer"])
+        self.assertHasBrattyTone(response.data["answer"])
+        self.assertTrue(response.data["sources"])
+        self.assertEqual(response.data["model"], "deepseek-chat")
+        mocked_provider.assert_called_once()
+
+        log = AssistantInteractionLog.objects.get()
+        self.assertTrue(log.success)
+        self.assertEqual(log.session_id, "session-1")
+        self.assertEqual(log.total_tokens, 33)
+        self.assertGreaterEqual(log.source_count, 1)
+
+    def test_chat_endpoint_returns_brattish_fallback_when_no_sources_match(self):
+        with patch("wiki.views.invoke_assistant_completion") as mocked_provider:
+            response = self.client.post(
+                "/api/assistant/chat/",
+                {
+                    "message": "zzqv_unique_token_94731",
+                    "history": [],
+                    "session_id": "session-no-source",
+                },
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertHasBrattyTone(response.data["answer"])
+        self.assertFalse(response.data["sources"])
+        self.assertEqual(response.data["model"], "deepseek-chat")
+        mocked_provider.assert_not_called()
+
+        log = AssistantInteractionLog.objects.get(session_id="session-no-source")
+        self.assertTrue(log.success)
+        self.assertEqual(log.total_tokens, 0)
+        self.assertEqual(log.source_count, 0)
+
+    def test_recent_competition_query_uses_builtin_digest_without_calling_provider(self):
+        with patch("wiki.views.invoke_assistant_completion") as mocked_provider:
+            response = self.client.post(
+                "/api/assistant/chat/",
+                {
+                    "message": "最近有哪些比赛？",
+                    "history": [],
+                    "session_id": "session-brief",
+                },
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertHasBrattyTone(response.data["answer"])
+        self.assertNotIn("主人", response.data["answer"])
+        self.assertNotIn("喵", response.data["answer"])
+        self.assertIn("线上", response.data["answer"])
+        self.assertIn("线下", response.data["answer"])
+        self.assertEqual(response.data["model"], "builtin-competition-brief")
+        self.assertTrue(response.data["sources"])
+        mocked_provider.assert_not_called()
+
+        log = AssistantInteractionLog.objects.get(session_id="session-brief")
+        self.assertTrue(log.success)
+        self.assertEqual(log.total_tokens, 0)
+        self.assertEqual(log.source_count, len(response.data["sources"]))
+
+    def test_original_problem_site_query_uses_current_page_context(self):
+        with patch("wiki.views.invoke_assistant_completion") as mocked_provider:
+            response = self.client.post(
+                "/api/assistant/chat/",
+                {
+                    "message": "我想要一个能根据题意找到原题的网站",
+                    "history": [],
+                    "session_id": "session-site-match",
+                    "current_path": f"/wiki/{self.site_article.id}",
+                    "current_title": "关键网站",
+                },
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("yuantiji.ac", response.data["answer"])
+        self.assertHasBrattyTone(response.data["answer"])
+        self.assertNotIn("主人", response.data["answer"])
+        self.assertNotIn("喵", response.data["answer"])
+        self.assertEqual(response.data["model"], "builtin-site-match")
+        self.assertEqual(len(response.data["sources"]), 1)
+        self.assertIn(str(self.site_article.id), response.data["sources"][0]["url"])
+        mocked_provider.assert_not_called()
+
+        log = AssistantInteractionLog.objects.get(session_id="session-site-match")
+        self.assertTrue(log.success)
+        self.assertEqual(log.total_tokens, 0)
+        self.assertEqual(log.source_count, 1)
+
+    def test_competition_format_query_uses_builtin_digest(self):
+        with patch("wiki.views.invoke_assistant_completion") as mocked_provider:
+            response = self.client.post(
+                "/api/assistant/chat/",
+                {
+                    "message": "蓝桥杯是什么赛制",
+                    "history": [],
+                    "session_id": "session-format",
+                    "current_path": f"/wiki/{self.lanqiao_article.id}",
+                    "current_title": self.lanqiao_article.title,
+                },
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertHasBrattyTone(response.data["answer"])
+        self.assertIn("OI 赛制", response.data["answer"])
+        self.assertIn("最后一次提交", response.data["answer"])
+        self.assertNotIn("主人", response.data["answer"])
+        self.assertNotIn("喵", response.data["answer"])
+        self.assertEqual(response.data["model"], "builtin-competition-format")
+        self.assertEqual(len(response.data["sources"]), 1)
+        self.assertIn(str(self.lanqiao_article.id), response.data["sources"][0]["url"])
+        self.assertIn("OI 赛制", response.data["sources"][0]["excerpt"])
+        mocked_provider.assert_not_called()
+
+        log = AssistantInteractionLog.objects.get(session_id="session-format")
+        self.assertTrue(log.success)
+        self.assertEqual(log.total_tokens, 0)
+        self.assertEqual(log.source_count, 1)
+
+    def test_competition_format_query_ignores_homepage_title(self):
+        with patch("wiki.views.invoke_assistant_completion") as mocked_provider:
+            response = self.client.post(
+                "/api/assistant/chat/",
+                {
+                    "message": "蓝桥杯是什么赛制",
+                    "history": [],
+                    "session_id": "session-format-home",
+                    "current_path": "/",
+                    "current_title": "欢迎来到 AlgoWiki!",
+                },
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertHasBrattyTone(response.data["answer"])
+        self.assertIn("蓝桥杯采用 OI 赛制", response.data["answer"])
+        self.assertNotIn("欢迎来到 AlgoWiki", response.data["answer"])
+        self.assertNotIn("主人", response.data["answer"])
+        self.assertNotIn("喵", response.data["answer"])
+        self.assertEqual(response.data["model"], "builtin-competition-format")
+        mocked_provider.assert_not_called()
+
+    def test_public_config_preserves_custom_welcome_message(self):
+        self.config.welcome_message = "师兄你好，我是小丛雨喵~"
+        self.config.assistant_name = "小小丛雨"
+        self.config.save(update_fields=["welcome_message", "assistant_name", "updated_at"])
+
+        response = self.client.get("/api/assistant/config/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["assistant_name"], "小小丛雨")
+        self.assertEqual(response.data["welcome_message"], "师兄你好，我是小丛雨喵~")
 
 
 class CompetitionCalendarSyncCommandTests(APITestCase):

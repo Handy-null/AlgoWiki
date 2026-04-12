@@ -5,9 +5,15 @@
         <h1>公告</h1>
         <p>按发布时间倒序查看全部公告</p>
       </div>
-      <RouterLink v-if="auth.isManager" class="btn btn-accent" :to="{ name: 'manage-announcements' }">
+      <a
+        v-if="auth.isManager"
+        class="btn btn-accent"
+        href="/admin/wiki/announcement/add/"
+        target="_blank"
+        rel="noopener"
+      >
         发布公告
-      </RouterLink>
+      </a>
     </header>
 
     <section v-if="loading" class="card state-card">
@@ -94,7 +100,7 @@
 
 <script setup>
 import { nextTick, onMounted, reactive, ref, watch } from "vue";
-import { RouterLink, useRoute } from "vue-router";
+import { useRoute } from "vue-router";
 
 import api from "../services/api";
 import { renderMarkdown } from "../services/markdown";
