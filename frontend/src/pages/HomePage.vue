@@ -145,6 +145,7 @@ import { useRouter } from "vue-router";
 
 import api from "../services/api";
 import ImageUploadHelper from "../components/ImageUploadHelper.vue";
+import { renderMarkdown } from "../services/markdown";
 import { useAuthStore } from "../stores/auth";
 import { useUiStore } from "../stores/ui";
 
@@ -230,18 +231,17 @@ async function openAnnouncement(item) {
   });
 }
 
-function toPlainText(value) {
-  return String(value || "")
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, "[图片]")
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
-    .replace(/`{1,3}/g, "")
-    .replace(/^#{1,6}\s*/gm, "")
-    .replace(/\r\n/g, "\n")
-    .trim();
+function markdownToPlainText(value) {
+  const html = renderMarkdown(value || "");
+  if (typeof DOMParser !== "undefined") {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    return (doc.body.textContent || "").trim();
+  }
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
 function summarizeText(value, limit = 96) {
-  const text = toPlainText(value).replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
+  const text = markdownToPlainText(value).replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
   if (text.length <= limit) {
     return text;
   }
