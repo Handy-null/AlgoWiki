@@ -9,7 +9,7 @@
           </span>
           <span class="toc-count">{{ chapterTocVisibleItems.length }}</span>
         </div>
-        <div v-if="chapterTocVisibleItems.length" class="toc-chapter-list">
+        <div v-if="chapterTocVisibleItems.length" ref="chapterTocListRef" class="toc-chapter-list">
           <div
             v-for="node in chapterTocVisibleItems"
             :key="node.id"
@@ -23,6 +23,7 @@
               },
             ]"
             :style="{ '--toc-indent': `${node.depth * 16}px` }"
+            :data-anchor-id="node.anchorId"
           >
             <button
               v-if="node.hasChildren"
@@ -85,7 +86,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 
 import { useRequestControllers } from "../composables/useRequestControllers";
@@ -176,15 +177,20 @@ const chapterArticles = computed(() => {
 const chapterTocTree = computed(() => buildChapterTocTree(chapterArticles.value));
 const chapterTocExpandedIds = ref(new Set());
 const activeChapterAnchorId = ref("");
+const chapterTocListRef = ref(null);
+const PAGE_SCROLL_TOP_OFFSET = 92;
+const PAGE_SCROLL_REVEAL_PADDING = 20;
+const PAGE_SCROLL_BOTTOM_PADDING = 20;
+const TOC_SCROLL_EDGE_GAP = 16;
+let chapterScrollRafId = 0;
+let chapterActiveLockUntil = 0;
+let chapterLastScrollY = 0;
+let chapterLastTocScrollTs = 0;
+let chapterRapidScrollUntil = 0;
+let chapterHeadingOffsetList = [];
+let chapterHeadingOffsetMap = new Map();
 const chapterTocVisibleItems = computed(() =>
   flattenVisibleChapterToc(chapterTocTree.value, chapterTocExpandedIds.value)
-);
-const activeChapterRootNode = computed(
-  () => findChapterRootNodeByAnchor(chapterTocTree.value, activeChapterAnchorId.value) || chapterTocTree.value[0] || null
-);
-const activeChapterBranchTitle = computed(() => activeChapterRootNode.value?.text || "当前章节");
-const activeChapterBranchItems = computed(() =>
-  flattenFullChapterBranch(activeChapterRootNode.value?.children || [])
 );
 const categoryDirectoryExpandedIds = ref(new Set());
 const categoryDirectoryTree = computed(() => buildCategoryDirectoryTree(effectiveCategories.value));
@@ -377,26 +383,6 @@ function findTocNodeById(nodes, targetId) {
   return null;
 }
 
-function findChapterNodePathByAnchor(nodes, anchorId, trail = []) {
-  if (!anchorId) return null;
-  for (const node of nodes) {
-    const nextTrail = [...trail, node];
-    if (node.anchorId === anchorId) {
-      return nextTrail;
-    }
-    if (node.children?.length) {
-      const nested = findChapterNodePathByAnchor(node.children, anchorId, nextTrail);
-      if (nested) return nested;
-    }
-  }
-  return null;
-}
-
-function findChapterRootNodeByAnchor(nodes, anchorId) {
-  const path = findChapterNodePathByAnchor(nodes, anchorId);
-  return Array.isArray(path) && path.length ? path[0] : null;
-}
-
 function collectDescendantIds(node, bucket = new Set()) {
   for (const child of node?.children || []) {
     bucket.add(child.id);
@@ -424,17 +410,11 @@ function flattenVisibleChapterToc(nodes, expandedIds, depth = 0, output = []) {
   return output;
 }
 
-function flattenFullChapterBranch(nodes, depth = 0, output = []) {
+function flattenAllChapterNodes(nodes, output = []) {
   for (const node of nodes) {
-    output.push({
-      id: `branch-${node.id}`,
-      text: node.text,
-      depth,
-      hasChildren: node.children.length > 0,
-      anchorId: node.anchorId,
-    });
+    output.push(node);
     if (node.children.length) {
-      flattenFullChapterBranch(node.children, depth + 1, output);
+      flattenAllChapterNodes(node.children, output);
     }
   }
   return output;
@@ -566,6 +546,9 @@ function handleTocNodeClick(node) {
     next.add(node.id);
     chapterTocExpandedIds.value = next;
   }
+  chapterActiveLockUntil = Date.now() + 1100;
+  chapterLastTocScrollTs = 0;
+  chapterLastScrollY = typeof window !== "undefined" ? window.scrollY : 0;
   activeChapterAnchorId.value = node.anchorId;
   scrollToAnchor(node.anchorId);
 }
@@ -574,7 +557,202 @@ function scrollToAnchor(anchorId) {
   if (!anchorId) return;
   const node = document.getElementById(anchorId);
   if (!node) return;
-  node.scrollIntoView({ behavior: "smooth", block: "start" });
+  const prefersReducedMotion =
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const safeTop = PAGE_SCROLL_TOP_OFFSET + PAGE_SCROLL_REVEAL_PADDING;
+  const targetTop = Math.max(0, window.scrollY + node.getBoundingClientRect().top - safeTop);
+  window.scrollTo({
+    top: targetTop,
+    behavior: prefersReducedMotion ? "auto" : "smooth",
+  });
+
+  // 双 rAF 后执行可见性校正，保证标题完整露出，而不是只露边。
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      const rect = node.getBoundingClientRect();
+      const viewportBottom = window.innerHeight - PAGE_SCROLL_BOTTOM_PADDING;
+      let delta = 0;
+      if (rect.top < safeTop) {
+        delta = rect.top - safeTop;
+      } else if (rect.bottom > viewportBottom) {
+        delta = rect.bottom - viewportBottom;
+      }
+      if (Math.abs(delta) > 1) {
+        window.scrollBy({ top: delta, behavior: "auto" });
+      }
+      rebuildChapterHeadingOffsets();
+      scheduleActiveAnchorSync();
+    });
+  });
+}
+
+function isCompactViewport() {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+  return window.matchMedia("(max-width: 900px)").matches;
+}
+
+function escapeAttributeSelector(value) {
+  return String(value || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+function rebuildChapterHeadingOffsets() {
+  if (typeof window === "undefined") {
+    chapterHeadingOffsetList = [];
+    chapterHeadingOffsetMap = new Map();
+    return;
+  }
+  const allNodes = flattenAllChapterNodes(chapterTocTree.value);
+  const headingItems = allNodes
+    .map((node) => ({ anchorId: node.anchorId, element: document.getElementById(node.anchorId) }))
+    .filter((item) => item.element);
+  const scrollY = window.scrollY || 0;
+  const nextList = [];
+  const nextMap = new Map();
+  for (const item of headingItems) {
+    const top = item.element.getBoundingClientRect().top + scrollY;
+    nextList.push({ anchorId: item.anchorId, top });
+    nextMap.set(item.anchorId, top);
+  }
+  nextList.sort((left, right) => left.top - right.top);
+  chapterHeadingOffsetList = nextList;
+  chapterHeadingOffsetMap = nextMap;
+}
+
+function findHeadingIndexByTop(targetTop) {
+  let low = 0;
+  let high = chapterHeadingOffsetList.length - 1;
+  let answer = -1;
+  while (low <= high) {
+    const middle = (low + high) >> 1;
+    if (chapterHeadingOffsetList[middle].top <= targetTop) {
+      answer = middle;
+      low = middle + 1;
+    } else {
+      high = middle - 1;
+    }
+  }
+  return answer;
+}
+
+function pickActiveAnchorFromViewport() {
+  if (!chapterHeadingOffsetList.length) return "";
+
+  const currentScrollY = typeof window !== "undefined" ? window.scrollY : 0;
+  const activationTop =
+    currentScrollY + PAGE_SCROLL_TOP_OFFSET + Math.min(220, Math.max(120, window.innerHeight * 0.28));
+  const scrollingDown = currentScrollY >= chapterLastScrollY;
+  const scrollDelta = Math.abs(currentScrollY - chapterLastScrollY);
+  if (scrollDelta > Math.max(window.innerHeight * 0.22, 170)) {
+    chapterRapidScrollUntil = Date.now() + 220;
+  }
+  chapterLastScrollY = currentScrollY;
+
+  const candidateIndex = findHeadingIndexByTop(activationTop);
+  if (candidateIndex < 0) {
+    return chapterHeadingOffsetList[0]?.anchorId || "";
+  }
+
+  let nextAnchorId = chapterHeadingOffsetList[candidateIndex]?.anchorId || "";
+  const currentAnchorId = activeChapterAnchorId.value;
+  const currentTop = chapterHeadingOffsetMap.get(currentAnchorId);
+  if (Number.isFinite(currentTop) && Math.abs(currentTop - activationTop) < 56) {
+    return currentAnchorId;
+  }
+
+  if (!scrollingDown && candidateIndex > 0) {
+    const currentCandidateTop = chapterHeadingOffsetList[candidateIndex].top;
+    const previousCandidateTop = chapterHeadingOffsetList[candidateIndex - 1].top;
+    if (activationTop - previousCandidateTop < 26 && currentCandidateTop - activationTop > 26) {
+      nextAnchorId = chapterHeadingOffsetList[candidateIndex - 1].anchorId;
+    }
+  }
+
+  return nextAnchorId;
+}
+
+function syncActiveAnchorByViewport() {
+  if (Date.now() < chapterActiveLockUntil) return;
+  const nextAnchorId = pickActiveAnchorFromViewport();
+  if (!nextAnchorId || nextAnchorId === activeChapterAnchorId.value) return;
+  activeChapterAnchorId.value = nextAnchorId;
+}
+
+function scheduleActiveAnchorSync() {
+  if (chapterScrollRafId) return;
+  chapterScrollRafId = window.requestAnimationFrame(() => {
+    chapterScrollRafId = 0;
+    syncActiveAnchorByViewport();
+  });
+}
+
+function ensureActiveTocItemInView(anchorId) {
+  if (!anchorId || isCompactViewport()) return;
+  const container = chapterTocListRef.value;
+  if (!container) return;
+  const row = container.querySelector(`[data-anchor-id="${escapeAttributeSelector(anchorId)}"]`);
+  if (!row) return;
+
+  const viewTop = container.scrollTop;
+  const viewBottom = viewTop + container.clientHeight;
+  const rowTop = row.offsetTop;
+  const rowBottom = rowTop + row.offsetHeight;
+  const above = rowTop < viewTop + TOC_SCROLL_EDGE_GAP;
+  const below = rowBottom > viewBottom - TOC_SCROLL_EDGE_GAP;
+  if (!above && !below) return;
+
+  const now = Date.now();
+  const rapidScrolling = now < chapterRapidScrollUntil;
+  if (!rapidScrolling && now - chapterLastTocScrollTs < 60) return;
+  chapterLastTocScrollTs = now;
+
+  const prefersReducedMotion =
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const centeredTop = rowTop - (container.clientHeight - row.offsetHeight) / 2;
+  const nextTop = above || below
+    ? Math.max(0, centeredTop)
+    : container.scrollTop;
+
+  container.scrollTo({
+    top: nextTop,
+    behavior: prefersReducedMotion || rapidScrolling ? "auto" : "smooth",
+  });
+}
+
+function stopChapterScrollSync() {
+  if (typeof window !== "undefined") {
+    window.removeEventListener("scroll", scheduleActiveAnchorSync);
+    window.removeEventListener("resize", handleChapterViewportResize);
+  }
+  if (chapterScrollRafId) {
+    window.cancelAnimationFrame(chapterScrollRafId);
+    chapterScrollRafId = 0;
+  }
+}
+
+function handleChapterViewportResize() {
+  rebuildChapterHeadingOffsets();
+  scheduleActiveAnchorSync();
+}
+
+function startChapterScrollSync() {
+  stopChapterScrollSync();
+  chapterLastScrollY = typeof window !== "undefined" ? window.scrollY : 0;
+  chapterLastTocScrollTs = 0;
+  chapterRapidScrollUntil = 0;
+  rebuildChapterHeadingOffsets();
+  if (!chapterHeadingOffsetList.length) return;
+
+  if (typeof window !== "undefined") {
+    window.addEventListener("scroll", scheduleActiveAnchorSync, { passive: true });
+    window.addEventListener("resize", handleChapterViewportResize, { passive: true });
+  }
+
+  scheduleActiveAnchorSync();
 }
 
 function tocLevelClass(node) {
@@ -716,13 +894,26 @@ onMounted(async () => {
   await loadArticles();
 });
 
+onBeforeUnmount(() => {
+  stopChapterScrollSync();
+});
+
 watch(
   () => chapterTocTree.value,
-  () => {
+  async (tree) => {
     chapterTocExpandedIds.value = buildDefaultExpandedIds(chapterTocTree.value);
-    activeChapterAnchorId.value = chapterTocTree.value[0]?.anchorId || "";
+    activeChapterAnchorId.value = tree[0]?.anchorId || "";
+    await nextTick();
+    startChapterScrollSync();
   },
   { immediate: true }
+);
+
+watch(
+  () => activeChapterAnchorId.value,
+  (anchorId) => {
+    ensureActiveTocItemInView(anchorId);
+  }
 );
 
 watch(
