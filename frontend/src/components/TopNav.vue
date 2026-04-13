@@ -1,7 +1,7 @@
 ﻿<template>
   <header class="topbar">
     <div class="topbar-inner">
-      <button class="menu-toggle" @click="toggleMobileMenu" aria-label="菜单">
+      <button type="button" class="menu-toggle" @click="toggleMobileMenu" aria-label="菜单">
         <span></span>
         <span></span>
         <span></span>
@@ -98,7 +98,7 @@
         <RouterLink v-if="!auth.isAuthenticated" class="auth-pill" :to="{ name: 'auth' }">登录</RouterLink>
 
         <template v-else>
-          <button class="notify-toggle" @click="toggleNoticePanel">
+          <button type="button" class="notify-toggle" @click="toggleNoticePanel">
             通知
             <span v-if="unreadCount" class="notify-count">{{ unreadCount > 99 ? "99+" : unreadCount }}</span>
           </button>
@@ -125,7 +125,7 @@
               </template>
             </div>
           </Transition>
-          <button class="auth-pill user-trigger" @click="toggleUserPanel">{{ auth.user?.username }}</button>
+          <button type="button" class="auth-pill user-trigger" @click="toggleUserPanel">{{ auth.user?.username }}</button>
           <Transition name="drop">
             <div v-if="showUserPanel" class="user-panel">
               <p class="user-name">{{ auth.user?.username || "-" }}</p>
@@ -180,61 +180,45 @@
         <template v-for="item in primaryNav" :key="`mobile-${item.key}`">
           <div v-if="item.kind === 'dropdown'" class="mobile-group">
             <span class="mobile-group-title">{{ item.name }}</span>
-            <RouterLink
+            <button
               v-for="child in item.children"
               :key="`mobile-${child.key}`"
-              :to="child.to"
-              custom
-              v-slot="{ href, navigate }"
+              type="button"
+              class="mobile-link mobile-link--child"
+              :class="{ 'mobile-link--active': isNavActive(child) }"
+              @click="navigateFromMobileMenu(child.to)"
             >
-              <a
-                :href="href"
-                class="mobile-link mobile-link--child"
-                :class="{ 'mobile-link--active': isNavActive(child) }"
-                @click="
-                  (event) => {
-                    showMobileMenu = false;
-                    navigate(event);
-                  }
-                "
-              >
-                {{ child.name }}
-              </a>
-            </RouterLink>
+              {{ child.name }}
+            </button>
           </div>
 
-          <RouterLink v-else :to="item.to" custom v-slot="{ href, navigate }">
-            <a
-              :href="href"
-              class="mobile-link"
-              :class="{ 'mobile-link--active': isNavActive(item) }"
-              @click="
-                (event) => {
-                  showMobileMenu = false;
-                  navigate(event);
-                }
-              "
-            >
-              {{ item.name }}
-            </a>
-          </RouterLink>
+          <button
+            v-else
+            type="button"
+            :key="`mobile-route-${item.key}`"
+            class="mobile-link"
+            :class="{ 'mobile-link--active': isNavActive(item) }"
+            @click="navigateFromMobileMenu(item.to)"
+          >
+            {{ item.name }}
+          </button>
         </template>
-        <RouterLink
+        <button
           v-if="auth.isAuthenticated"
+          type="button"
           class="mobile-link mobile-link--accent"
-          :to="{ name: 'profile' }"
-          @click="showMobileMenu = false"
+          @click="navigateFromMobileMenu({ name: 'profile' })"
         >
           个人中心
-        </RouterLink>
-        <RouterLink
+        </button>
+        <button
           v-else
+          type="button"
           class="mobile-link mobile-link--accent"
-          :to="{ name: 'auth' }"
-          @click="showMobileMenu = false"
+          @click="navigateFromMobileMenu({ name: 'auth' })"
         >
           登录 / 注册
-        </RouterLink>
+        </button>
       </div>
     </Transition>
   </header>
@@ -473,6 +457,17 @@ function toggleMobileMenu() {
   closeDropdowns();
   closeThemePanel();
   showMobileMenu.value = !showMobileMenu.value;
+}
+
+async function navigateFromMobileMenu(target) {
+  showMobileMenu.value = false;
+  pinnedDropdownKey.value = "";
+  closeDropdowns();
+  closeNoticePanel();
+  closeUserPanel();
+  closeThemePanel();
+  if (!target) return;
+  await router.push(target);
 }
 
 function closeNoticePanel() {
@@ -1350,11 +1345,14 @@ onBeforeUnmount(() => {
   }
 
   .mobile-link {
+    border: 0;
     font-size: 14px;
     color: var(--text-strong);
     padding: 12px 10px;
     border-radius: 12px;
     background: var(--surface-soft);
+    width: 100%;
+    text-align: left;
   }
 
   .mobile-link--child {
