@@ -51,10 +51,17 @@ from .models import (
     SecurityAuditLog,
     TeamMember,
     TrickEntry,
+    TrickTerm,
+    TrickTermSuggestion,
     UserNotification,
     User,
 )
-from .permissions import AuthenticatedAndNotBanned, AdminOrSuperAdmin, SuperAdminOnly, can_moderate_category
+from .permissions import (
+    AuthenticatedAndNotBanned,
+    AdminOrSuperAdmin,
+    SuperAdminOnly,
+    can_moderate_category,
+)
 from .security import record_password_history, record_security_event
 from .throttles import (
     AssistantAnonRateThrottle,
@@ -111,6 +118,8 @@ from .serializers import (
     TeamMemberSerializer,
     TeamMemberUpsertSerializer,
     UserNotificationSerializer,
+    TrickTermSerializer,
+    TrickTermSuggestionSerializer,
     UserAdminSerializer,
     UserProfileSettingsSerializer,
     UserProfileUpdateSerializer,
@@ -141,7 +150,11 @@ api_logger = logging.getLogger("algowiki.api")
 
 
 def is_manager(user) -> bool:
-    return bool(user and user.is_authenticated and user.role in {User.Role.ADMIN, User.Role.SUPERADMIN})
+    return bool(
+        user
+        and user.is_authenticated
+        and user.role in {User.Role.ADMIN, User.Role.SUPERADMIN}
+    )
 
 
 def build_question_auto_close_at(base_time=None):
@@ -213,7 +226,11 @@ def create_notification(
         title=(title or "").strip()[:200],
         content=(content or "").strip()[:500],
         link=(link or "").strip()[:255],
-        level=level if level in dict(UserNotification.Level.choices) else UserNotification.Level.INFO,
+        level=(
+            level
+            if level in dict(UserNotification.Level.choices)
+            else UserNotification.Level.INFO
+        ),
         target_type=target_type[:80],
         target_id=target_id,
     )
@@ -234,7 +251,11 @@ def bulk_notify_users(
     actor_id = actor.id if actor and actor.is_authenticated else None
     now = timezone.now()
     items = []
-    valid_level = level if level in dict(UserNotification.Level.choices) else UserNotification.Level.INFO
+    valid_level = (
+        level
+        if level in dict(UserNotification.Level.choices)
+        else UserNotification.Level.INFO
+    )
 
     for user in users:
         if not user.is_active or user.is_banned:
@@ -265,7 +286,9 @@ DELETED_USER_PLACEHOLDER_USERNAME = "system_deleted_user"
 
 
 def is_deleted_user_placeholder(user) -> bool:
-    return bool(user and getattr(user, "username", "") == DELETED_USER_PLACEHOLDER_USERNAME)
+    return bool(
+        user and getattr(user, "username", "") == DELETED_USER_PLACEHOLDER_USERNAME
+    )
 
 
 def get_deleted_user_placeholder():
@@ -315,7 +338,9 @@ def reassign_protected_user_relations(*, source_user, placeholder_user) -> None:
             continue
         if relation.related_model is User:
             continue
-        relation.related_model.objects.filter(**{field.name: source_user}).update(**{field.name: placeholder_user})
+        relation.related_model.objects.filter(**{field.name: source_user}).update(
+            **{field.name: placeholder_user}
+        )
 
 
 UNSET = object()
@@ -361,7 +386,9 @@ def parse_move_direction(request):
 NON_PUBLIC_DETAIL_ACTIONS = {"retrieve", "update", "partial_update", "destroy", "move"}
 
 
-def can_access_non_public_items(*, user, action: str, explicit_include: bool, permission_check) -> bool:
+def can_access_non_public_items(
+    *, user, action: str, explicit_include: bool, permission_check
+) -> bool:
     if not permission_check(user):
         return False
     return bool(explicit_include or action in NON_PUBLIC_DETAIL_ACTIONS)
@@ -372,9 +399,13 @@ def get_next_order_value(queryset, field_name: str) -> int:
     return int(max_value) + 1
 
 
-def move_ordered_instance(*, instance, queryset, order_field: str, direction: str) -> bool:
+def move_ordered_instance(
+    *, instance, queryset, order_field: str, direction: str
+) -> bool:
     items = list(queryset.order_by(order_field, "id"))
-    current_index = next((index for index, item in enumerate(items) if item.pk == instance.pk), None)
+    current_index = next(
+        (index for index, item in enumerate(items) if item.pk == instance.pk), None
+    )
     if current_index is None:
         return False
 
@@ -382,7 +413,10 @@ def move_ordered_instance(*, instance, queryset, order_field: str, direction: st
     if target_index < 0 or target_index >= len(items):
         return False
 
-    items[current_index], items[target_index] = items[target_index], items[current_index]
+    items[current_index], items[target_index] = (
+        items[target_index],
+        items[current_index],
+    )
     now = timezone.now()
     changed_items = []
     for index, item in enumerate(items, start=1):
@@ -406,10 +440,12 @@ def move_ordered_instance(*, instance, queryset, order_field: str, direction: st
 
 
 INVALID_EXPORT_FILENAME_CHARS = re.compile(r'[\\/:*?"<>|]+')
-MARKDOWN_IMAGE_PATTERN = re.compile(r'!\[[^\]]*]\(([^)\n]+)\)')
+MARKDOWN_IMAGE_PATTERN = re.compile(r"!\[[^\]]*]\(([^)\n]+)\)")
 MARKDOWN_LINK_PATTERN = re.compile(r"\[([^\]]+)\]\(([^)\n]+)\)")
 COMPETITION_CALENDAR_FINISHED_RETENTION_DAYS = 30
-EXPORT_FEATURE_DISABLED_DETAIL = "Export has been disabled to keep cost and abuse risk under control."
+EXPORT_FEATURE_DISABLED_DETAIL = (
+    "Export has been disabled to keep cost and abuse risk under control."
+)
 
 
 class ActionThrottleMixin:
@@ -428,7 +464,9 @@ class ActionThrottleMixin:
 
 
 def export_feature_disabled_response():
-    return Response({"detail": EXPORT_FEATURE_DISABLED_DETAIL}, status=status.HTTP_404_NOT_FOUND)
+    return Response(
+        {"detail": EXPORT_FEATURE_DISABLED_DETAIL}, status=status.HTTP_404_NOT_FOUND
+    )
 
 
 def sanitize_export_filename(value: str, fallback: str = "article") -> str:
@@ -553,7 +591,9 @@ def markdown_line_to_plain_text(line: str) -> str:
 
 def filter_visible_competition_calendar_events(queryset, *, now=None):
     reference_now = now or timezone.now()
-    cutoff = reference_now - timedelta(days=COMPETITION_CALENDAR_FINISHED_RETENTION_DAYS)
+    cutoff = reference_now - timedelta(
+        days=COMPETITION_CALENDAR_FINISHED_RETENTION_DAYS
+    )
     return queryset.filter(end_time__gte=cutoff)
 
 
@@ -565,10 +605,16 @@ class HealthCheckView(APIView):
     def get(self, request):
         frontend_index = Path(getattr(settings, "FRONTEND_DIST_DIR", "")) / "index.html"
         media_root = Path(settings.MEDIA_ROOT).resolve()
-        disk_target = media_root if media_root.exists() else Path(settings.BASE_DIR).resolve()
+        disk_target = (
+            media_root if media_root.exists() else Path(settings.BASE_DIR).resolve()
+        )
         disk_usage = shutil.disk_usage(disk_target)
         free_mb = int(disk_usage.free / 1024 / 1024)
-        media_ok = media_root.exists() and media_root.is_dir() and os.access(media_root, os.W_OK)
+        media_ok = (
+            media_root.exists()
+            and media_root.is_dir()
+            and os.access(media_root, os.W_OK)
+        )
         frontend_ready = frontend_index.exists()
         serve_frontend = bool(getattr(settings, "SERVE_FRONTEND", False))
         request_id = getattr(request, "request_id", "")
@@ -602,9 +648,17 @@ class HealthCheckView(APIView):
             "security": {
                 "debug": bool(settings.DEBUG),
                 "https_redirect": bool(getattr(settings, "SECURE_SSL_REDIRECT", False)),
-                "session_cookie_secure": bool(getattr(settings, "SESSION_COOKIE_SECURE", False)),
-                "csrf_cookie_secure": bool(getattr(settings, "CSRF_COOKIE_SECURE", False)),
-                "token_ttl_hours": int((getattr(settings, "AUTH_SECURITY", {}) or {}).get("TOKEN_TTL_HOURS", 0)),
+                "session_cookie_secure": bool(
+                    getattr(settings, "SESSION_COOKIE_SECURE", False)
+                ),
+                "csrf_cookie_secure": bool(
+                    getattr(settings, "CSRF_COOKIE_SECURE", False)
+                ),
+                "token_ttl_hours": int(
+                    (getattr(settings, "AUTH_SECURITY", {}) or {}).get(
+                        "TOKEN_TTL_HOURS", 0
+                    )
+                ),
             },
         }
 
@@ -626,7 +680,11 @@ class HealthCheckView(APIView):
             payload["status"] = "degraded"
             payload["frontend"]["detail"] = "Frontend dist index.html is missing."
 
-        status_code = status.HTTP_200_OK if payload["status"] == "ok" else status.HTTP_503_SERVICE_UNAVAILABLE
+        status_code = (
+            status.HTTP_200_OK
+            if payload["status"] == "ok"
+            else status.HTTP_503_SERVICE_UNAVAILABLE
+        )
         return Response(payload, status=status_code)
 
 
@@ -667,7 +725,9 @@ class ImageUploadView(APIView):
         now = timezone.now()
         filename = f"{now:%Y%m%d_%H%M%S}_{uuid4().hex[:10]}{suffix}"
         relative_dir = Path("wiki-uploads") / f"{now:%Y}" / f"{now:%m}"
-        storage = FileSystemStorage(location=settings.MEDIA_ROOT, base_url=settings.MEDIA_URL)
+        storage = FileSystemStorage(
+            location=settings.MEDIA_ROOT, base_url=settings.MEDIA_URL
+        )
         stored_name = storage.save(str(relative_dir / filename), image)
         public_url = request.build_absolute_uri(storage.url(stored_name))
 
@@ -689,7 +749,9 @@ class RegisterEmailCodeView(APIView):
     throttle_classes = [RegisterRateThrottle]
 
     def post(self, request):
-        serializer = RegisterEmailCodeSerializer(data=request.data, context={"request": request})
+        serializer = RegisterEmailCodeSerializer(
+            data=request.data, context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
         payload = serializer.save()
         record_security_event(
@@ -745,7 +807,9 @@ class PasswordResetCodeView(APIView):
     throttle_classes = [PasswordResetRequestRateThrottle]
 
     def post(self, request):
-        serializer = PasswordResetCodeSerializer(data=request.data, context={"request": request})
+        serializer = PasswordResetCodeSerializer(
+            data=request.data, context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
         payload = serializer.save()
         record_security_event(
@@ -768,7 +832,9 @@ class PasswordResetView(APIView):
     throttle_classes = [PasswordResetConfirmRateThrottle]
 
     def post(self, request):
-        serializer = PasswordResetSerializer(data=request.data, context={"request": request})
+        serializer = PasswordResetSerializer(
+            data=request.data, context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
         payload = serializer.save()
         user = payload["user"]
@@ -843,7 +909,9 @@ class MeView(APIView):
             stats = {
                 "star_count": ArticleStar.objects.filter(user=user).count(),
                 "comment_count": ArticleComment.objects.filter(author=user).count(),
-                "revision_count": RevisionProposal.objects.filter(proposer=user).count(),
+                "revision_count": RevisionProposal.objects.filter(
+                    proposer=user
+                ).count(),
                 "issue_count": IssueTicket.objects.filter(author=user).count(),
                 "question_count": Question.objects.filter(author=user).count(),
                 "answer_count": Answer.objects.filter(author=user).count(),
@@ -851,7 +919,9 @@ class MeView(APIView):
             }
 
             recent_events = ContributionEvent.objects.filter(user=user)[:20]
-            starred_articles = Article.objects.filter(stargazers__user=user).select_related("category", "author")[:10]
+            starred_articles = Article.objects.filter(
+                stargazers__user=user
+            ).select_related("category", "author")[:10]
 
             return Response(
                 {
@@ -861,7 +931,9 @@ class MeView(APIView):
                     ).data,
                     "profile_settings": UserProfileSettingsSerializer(user).data,
                     "stats": stats,
-                    "recent_events": ContributionEventSerializer(recent_events, many=True).data,
+                    "recent_events": ContributionEventSerializer(
+                        recent_events, many=True
+                    ).data,
                     "starred_articles": ArticleSerializer(
                         starred_articles,
                         many=True,
@@ -873,7 +945,9 @@ class MeView(APIView):
             return schema_outdated_response(exc)
 
     def patch(self, request):
-        serializer = UserProfileUpdateSerializer(request.user, data=request.data, partial=True)
+        serializer = UserProfileUpdateSerializer(
+            request.user, data=request.data, partial=True
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(
@@ -892,7 +966,9 @@ class EmailChangeCodeView(APIView):
     throttle_classes = [EmailChangeRequestRateThrottle]
 
     def post(self, request):
-        serializer = EmailChangeCodeSerializer(data=request.data, context={"request": request})
+        serializer = EmailChangeCodeSerializer(
+            data=request.data, context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
         payload = serializer.save()
         record_security_event(
@@ -912,7 +988,9 @@ class EmailChangeView(APIView):
     throttle_classes = [EmailChangeConfirmRateThrottle]
 
     def post(self, request):
-        serializer = EmailChangeSerializer(data=request.data, context={"request": request})
+        serializer = EmailChangeSerializer(
+            data=request.data, context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
         payload = serializer.save()
         user = payload["user"]
@@ -943,7 +1021,9 @@ class MeEventListView(generics.ListAPIView):
     permission_classes = [AuthenticatedAndNotBanned]
 
     def get_queryset(self):
-        queryset = ContributionEvent.objects.filter(user=self.request.user).select_related("user")
+        queryset = ContributionEvent.objects.filter(
+            user=self.request.user
+        ).select_related("user")
         event_type = self.request.query_params.get("event_type")
         if event_type in dict(ContributionEvent.EventType.choices):
             queryset = queryset.filter(event_type=event_type)
@@ -1024,10 +1104,18 @@ class MeSecuritySummaryView(APIView):
                     "since": timezone.localtime(cutoff).isoformat(),
                     "totals": {
                         "events": queryset.count(),
-                        "login_failed": queryset.filter(event_type=SecurityAuditLog.EventType.LOGIN_FAILED).count(),
-                        "login_locked": queryset.filter(event_type=SecurityAuditLog.EventType.LOGIN_LOCKED).count(),
-                        "login_denied": queryset.filter(event_type=SecurityAuditLog.EventType.LOGIN_DENIED).count(),
-                        "password_changed": queryset.filter(event_type=SecurityAuditLog.EventType.PASSWORD_CHANGED).count(),
+                        "login_failed": queryset.filter(
+                            event_type=SecurityAuditLog.EventType.LOGIN_FAILED
+                        ).count(),
+                        "login_locked": queryset.filter(
+                            event_type=SecurityAuditLog.EventType.LOGIN_LOCKED
+                        ).count(),
+                        "login_denied": queryset.filter(
+                            event_type=SecurityAuditLog.EventType.LOGIN_DENIED
+                        ).count(),
+                        "password_changed": queryset.filter(
+                            event_type=SecurityAuditLog.EventType.PASSWORD_CHANGED
+                        ).count(),
                     },
                     "top_failed_ips": list(top_failed_ips),
                 }
@@ -1041,7 +1129,9 @@ class ChangePasswordCodeView(APIView):
     throttle_classes = [PasswordChangeRequestRateThrottle]
 
     def post(self, request):
-        serializer = PasswordChangeCodeSerializer(data=request.data, context={"request": request})
+        serializer = PasswordChangeCodeSerializer(
+            data=request.data, context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
         payload = serializer.save()
         record_security_event(
@@ -1060,7 +1150,9 @@ class ChangePasswordView(APIView):
     throttle_classes = [PasswordChangeConfirmRateThrottle]
 
     def post(self, request):
-        serializer = PasswordChangeSerializer(data=request.data, context={"request": request})
+        serializer = PasswordChangeSerializer(
+            data=request.data, context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
         payload = serializer.save()
         user = payload["user"]
@@ -1120,11 +1212,20 @@ class CategoryViewSet(viewsets.ModelViewSet):
         parent = serializer.validated_data.get("parent")
         save_kwargs = {}
         if request.data.get("order", None) in {"", None}:
-            save_kwargs["order"] = get_next_order_value(Category.objects.filter(parent=parent), "order")
+            save_kwargs["order"] = get_next_order_value(
+                Category.objects.filter(parent=parent), "order"
+            )
         category = serializer.save(**save_kwargs)
-        log_event(request.user, ContributionEvent.EventType.ADMIN, category, {"action": "create_category"})
+        log_event(
+            request.user,
+            ContributionEvent.EventType.ADMIN,
+            category,
+            {"action": "create_category"},
+        )
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response(
+            serializer.data, status=status.HTTP_201_CREATED, headers=headers
+        )
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", False)
@@ -1132,20 +1233,38 @@ class CategoryViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(category, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        log_event(request.user, ContributionEvent.EventType.ADMIN, category, {"action": "update_category"})
+        log_event(
+            request.user,
+            ContributionEvent.EventType.ADMIN,
+            category,
+            {"action": "update_category"},
+        )
         return Response(serializer.data)
 
     def destroy(self, request, *args, **kwargs):
         category = self.get_object()
-        log_event(request.user, ContributionEvent.EventType.ADMIN, category, {"action": "delete_category"})
+        log_event(
+            request.user,
+            ContributionEvent.EventType.ADMIN,
+            category,
+            {"action": "delete_category"},
+        )
         return super().destroy(request, *args, **kwargs)
 
-    @action(detail=True, methods=["post"], permission_classes=[AdminOrSuperAdmin], url_path="move")
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[AdminOrSuperAdmin],
+        url_path="move",
+    )
     def move(self, request, pk=None):
         category = self.get_object()
         direction = parse_move_direction(request)
         if not direction:
-            return Response({"detail": "direction must be up or down."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "direction must be up or down."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         moved = move_ordered_instance(
             instance=category,
@@ -1154,7 +1273,10 @@ class CategoryViewSet(viewsets.ModelViewSet):
             direction=direction,
         )
         if not moved:
-            return Response({"detail": "Category is already at the edge."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Category is already at the edge."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         category.refresh_from_db()
         log_event(
@@ -1203,9 +1325,9 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             queryset = queryset.prefetch_related(
                 Prefetch(
                     "revision_proposals",
-                    queryset=RevisionProposal.objects.filter(status=RevisionProposal.Status.APPROVED).select_related(
-                        "proposer"
-                    ),
+                    queryset=RevisionProposal.objects.filter(
+                        status=RevisionProposal.Status.APPROVED
+                    ).select_related("proposer"),
                     to_attr="approved_revision_proposals",
                 )
             )
@@ -1221,7 +1343,9 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
                 | Q(category__moderation_scope=Category.ModerationScope.SCHOOL)
             )
         elif user.is_authenticated:
-            queryset = queryset.filter(Q(status=Article.Status.PUBLISHED) | Q(author=user))
+            queryset = queryset.filter(
+                Q(status=Article.Status.PUBLISHED) | Q(author=user)
+            )
         else:
             queryset = queryset.filter(status=Article.Status.PUBLISHED)
 
@@ -1244,17 +1368,25 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
                 if author_filter.isdigit():
                     queryset = queryset.filter(author_id=int(author_filter))
                 else:
-                    queryset = queryset.filter(author__username__icontains=author_filter)
+                    queryset = queryset.filter(
+                        author__username__icontains=author_filter
+                    )
 
         search = self.request.query_params.get("search")
         if search:
             search = search.strip()
-            tokens = [token for token in re.split(r"[\s\u3000\.,，。:：/\\-]+", search) if token]
+            tokens = [
+                token
+                for token in re.split(r"[\s\u3000\.,，。:：/\\-]+", search)
+                if token
+            ]
             if tokens:
                 try:
                     token_query = Q()
                     for token in tokens:
-                        token_query &= (Q(title__icontains=token) | Q(summary__icontains=token))
+                        token_query &= Q(title__icontains=token) | Q(
+                            summary__icontains=token
+                        )
                     queryset = queryset.filter(token_query)
                 except DatabaseError:
                     queryset = self._python_search_fallback(queryset, tokens)
@@ -1294,28 +1426,43 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         article = self.get_object()
         user = request.user
         is_owner = user.is_authenticated and article.author_id == user.id
-        if article.status != Article.Status.PUBLISHED and not (is_owner or can_moderate_category(user, article.category)):
-            return Response({"detail": "Article is not visible."}, status=status.HTTP_404_NOT_FOUND)
+        if article.status != Article.Status.PUBLISHED and not (
+            is_owner or can_moderate_category(user, article.category)
+        ):
+            return Response(
+                {"detail": "Article is not visible."}, status=status.HTTP_404_NOT_FOUND
+            )
 
         Article.objects.filter(pk=article.pk).update(view_count=article.view_count + 1)
         article.refresh_from_db()
         serializer = self.get_serializer(article)
         return Response(serializer.data)
 
-    @action(detail=True, methods=["get"], permission_classes=[AllowAny], url_path="export-markdown-bundle")
+    @action(
+        detail=True,
+        methods=["get"],
+        permission_classes=[AllowAny],
+        url_path="export-markdown-bundle",
+    )
     def export_markdown_bundle(self, request, pk=None):
         return export_feature_disabled_response()
         article = self.get_object()
         user = request.user
         is_owner = user.is_authenticated and article.author_id == user.id
-        if article.status != Article.Status.PUBLISHED and not (is_owner or can_moderate_category(user, article.category)):
-            return Response({"detail": "Article is not visible."}, status=status.HTTP_404_NOT_FOUND)
+        if article.status != Article.Status.PUBLISHED and not (
+            is_owner or can_moderate_category(user, article.category)
+        ):
+            return Response(
+                {"detail": "Article is not visible."}, status=status.HTTP_404_NOT_FOUND
+            )
 
         markdown_content = article.content_md or ""
         markdown_name = f"{sanitize_export_filename(article.title, fallback=f'article-{article.id}')}.md"
 
         buffer = io.BytesIO()
-        with zipfile.ZipFile(buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as zip_file:
+        with zipfile.ZipFile(
+            buffer, mode="w", compression=zipfile.ZIP_DEFLATED
+        ) as zip_file:
             zip_file.writestr(markdown_name, markdown_content.encode("utf-8"))
             # Keep a stable assets directory in package even when no image is found.
             zip_file.writestr("assets/", b"")
@@ -1338,20 +1485,31 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
                     added_paths.add(relative_path)
 
         buffer.seek(0)
-        export_name = sanitize_export_filename(article.title, fallback=f"article-{article.id}")
+        export_name = sanitize_export_filename(
+            article.title, fallback=f"article-{article.id}"
+        )
         response = HttpResponse(buffer.getvalue(), content_type="application/zip")
         response["Content-Disposition"] = f'attachment; filename="{export_name}.zip"'
         response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
         return response
 
-    @action(detail=True, methods=["get"], permission_classes=[AllowAny], url_path="export-pdf")
+    @action(
+        detail=True,
+        methods=["get"],
+        permission_classes=[AllowAny],
+        url_path="export-pdf",
+    )
     def export_pdf(self, request, pk=None):
         return export_feature_disabled_response()
         article = self.get_object()
         user = request.user
         is_owner = user.is_authenticated and article.author_id == user.id
-        if article.status != Article.Status.PUBLISHED and not (is_owner or can_moderate_category(user, article.category)):
-            return Response({"detail": "Article is not visible."}, status=status.HTTP_404_NOT_FOUND)
+        if article.status != Article.Status.PUBLISHED and not (
+            is_owner or can_moderate_category(user, article.category)
+        ):
+            return Response(
+                {"detail": "Article is not visible."}, status=status.HTTP_404_NOT_FOUND
+            )
 
         try:
             from reportlab.lib.pagesizes import A4
@@ -1360,7 +1518,12 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             from reportlab.pdfbase import pdfmetrics
             from reportlab.pdfbase.cidfonts import UnicodeCIDFont
             from reportlab.platypus import Image as PdfImage
-            from reportlab.platypus import Paragraph, Preformatted, SimpleDocTemplate, Spacer
+            from reportlab.platypus import (
+                Paragraph,
+                Preformatted,
+                SimpleDocTemplate,
+                Spacer,
+            )
         except Exception as exc:
             return Response(
                 {
@@ -1396,12 +1559,54 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             spaceAfter=10,
         )
         heading_style_map = {
-            1: ParagraphStyle("ArticlePdfH1", fontName="STSong-Light", fontSize=21, leading=28, spaceBefore=8, spaceAfter=4),
-            2: ParagraphStyle("ArticlePdfH2", fontName="STSong-Light", fontSize=18, leading=24, spaceBefore=8, spaceAfter=4),
-            3: ParagraphStyle("ArticlePdfH3", fontName="STSong-Light", fontSize=15, leading=21, spaceBefore=6, spaceAfter=3),
-            4: ParagraphStyle("ArticlePdfH4", fontName="STSong-Light", fontSize=13, leading=18, spaceBefore=5, spaceAfter=3),
-            5: ParagraphStyle("ArticlePdfH5", fontName="STSong-Light", fontSize=12, leading=17, spaceBefore=4, spaceAfter=2),
-            6: ParagraphStyle("ArticlePdfH6", fontName="STSong-Light", fontSize=11, leading=16, spaceBefore=4, spaceAfter=2),
+            1: ParagraphStyle(
+                "ArticlePdfH1",
+                fontName="STSong-Light",
+                fontSize=21,
+                leading=28,
+                spaceBefore=8,
+                spaceAfter=4,
+            ),
+            2: ParagraphStyle(
+                "ArticlePdfH2",
+                fontName="STSong-Light",
+                fontSize=18,
+                leading=24,
+                spaceBefore=8,
+                spaceAfter=4,
+            ),
+            3: ParagraphStyle(
+                "ArticlePdfH3",
+                fontName="STSong-Light",
+                fontSize=15,
+                leading=21,
+                spaceBefore=6,
+                spaceAfter=3,
+            ),
+            4: ParagraphStyle(
+                "ArticlePdfH4",
+                fontName="STSong-Light",
+                fontSize=13,
+                leading=18,
+                spaceBefore=5,
+                spaceAfter=3,
+            ),
+            5: ParagraphStyle(
+                "ArticlePdfH5",
+                fontName="STSong-Light",
+                fontSize=12,
+                leading=17,
+                spaceBefore=4,
+                spaceAfter=2,
+            ),
+            6: ParagraphStyle(
+                "ArticlePdfH6",
+                fontName="STSong-Light",
+                fontSize=11,
+                leading=16,
+                spaceBefore=4,
+                spaceAfter=2,
+            ),
         }
         body_style = ParagraphStyle(
             "ArticlePdfBody",
@@ -1432,7 +1637,9 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         story = [
             Paragraph(escape(article.title or f"Article {article.id}"), title_style),
             Paragraph(
-                escape(f"作者 {article.author.username} · 更新于 {timezone.localtime(article.updated_at).strftime('%Y-%m-%d %H:%M')}"),
+                escape(
+                    f"作者 {article.author.username} · 更新于 {timezone.localtime(article.updated_at).strftime('%Y-%m-%d %H:%M')}"
+                ),
                 meta_style,
             ),
             Spacer(1, 2),
@@ -1483,7 +1690,9 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
                                     progressive=True,
                                 )
                             else:
-                                source_img.save(optimized_buffer, format="PNG", optimize=True)
+                                source_img.save(
+                                    optimized_buffer, format="PNG", optimize=True
+                                )
                             optimized_buffer.seek(0)
                             image_buffers.append(optimized_buffer)
                             image = PdfImage(optimized_buffer)
@@ -1500,17 +1709,23 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
                 level = max(1, min(6, level))
                 heading_text = markdown_line_to_plain_text(stripped[level:])
                 if heading_text:
-                    story.append(Paragraph(escape(heading_text), heading_style_map[level]))
+                    story.append(
+                        Paragraph(escape(heading_text), heading_style_map[level])
+                    )
                 continue
 
             if re.match(r"^[-*+]\s+", stripped):
-                bullet_text = markdown_line_to_plain_text(re.sub(r"^[-*+]\s+", "", stripped, count=1))
+                bullet_text = markdown_line_to_plain_text(
+                    re.sub(r"^[-*+]\s+", "", stripped, count=1)
+                )
                 if bullet_text:
                     story.append(Paragraph(f"• {escape(bullet_text)}", body_style))
                 continue
 
             if re.match(r"^\d+\.\s+", stripped):
-                story.append(Paragraph(escape(markdown_line_to_plain_text(stripped)), body_style))
+                story.append(
+                    Paragraph(escape(markdown_line_to_plain_text(stripped)), body_style)
+                )
                 continue
 
             if stripped.startswith(">"):
@@ -1543,7 +1758,9 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         doc.build(story)
         buffer.seek(0)
 
-        export_name = sanitize_export_filename(article.title, fallback=f"article-{article.id}")
+        export_name = sanitize_export_filename(
+            article.title, fallback=f"article-{article.id}"
+        )
         response = HttpResponse(buffer.getvalue(), content_type="application/pdf")
         response["Content-Disposition"] = f'attachment; filename="{export_name}.pdf"'
         response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
@@ -1580,7 +1797,9 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         return export_feature_disabled_response()
         articles = list(self._export_queryset_for_collection())
         if not articles:
-            return Response({"detail": "No articles to export."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "No articles to export."}, status=status.HTTP_404_NOT_FOUND
+            )
 
         markdown_parts = []
         for index, article in enumerate(articles, start=1):
@@ -1596,7 +1815,9 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         markdown_name = f"{export_name}.md"
 
         buffer = io.BytesIO()
-        with zipfile.ZipFile(buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as zip_file:
+        with zipfile.ZipFile(
+            buffer, mode="w", compression=zipfile.ZIP_DEFLATED
+        ) as zip_file:
             zip_file.writestr(markdown_name, markdown_content.encode("utf-8"))
             zip_file.writestr("assets/", b"")
 
@@ -1605,7 +1826,9 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
                 assets_root_resolved = assets_root.resolve()
                 added_paths = set()
                 for article in articles:
-                    for image_src in extract_markdown_image_sources(article.content_md or ""):
+                    for image_src in extract_markdown_image_sources(
+                        article.content_md or ""
+                    ):
                         relative_path = normalize_markdown_asset_path(image_src)
                         if not relative_path or relative_path in added_paths:
                             continue
@@ -1635,7 +1858,9 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         return export_feature_disabled_response()
         articles = list(self._export_queryset_for_collection())
         if not articles:
-            return Response({"detail": "No articles to export."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "No articles to export."}, status=status.HTTP_404_NOT_FOUND
+            )
 
         try:
             from reportlab.lib import colors
@@ -1669,7 +1894,9 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         except KeyError:
             pdfmetrics.registerFont(UnicodeCIDFont("STSong-Light"))
 
-        table_separator_pattern = re.compile(r"^\s*\|?(?:\s*:?-{3,}:?\s*\|)+\s*:?-{3,}:?\s*\|?\s*$")
+        table_separator_pattern = re.compile(
+            r"^\s*\|?(?:\s*:?-{3,}:?\s*\|)+\s*:?-{3,}:?\s*\|?\s*$"
+        )
 
         def split_table_row(line: str):
             text = (line or "").strip()
@@ -1706,12 +1933,54 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             spaceAfter=8,
         )
         heading_style_map = {
-            1: ParagraphStyle("CollectionPdfH1", fontName="STSong-Light", fontSize=20, leading=27, spaceBefore=8, spaceAfter=4),
-            2: ParagraphStyle("CollectionPdfH2", fontName="STSong-Light", fontSize=17, leading=23, spaceBefore=7, spaceAfter=4),
-            3: ParagraphStyle("CollectionPdfH3", fontName="STSong-Light", fontSize=15, leading=20, spaceBefore=6, spaceAfter=3),
-            4: ParagraphStyle("CollectionPdfH4", fontName="STSong-Light", fontSize=13, leading=18, spaceBefore=5, spaceAfter=3),
-            5: ParagraphStyle("CollectionPdfH5", fontName="STSong-Light", fontSize=12, leading=17, spaceBefore=4, spaceAfter=2),
-            6: ParagraphStyle("CollectionPdfH6", fontName="STSong-Light", fontSize=11, leading=16, spaceBefore=4, spaceAfter=2),
+            1: ParagraphStyle(
+                "CollectionPdfH1",
+                fontName="STSong-Light",
+                fontSize=20,
+                leading=27,
+                spaceBefore=8,
+                spaceAfter=4,
+            ),
+            2: ParagraphStyle(
+                "CollectionPdfH2",
+                fontName="STSong-Light",
+                fontSize=17,
+                leading=23,
+                spaceBefore=7,
+                spaceAfter=4,
+            ),
+            3: ParagraphStyle(
+                "CollectionPdfH3",
+                fontName="STSong-Light",
+                fontSize=15,
+                leading=20,
+                spaceBefore=6,
+                spaceAfter=3,
+            ),
+            4: ParagraphStyle(
+                "CollectionPdfH4",
+                fontName="STSong-Light",
+                fontSize=13,
+                leading=18,
+                spaceBefore=5,
+                spaceAfter=3,
+            ),
+            5: ParagraphStyle(
+                "CollectionPdfH5",
+                fontName="STSong-Light",
+                fontSize=12,
+                leading=17,
+                spaceBefore=4,
+                spaceAfter=2,
+            ),
+            6: ParagraphStyle(
+                "CollectionPdfH6",
+                fontName="STSong-Light",
+                fontSize=11,
+                leading=16,
+                spaceBefore=4,
+                spaceAfter=2,
+            ),
         }
         body_style = ParagraphStyle(
             "CollectionPdfBody",
@@ -1743,10 +2012,17 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         image_buffers = []
 
         for article in articles:
-            story.append(Paragraph(escape(article.title or f"Article {article.id}"), article_title_style))
             story.append(
                 Paragraph(
-                    escape(f"作者 {article.author.username} · 更新于 {timezone.localtime(article.updated_at).strftime('%Y-%m-%d %H:%M')}"),
+                    escape(article.title or f"Article {article.id}"),
+                    article_title_style,
+                )
+            )
+            story.append(
+                Paragraph(
+                    escape(
+                        f"作者 {article.author.username} · 更新于 {timezone.localtime(article.updated_at).strftime('%Y-%m-%d %H:%M')}"
+                    ),
                     meta_style,
                 )
             )
@@ -1798,22 +2074,40 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
                         rows.append(split_table_row(candidate))
                         line_index += 1
 
-                    col_count = max([len(header_cells)] + [len(row) for row in rows] + [1])
+                    col_count = max(
+                        [len(header_cells)] + [len(row) for row in rows] + [1]
+                    )
 
                     def normalize_cells(cells):
-                        normalized = [markdown_line_to_plain_text(cell) for cell in cells[:col_count]]
+                        normalized = [
+                            markdown_line_to_plain_text(cell)
+                            for cell in cells[:col_count]
+                        ]
                         while len(normalized) < col_count:
                             normalized.append("")
                         return normalized
 
-                    table_data = [normalize_cells(header_cells)] + [normalize_cells(row) for row in rows]
+                    table_data = [normalize_cells(header_cells)] + [
+                        normalize_cells(row) for row in rows
+                    ]
                     if table_data:
                         table = Table(table_data, hAlign="LEFT")
                         table.setStyle(
                             TableStyle(
                                 [
-                                    ("GRID", (0, 0), (-1, -1), 0.6, colors.HexColor("#c7cfdc")),
-                                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#eef3fb")),
+                                    (
+                                        "GRID",
+                                        (0, 0),
+                                        (-1, -1),
+                                        0.6,
+                                        colors.HexColor("#c7cfdc"),
+                                    ),
+                                    (
+                                        "BACKGROUND",
+                                        (0, 0),
+                                        (-1, 0),
+                                        colors.HexColor("#eef3fb"),
+                                    ),
                                     ("FONTNAME", (0, 0), (-1, -1), "STSong-Light"),
                                     ("FONTSIZE", (0, 0), (-1, -1), 10),
                                     ("VALIGN", (0, 0), (-1, -1), "TOP"),
@@ -1848,7 +2142,9 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
                                         progressive=True,
                                     )
                                 else:
-                                    source_img.save(optimized_buffer, format="PNG", optimize=True)
+                                    source_img.save(
+                                        optimized_buffer, format="PNG", optimize=True
+                                    )
                                 optimized_buffer.seek(0)
                                 image_buffers.append(optimized_buffer)
                                 image = PdfImage(optimized_buffer)
@@ -1865,12 +2161,16 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
                     level = max(1, min(6, level))
                     heading_text = markdown_line_to_plain_text(stripped[level:])
                     if heading_text:
-                        story.append(Paragraph(escape(heading_text), heading_style_map[level]))
+                        story.append(
+                            Paragraph(escape(heading_text), heading_style_map[level])
+                        )
                     line_index += 1
                     continue
 
                 if re.match(r"^[-*+]\s+", stripped):
-                    bullet_text = markdown_line_to_plain_text(re.sub(r"^[-*+]\s+", "", stripped, count=1))
+                    bullet_text = markdown_line_to_plain_text(
+                        re.sub(r"^[-*+]\s+", "", stripped, count=1)
+                    )
                     if bullet_text:
                         story.append(Paragraph(f"• {escape(bullet_text)}", body_style))
                     line_index += 1
@@ -1922,7 +2222,10 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         if request.user.is_banned:
-            return Response({"detail": "Banned users cannot create content."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "Banned users cannot create content."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -1941,7 +2244,12 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             )
 
         article = serializer.save(**save_kwargs)
-        log_event(request.user, ContributionEvent.EventType.ADMIN, article, {"action": "create_article"})
+        log_event(
+            request.user,
+            ContributionEvent.EventType.ADMIN,
+            article,
+            {"action": "create_article"},
+        )
         return Response(
             self.get_serializer(article).data,
             status=status.HTTP_201_CREATED,
@@ -1951,9 +2259,14 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         partial = kwargs.pop("partial", False)
         article = self.get_object()
         if not can_moderate_category(request.user, article.category):
-            return Response({"detail": "No permission to edit this article."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "No permission to edit this article."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         if article.is_locked and not is_manager(request.user):
-            return Response({"detail": "This article is locked."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "This article is locked."}, status=status.HTTP_403_FORBIDDEN
+            )
 
         serializer = self.get_serializer(article, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
@@ -1964,24 +2277,42 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN,
             )
         save_kwargs = {"last_editor": request.user}
-        if next_category != article.category and request.data.get("display_order", None) in {"", None}:
+        if next_category != article.category and request.data.get(
+            "display_order", None
+        ) in {"", None}:
             save_kwargs["display_order"] = get_next_order_value(
                 Article.objects.filter(category=next_category).exclude(pk=article.pk),
                 "display_order",
             )
         serializer.save(**save_kwargs)
-        log_event(request.user, ContributionEvent.EventType.ADMIN, article, {"action": "update_article"})
+        log_event(
+            request.user,
+            ContributionEvent.EventType.ADMIN,
+            article,
+            {"action": "update_article"},
+        )
         return Response(serializer.data)
 
-    @action(detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned], url_path="move")
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[AuthenticatedAndNotBanned],
+        url_path="move",
+    )
     def move(self, request, pk=None):
         article = self.get_object()
         if not can_moderate_category(request.user, article.category):
-            return Response({"detail": "No permission to move this article."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "No permission to move this article."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         direction = parse_move_direction(request)
         if not direction:
-            return Response({"detail": "direction must be up or down."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "direction must be up or down."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         moved = move_ordered_instance(
             instance=article,
@@ -1990,7 +2321,10 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             direction=direction,
         )
         if not moved:
-            return Response({"detail": "Article is already at the edge."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Article is already at the edge."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         article.refresh_from_db()
         log_event(
@@ -2001,21 +2335,29 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         )
         return Response(self.get_serializer(article).data)
 
-    @action(detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned])
+    @action(
+        detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned]
+    )
     def star(self, request, pk=None):
         article = self.get_object()
-        star, created = ArticleStar.objects.get_or_create(user=request.user, article=article)
+        star, created = ArticleStar.objects.get_or_create(
+            user=request.user, article=article
+        )
         if created:
             log_event(request.user, ContributionEvent.EventType.STAR, article)
         return Response({"starred": True, "id": star.id})
 
-    @action(detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned])
+    @action(
+        detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned]
+    )
     def unstar(self, request, pk=None):
         article = self.get_object()
         ArticleStar.objects.filter(user=request.user, article=article).delete()
         return Response({"starred": False})
 
-    @action(detail=False, methods=["get"], permission_classes=[AuthenticatedAndNotBanned])
+    @action(
+        detail=False, methods=["get"], permission_classes=[AuthenticatedAndNotBanned]
+    )
     def mine(self, request):
         queryset = self.get_queryset().filter(author=request.user)
         page = self.paginate_queryset(queryset)
@@ -2025,7 +2367,9 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-    @action(detail=False, methods=["get"], permission_classes=[AuthenticatedAndNotBanned])
+    @action(
+        detail=False, methods=["get"], permission_classes=[AuthenticatedAndNotBanned]
+    )
     def starred(self, request):
         queryset = (
             self.get_queryset()
@@ -2044,61 +2388,111 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
 
         if action == "publish":
             if not can_moderate_category(operator, article.category):
-                return False, status.HTTP_403_FORBIDDEN, "No permission to moderate this article."
+                return (
+                    False,
+                    status.HTTP_403_FORBIDDEN,
+                    "No permission to moderate this article.",
+                )
             article.status = Article.Status.PUBLISHED
             article.published_at = timezone.now()
             article.save(update_fields=["status", "published_at", "updated_at"])
-            log_event(operator, ContributionEvent.EventType.ADMIN, article, {"action": "publish_article"})
+            log_event(
+                operator,
+                ContributionEvent.EventType.ADMIN,
+                article,
+                {"action": "publish_article"},
+            )
             return True, status.HTTP_200_OK, None
 
         if action == "hide":
             if not can_moderate_category(operator, article.category):
-                return False, status.HTTP_403_FORBIDDEN, "No permission to moderate this article."
+                return (
+                    False,
+                    status.HTTP_403_FORBIDDEN,
+                    "No permission to moderate this article.",
+                )
             article.status = Article.Status.HIDDEN
             article.save(update_fields=["status", "updated_at"])
-            log_event(operator, ContributionEvent.EventType.ADMIN, article, {"action": "hide_article"})
+            log_event(
+                operator,
+                ContributionEvent.EventType.ADMIN,
+                article,
+                {"action": "hide_article"},
+            )
             return True, status.HTTP_200_OK, None
 
         if action == "delete":
             if not is_manager(operator):
-                return False, status.HTTP_403_FORBIDDEN, "Only admins can delete articles."
-            log_event(operator, ContributionEvent.EventType.ADMIN, article, {"action": "delete_article"})
+                return (
+                    False,
+                    status.HTTP_403_FORBIDDEN,
+                    "Only admins can delete articles.",
+                )
+            log_event(
+                operator,
+                ContributionEvent.EventType.ADMIN,
+                article,
+                {"action": "delete_article"},
+            )
             article.delete()
             return True, status.HTTP_200_OK, None
 
         return False, status.HTTP_400_BAD_REQUEST, "Invalid moderation action."
 
-    @action(detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned])
+    @action(
+        detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned]
+    )
     def publish(self, request, pk=None):
         article = self.get_object()
-        ok, error_status, detail = self._apply_article_moderation(article, request.user, "publish")
+        ok, error_status, detail = self._apply_article_moderation(
+            article, request.user, "publish"
+        )
         if not ok:
             return Response({"detail": detail}, status=error_status)
         return Response({"status": article.status})
 
     def destroy(self, request, *args, **kwargs):
         article = self.get_object()
-        ok, error_status, detail = self._apply_article_moderation(article, request.user, "delete")
+        ok, error_status, detail = self._apply_article_moderation(
+            article, request.user, "delete"
+        )
         if not ok:
             return Response({"detail": detail}, status=error_status)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=False, methods=["post"], permission_classes=[AuthenticatedAndNotBanned], url_path="bulk-moderate")
+    @action(
+        detail=False,
+        methods=["post"],
+        permission_classes=[AuthenticatedAndNotBanned],
+        url_path="bulk-moderate",
+    )
     def bulk_moderate(self, request):
         raw_ids = request.data.get("ids")
         if not isinstance(raw_ids, list) or not raw_ids:
-            return Response({"detail": "ids must be a non-empty list."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "ids must be a non-empty list."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if len(raw_ids) > 200:
-            return Response({"detail": "Too many ids, max is 200."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Too many ids, max is 200."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         ids = []
         for raw_id in raw_ids:
             try:
                 article_id = int(raw_id)
             except (TypeError, ValueError):
-                return Response({"detail": "ids must contain integers."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"detail": "ids must contain integers."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             if article_id <= 0:
-                return Response({"detail": "ids must contain positive integers."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"detail": "ids must contain positive integers."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             if article_id not in ids:
                 ids.append(article_id)
 
@@ -2121,14 +2515,26 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         for article_id in ids:
             article = article_map.get(article_id)
             if not article:
-                results.append({"id": article_id, "success": False, "detail": "Article not found or inaccessible."})
+                results.append(
+                    {
+                        "id": article_id,
+                        "success": False,
+                        "detail": "Article not found or inaccessible.",
+                    }
+                )
                 continue
 
-            ok, _, detail = self._apply_article_moderation(article, request.user, action_name)
+            ok, _, detail = self._apply_article_moderation(
+                article, request.user, action_name
+            )
             if ok:
                 success_count += 1
-                status_value = action_name if action_name == "delete" else article.status
-                results.append({"id": article_id, "success": True, "status": status_value})
+                status_value = (
+                    action_name if action_name == "delete" else article.status
+                )
+                results.append(
+                    {"id": article_id, "success": True, "status": status_value}
+                )
             else:
                 results.append({"id": article_id, "success": False, "detail": detail})
 
@@ -2144,7 +2550,9 @@ class ArticleViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
 
 class ArticleCommentViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
     serializer_class = ArticleCommentSerializer
-    queryset = ArticleComment.objects.select_related("article", "author", "parent").all()
+    queryset = ArticleComment.objects.select_related(
+        "article", "author", "parent"
+    ).all()
     throttle_action_classes = {
         "create": [ContentCreateRateThrottle],
         "update": [ContentUpdateRateThrottle],
@@ -2177,7 +2585,9 @@ class ArticleCommentViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             else:
                 queryset = queryset.exclude(status=ArticleComment.Status.HIDDEN)
         elif user and user.is_authenticated and user.role == User.Role.SCHOOL:
-            review_scope = Q(article__category__moderation_scope=Category.ModerationScope.SCHOOL) | Q(author=user)
+            review_scope = Q(
+                article__category__moderation_scope=Category.ModerationScope.SCHOOL
+            ) | Q(author=user)
             if self.action in {"approve", "reject", "bulk_review"}:
                 queryset = queryset.filter(review_scope)
                 if status_filter in dict(ArticleComment.Status.choices):
@@ -2187,7 +2597,9 @@ class ArticleCommentViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
                 if status_filter == ArticleComment.Status.VISIBLE:
                     queryset = queryset.filter(status=ArticleComment.Status.VISIBLE)
                 else:
-                    queryset = queryset.filter(status=status_filter).filter(review_scope)
+                    queryset = queryset.filter(status=status_filter).filter(
+                        review_scope
+                    )
             else:
                 queryset = queryset.filter(
                     Q(status=ArticleComment.Status.VISIBLE)
@@ -2215,7 +2627,9 @@ class ArticleCommentViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
 
         return queryset
 
-    @action(detail=False, methods=["get"], permission_classes=[AuthenticatedAndNotBanned])
+    @action(
+        detail=False, methods=["get"], permission_classes=[AuthenticatedAndNotBanned]
+    )
     def mine(self, request):
         queryset = (
             ArticleComment.objects.filter(author=request.user)
@@ -2234,16 +2648,36 @@ class ArticleCommentViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         article = serializer.validated_data["article"]
 
-        if article.status != Article.Status.PUBLISHED and not can_moderate_category(request.user, article.category):
-            return Response({"detail": "Article not available for commenting."}, status=status.HTTP_403_FORBIDDEN)
+        if article.status != Article.Status.PUBLISHED and not can_moderate_category(
+            request.user, article.category
+        ):
+            return Response(
+                {"detail": "Article not available for commenting."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         if not article.allow_comments:
-            return Response({"detail": "Comments are disabled for this article."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "Comments are disabled for this article."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         is_reviewer = can_moderate_category(request.user, article.category)
-        comment_status = ArticleComment.Status.VISIBLE if is_reviewer else ArticleComment.Status.PENDING
+        comment_status = (
+            ArticleComment.Status.VISIBLE
+            if is_reviewer
+            else ArticleComment.Status.PENDING
+        )
         comment = serializer.save(author=request.user, status=comment_status)
-        log_event(request.user, ContributionEvent.EventType.COMMENT, comment, {"article_id": article.id})
-        if comment.status == ArticleComment.Status.VISIBLE and article.author_id != request.user.id:
+        log_event(
+            request.user,
+            ContributionEvent.EventType.COMMENT,
+            comment,
+            {"article_id": article.id},
+        )
+        if (
+            comment.status == ArticleComment.Status.VISIBLE
+            and article.author_id != request.user.id
+        ):
             create_notification(
                 user=article.author,
                 actor=request.user,
@@ -2252,14 +2686,19 @@ class ArticleCommentViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
                 content=comment.content[:120],
                 link=f"/wiki/{article.id}",
             )
-        return Response(self.get_serializer(comment).data, status=status.HTTP_201_CREATED)
+        return Response(
+            self.get_serializer(comment).data, status=status.HTTP_201_CREATED
+        )
 
     def update(self, request, *args, **kwargs):
         comment = self.get_object()
         partial = kwargs.pop("partial", False)
         manager = is_manager(request.user)
         if comment.author_id != request.user.id and not manager:
-            return Response({"detail": "You cannot edit this comment."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "You cannot edit this comment."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         serializer = self.get_serializer(comment, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
@@ -2267,9 +2706,17 @@ class ArticleCommentViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         serializer.save(status=next_status)
         log_event(
             request.user,
-            ContributionEvent.EventType.ADMIN if manager else ContributionEvent.EventType.COMMENT,
+            (
+                ContributionEvent.EventType.ADMIN
+                if manager
+                else ContributionEvent.EventType.COMMENT
+            ),
             comment,
-            {"action": "update_comment", "status": next_status, "article_id": comment.article_id},
+            {
+                "action": "update_comment",
+                "status": next_status,
+                "article_id": comment.article_id,
+            },
         )
         return Response(serializer.data)
 
@@ -2277,7 +2724,10 @@ class ArticleCommentViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         comment = self.get_object()
         manager = is_manager(request.user)
         if comment.author_id != request.user.id and not manager:
-            return Response({"detail": "You cannot remove this comment."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "You cannot remove this comment."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         comment.status = ArticleComment.Status.HIDDEN
         comment.save(update_fields=["status", "updated_at"])
         if manager:
@@ -2301,7 +2751,11 @@ class ArticleCommentViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
 
     def _apply_review_action(self, *, comment, reviewer, action, review_note=""):
         if not self._can_review_comment(reviewer, comment):
-            return False, status.HTTP_403_FORBIDDEN, "No permission to review this comment."
+            return (
+                False,
+                status.HTTP_403_FORBIDDEN,
+                "No permission to review this comment.",
+            )
         if comment.status != ArticleComment.Status.PENDING:
             return False, status.HTTP_400_BAD_REQUEST, "Comment is not pending review."
 
@@ -2382,26 +2836,43 @@ class ArticleCommentViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         action_name = request.data.get("action")
         review_note = request.data.get("review_note", "")
         if not isinstance(raw_ids, list) or not raw_ids:
-            return Response({"detail": "ids must be a non-empty list."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "ids must be a non-empty list."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if action_name not in {"approve", "reject"}:
-            return Response({"detail": "action must be approve or reject."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "action must be approve or reject."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if len(raw_ids) > 200:
-            return Response({"detail": "Too many ids, max is 200."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Too many ids, max is 200."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         ids = []
         for raw_id in raw_ids:
             try:
                 comment_id = int(raw_id)
             except (TypeError, ValueError):
-                return Response({"detail": "ids must contain integers."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"detail": "ids must contain integers."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             if comment_id <= 0:
-                return Response({"detail": "ids must contain positive integers."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"detail": "ids must contain positive integers."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             if comment_id not in ids:
                 ids.append(comment_id)
 
         comments = {
             item.id: item
-            for item in ArticleComment.objects.filter(id__in=ids).select_related("article", "author", "article__category")
+            for item in ArticleComment.objects.filter(id__in=ids).select_related(
+                "article", "author", "article__category"
+            )
         }
 
         results = []
@@ -2409,7 +2880,9 @@ class ArticleCommentViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         for comment_id in ids:
             comment = comments.get(comment_id)
             if not comment:
-                results.append({"id": comment_id, "success": False, "detail": "Comment not found."})
+                results.append(
+                    {"id": comment_id, "success": False, "detail": "Comment not found."}
+                )
                 continue
 
             ok, _, detail = self._apply_review_action(
@@ -2420,7 +2893,9 @@ class ArticleCommentViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             )
             if ok:
                 success_count += 1
-                results.append({"id": comment_id, "success": True, "status": comment.status})
+                results.append(
+                    {"id": comment_id, "success": True, "status": comment.status}
+                )
             else:
                 results.append({"id": comment_id, "success": False, "detail": detail})
 
@@ -2433,28 +2908,47 @@ class ArticleCommentViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             }
         )
 
-    @action(detail=False, methods=["post"], permission_classes=[AdminOrSuperAdmin], url_path="bulk-hide")
+    @action(
+        detail=False,
+        methods=["post"],
+        permission_classes=[AdminOrSuperAdmin],
+        url_path="bulk-hide",
+    )
     def bulk_hide(self, request):
         raw_ids = request.data.get("ids")
         if not isinstance(raw_ids, list) or not raw_ids:
-            return Response({"detail": "ids must be a non-empty list."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "ids must be a non-empty list."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if len(raw_ids) > 200:
-            return Response({"detail": "Too many ids, max is 200."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Too many ids, max is 200."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         ids = []
         for raw_id in raw_ids:
             try:
                 comment_id = int(raw_id)
             except (TypeError, ValueError):
-                return Response({"detail": "ids must contain integers."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"detail": "ids must contain integers."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             if comment_id <= 0:
-                return Response({"detail": "ids must contain positive integers."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"detail": "ids must contain positive integers."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             if comment_id not in ids:
                 ids.append(comment_id)
 
         comment_map = {
             item.id: item
-            for item in ArticleComment.objects.filter(id__in=ids).select_related("article", "author", "parent")
+            for item in ArticleComment.objects.filter(id__in=ids).select_related(
+                "article", "author", "parent"
+            )
         }
 
         results = []
@@ -2462,7 +2956,9 @@ class ArticleCommentViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         for comment_id in ids:
             comment = comment_map.get(comment_id)
             if not comment:
-                results.append({"id": comment_id, "success": False, "detail": "Comment not found."})
+                results.append(
+                    {"id": comment_id, "success": False, "detail": "Comment not found."}
+                )
                 continue
 
             if comment.status != ArticleComment.Status.HIDDEN:
@@ -2475,7 +2971,9 @@ class ArticleCommentViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
                 {"action": "hide_comment_bulk", "article_id": comment.article_id},
             )
             success_count += 1
-            results.append({"id": comment_id, "success": True, "status": comment.status})
+            results.append(
+                {"id": comment_id, "success": True, "status": comment.status}
+            )
 
         return Response(
             {
@@ -2489,7 +2987,9 @@ class ArticleCommentViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
 
 class RevisionProposalViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
     serializer_class = RevisionProposalSerializer
-    queryset = RevisionProposal.objects.select_related("article", "proposer", "reviewer", "article__category").all()
+    queryset = RevisionProposal.objects.select_related(
+        "article", "proposer", "reviewer", "article__category"
+    ).all()
     permission_classes = [AuthenticatedAndNotBanned]
     MAX_PENDING_PER_USER = 5
     throttle_action_classes = {
@@ -2518,7 +3018,9 @@ class RevisionProposalViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             if proposer_filter.isdigit():
                 queryset = queryset.filter(proposer_id=int(proposer_filter))
             else:
-                queryset = queryset.filter(proposer__username__icontains=proposer_filter)
+                queryset = queryset.filter(
+                    proposer__username__icontains=proposer_filter
+                )
 
         search = self.request.query_params.get("search")
         if search:
@@ -2578,13 +3080,25 @@ class RevisionProposalViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
                 request.user,
                 ContributionEvent.EventType.ADMIN,
                 proposal,
-                {"action": "create_revision_direct_publish", "article_id": proposal.article_id},
+                {
+                    "action": "create_revision_direct_publish",
+                    "article_id": proposal.article_id,
+                },
             )
-            return Response(self.get_serializer(proposal).data, status=status.HTTP_201_CREATED)
+            return Response(
+                self.get_serializer(proposal).data, status=status.HTTP_201_CREATED
+            )
 
         proposal = serializer.save(proposer=request.user)
-        log_event(request.user, ContributionEvent.EventType.REVISION, proposal, {"article_id": proposal.article_id})
-        return Response(self.get_serializer(proposal).data, status=status.HTTP_201_CREATED)
+        log_event(
+            request.user,
+            ContributionEvent.EventType.REVISION,
+            proposal,
+            {"article_id": proposal.article_id},
+        )
+        return Response(
+            self.get_serializer(proposal).data, status=status.HTTP_201_CREATED
+        )
 
     def _validate_user_pending_operation(self, user, proposal, *, operation):
         if proposal.proposer_id != user.id:
@@ -2646,7 +3160,11 @@ class RevisionProposalViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
 
     def _apply_review_action(self, proposal, reviewer, *, action, review_note=""):
         if not is_manager(reviewer):
-            return False, status.HTTP_403_FORBIDDEN, "No permission to review this proposal."
+            return (
+                False,
+                status.HTTP_403_FORBIDDEN,
+                "No permission to review this proposal.",
+            )
         if proposal.status != RevisionProposal.Status.PENDING:
             return False, status.HTTP_400_BAD_REQUEST, "Proposal is already reviewed."
 
@@ -2659,7 +3177,15 @@ class RevisionProposalViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
                 proposal.reviewer = reviewer
                 proposal.review_note = review_note
                 proposal.reviewed_at = timezone.now()
-                proposal.save(update_fields=["status", "reviewer", "review_note", "reviewed_at", "updated_at"])
+                proposal.save(
+                    update_fields=[
+                        "status",
+                        "reviewer",
+                        "review_note",
+                        "reviewed_at",
+                        "updated_at",
+                    ]
+                )
 
                 article = proposal.article
                 if proposal.proposed_title:
@@ -2674,11 +3200,24 @@ class RevisionProposalViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             proposal.reviewer = reviewer
             proposal.review_note = review_note
             proposal.reviewed_at = timezone.now()
-            proposal.save(update_fields=["status", "reviewer", "review_note", "reviewed_at", "updated_at"])
+            proposal.save(
+                update_fields=[
+                    "status",
+                    "reviewer",
+                    "review_note",
+                    "reviewed_at",
+                    "updated_at",
+                ]
+            )
         else:
             return False, status.HTTP_400_BAD_REQUEST, "Invalid review action."
 
-        log_event(reviewer, ContributionEvent.EventType.ADMIN, proposal, {"action": f"{action}_revision"})
+        log_event(
+            reviewer,
+            ContributionEvent.EventType.ADMIN,
+            proposal,
+            {"action": f"{action}_revision"},
+        )
         if proposal.proposer_id != reviewer.id:
             status_text = "已通过" if action == "approve" else "已驳回"
             create_notification(
@@ -2686,13 +3225,21 @@ class RevisionProposalViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
                 actor=reviewer,
                 target=proposal,
                 title=f"修订提议{status_text}：{proposal.article.title}",
-                content=review_note[:180] if review_note else "管理员已处理你的修订提议。",
+                content=(
+                    review_note[:180] if review_note else "管理员已处理你的修订提议。"
+                ),
                 link=f"/wiki/{proposal.article_id}",
-                level=UserNotification.Level.WARNING if action == "reject" else UserNotification.Level.INFO,
+                level=(
+                    UserNotification.Level.WARNING
+                    if action == "reject"
+                    else UserNotification.Level.INFO
+                ),
             )
         return True, status.HTTP_200_OK, None
 
-    @action(detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned])
+    @action(
+        detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned]
+    )
     def approve(self, request, pk=None):
         proposal = self.get_object()
         ok, error_status, detail = self._apply_review_action(
@@ -2705,7 +3252,9 @@ class RevisionProposalViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             return Response({"detail": detail}, status=error_status)
         return Response(self.get_serializer(proposal).data)
 
-    @action(detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned])
+    @action(
+        detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned]
+    )
     def reject(self, request, pk=None):
         proposal = self.get_object()
         ok, error_status, detail = self._apply_review_action(
@@ -2718,22 +3267,39 @@ class RevisionProposalViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             return Response({"detail": detail}, status=error_status)
         return Response(self.get_serializer(proposal).data)
 
-    @action(detail=False, methods=["post"], permission_classes=[AdminOrSuperAdmin], url_path="bulk-review")
+    @action(
+        detail=False,
+        methods=["post"],
+        permission_classes=[AdminOrSuperAdmin],
+        url_path="bulk-review",
+    )
     def bulk_review(self, request):
         raw_ids = request.data.get("ids")
         if not isinstance(raw_ids, list) or not raw_ids:
-            return Response({"detail": "ids must be a non-empty list."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "ids must be a non-empty list."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if len(raw_ids) > 200:
-            return Response({"detail": "Too many ids, max is 200."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Too many ids, max is 200."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         ids = []
         for raw_id in raw_ids:
             try:
                 proposal_id = int(raw_id)
             except (TypeError, ValueError):
-                return Response({"detail": "ids must contain integers."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"detail": "ids must contain integers."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             if proposal_id <= 0:
-                return Response({"detail": "ids must contain positive integers."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"detail": "ids must contain positive integers."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             if proposal_id not in ids:
                 ids.append(proposal_id)
 
@@ -2774,7 +3340,9 @@ class RevisionProposalViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             )
             if ok:
                 success_count += 1
-                results.append({"id": proposal_id, "success": True, "status": proposal.status})
+                results.append(
+                    {"id": proposal_id, "success": True, "status": proposal.status}
+                )
             else:
                 results.append({"id": proposal_id, "success": False, "detail": detail})
 
@@ -2790,7 +3358,9 @@ class RevisionProposalViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
 
 class IssueTicketViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
     serializer_class = IssueTicketSerializer
-    queryset = IssueTicket.objects.select_related("author", "assignee", "related_article").all()
+    queryset = IssueTicket.objects.select_related(
+        "author", "assignee", "related_article"
+    ).all()
     permission_classes = [AuthenticatedAndNotBanned]
     throttle_action_classes = {
         "create": [ContentCreateRateThrottle],
@@ -2860,7 +3430,8 @@ class IssueTicketViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         search = self.request.query_params.get("search")
         if search:
             queryset = queryset.filter(
-                Q(title__icontains=search.strip()) | Q(content__icontains=search.strip())
+                Q(title__icontains=search.strip())
+                | Q(content__icontains=search.strip())
             )
 
         if manager:
@@ -2870,7 +3441,9 @@ class IssueTicketViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
                 if author_filter.isdigit():
                     queryset = queryset.filter(author_id=int(author_filter))
                 else:
-                    queryset = queryset.filter(author__username__icontains=author_filter)
+                    queryset = queryset.filter(
+                        author__username__icontains=author_filter
+                    )
 
             assignee_filter = self.request.query_params.get("assignee")
             if assignee_filter:
@@ -2881,7 +3454,9 @@ class IssueTicketViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
                 elif assignee_filter.isdigit():
                     queryset = queryset.filter(assignee_id=int(assignee_filter))
                 else:
-                    queryset = queryset.filter(assignee__username__icontains=assignee_filter)
+                    queryset = queryset.filter(
+                        assignee__username__icontains=assignee_filter
+                    )
 
         order = self.request.query_params.get("order")
         if order == "created_oldest":
@@ -2897,12 +3472,15 @@ class IssueTicketViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         initial_status = (
             IssueTicket.Status.OPEN
-            if request.user.role in {User.Role.SCHOOL, User.Role.ADMIN, User.Role.SUPERADMIN}
+            if request.user.role
+            in {User.Role.SCHOOL, User.Role.ADMIN, User.Role.SUPERADMIN}
             else IssueTicket.Status.PENDING
         )
         ticket = serializer.save(author=request.user, status=initial_status)
         log_event(request.user, ContributionEvent.EventType.ISSUE, ticket)
-        return Response(self.get_serializer(ticket).data, status=status.HTTP_201_CREATED)
+        return Response(
+            self.get_serializer(ticket).data, status=status.HTTP_201_CREATED
+        )
 
     def _apply_status_update(
         self,
@@ -2915,7 +3493,11 @@ class IssueTicketViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
     ):
         manager = is_manager(operator)
         if not manager:
-            return False, status.HTTP_403_FORBIDDEN, "No permission to update this ticket."
+            return (
+                False,
+                status.HTTP_403_FORBIDDEN,
+                "No permission to update this ticket.",
+            )
 
         if new_status not in dict(IssueTicket.Status.choices):
             return False, status.HTTP_400_BAD_REQUEST, "Invalid status."
@@ -2925,7 +3507,9 @@ class IssueTicketViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         assignee_id_for_event = ticket.assignee_id
 
         if assign_to_given:
-            assign_text = str(assign_to).strip().lower() if assign_to is not None else ""
+            assign_text = (
+                str(assign_to).strip().lower() if assign_to is not None else ""
+            )
             if assign_text in {"", "null", "none", "0"}:
                 ticket.assignee = None
                 assignee_id_for_event = None
@@ -2941,7 +3525,11 @@ class IssueTicketViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
                     role__in=[User.Role.SCHOOL, User.Role.ADMIN, User.Role.SUPERADMIN],
                 ).first()
                 if not assignee:
-                    return False, status.HTTP_400_BAD_REQUEST, "Assignee is not available."
+                    return (
+                        False,
+                        status.HTTP_400_BAD_REQUEST,
+                        "Assignee is not available.",
+                    )
                 if (
                     ticket.visibility == IssueTicket.Visibility.PRIVATE
                     and assignee.role == User.Role.SCHOOL
@@ -2956,7 +3544,9 @@ class IssueTicketViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
 
         resolution_note_given = resolution_note is not UNSET
         if resolution_note_given:
-            ticket.resolution_note = "" if resolution_note is None else str(resolution_note)
+            ticket.resolution_note = (
+                "" if resolution_note is None else str(resolution_note)
+            )
 
         update_fields = ["status", "updated_at"]
         if assign_to_given:
@@ -2999,7 +3589,10 @@ class IssueTicketViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         manager = is_manager(request.user)
 
         if not manager and ticket.author_id != request.user.id:
-            return Response({"detail": "No permission to edit this ticket."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "No permission to edit this ticket."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         serializer = self.get_serializer(ticket, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
@@ -3015,7 +3608,11 @@ class IssueTicketViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         save_kwargs = {}
-        event_type = ContributionEvent.EventType.ADMIN if manager else ContributionEvent.EventType.ISSUE
+        event_type = (
+            ContributionEvent.EventType.ADMIN
+            if manager
+            else ContributionEvent.EventType.ISSUE
+        )
         event_payload = {"action": "update_issue"}
         if not manager:
             save_kwargs.update(
@@ -3038,16 +3635,30 @@ class IssueTicketViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         ticket = self.get_object()
         if not is_manager(request.user):
-            return Response({"detail": "Only admins can delete tickets."}, status=status.HTTP_403_FORBIDDEN)
-        log_event(request.user, ContributionEvent.EventType.ADMIN, ticket, {"action": "delete_issue"})
+            return Response(
+                {"detail": "Only admins can delete tickets."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        log_event(
+            request.user,
+            ContributionEvent.EventType.ADMIN,
+            ticket,
+            {"action": "delete_issue"},
+        )
         return super().destroy(request, *args, **kwargs)
 
     @action(detail=True, methods=["post"], permission_classes=[AdminOrSuperAdmin])
     def set_status(self, request, pk=None):
         ticket = self.get_object()
-        assign_to = request.data.get("assign_to", UNSET) if "assign_to" in request.data else UNSET
+        assign_to = (
+            request.data.get("assign_to", UNSET)
+            if "assign_to" in request.data
+            else UNSET
+        )
         resolution_note = (
-            request.data.get("resolution_note", UNSET) if "resolution_note" in request.data else UNSET
+            request.data.get("resolution_note", UNSET)
+            if "resolution_note" in request.data
+            else UNSET
         )
         ok, error_status, detail = self._apply_status_update(
             ticket=ticket,
@@ -3060,29 +3671,52 @@ class IssueTicketViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             return Response({"detail": detail}, status=error_status)
         return Response(self.get_serializer(ticket).data)
 
-    @action(detail=False, methods=["post"], permission_classes=[AdminOrSuperAdmin], url_path="bulk-set-status")
+    @action(
+        detail=False,
+        methods=["post"],
+        permission_classes=[AdminOrSuperAdmin],
+        url_path="bulk-set-status",
+    )
     def bulk_set_status(self, request):
         raw_ids = request.data.get("ids")
         if not isinstance(raw_ids, list) or not raw_ids:
-            return Response({"detail": "ids must be a non-empty list."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "ids must be a non-empty list."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if len(raw_ids) > 200:
-            return Response({"detail": "Too many ids, max is 200."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Too many ids, max is 200."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         ids = []
         for raw_id in raw_ids:
             try:
                 ticket_id = int(raw_id)
             except (TypeError, ValueError):
-                return Response({"detail": "ids must contain integers."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"detail": "ids must contain integers."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             if ticket_id <= 0:
-                return Response({"detail": "ids must contain positive integers."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"detail": "ids must contain positive integers."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             if ticket_id not in ids:
                 ids.append(ticket_id)
 
         status_value = request.data.get("status")
-        assign_to = request.data.get("assign_to", UNSET) if "assign_to" in request.data else UNSET
+        assign_to = (
+            request.data.get("assign_to", UNSET)
+            if "assign_to" in request.data
+            else UNSET
+        )
         resolution_note = (
-            request.data.get("resolution_note", UNSET) if "resolution_note" in request.data else UNSET
+            request.data.get("resolution_note", UNSET)
+            if "resolution_note" in request.data
+            else UNSET
         )
 
         ticket_map = {
@@ -3096,7 +3730,13 @@ class IssueTicketViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         for ticket_id in ids:
             ticket = ticket_map.get(ticket_id)
             if not ticket:
-                results.append({"id": ticket_id, "success": False, "detail": "Ticket not found or inaccessible."})
+                results.append(
+                    {
+                        "id": ticket_id,
+                        "success": False,
+                        "detail": "Ticket not found or inaccessible.",
+                    }
+                )
                 continue
 
             ok, _, detail = self._apply_status_update(
@@ -3108,7 +3748,9 @@ class IssueTicketViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             )
             if ok:
                 success_count += 1
-                results.append({"id": ticket_id, "success": True, "status": ticket.status})
+                results.append(
+                    {"id": ticket_id, "success": True, "status": ticket.status}
+                )
             else:
                 results.append({"id": ticket_id, "success": False, "detail": detail})
 
@@ -3124,7 +3766,9 @@ class IssueTicketViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
 
 class TrickEntryViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
     serializer_class = TrickEntrySerializer
-    queryset = TrickEntry.objects.select_related("author").all()
+    queryset = (
+        TrickEntry.objects.select_related("author").prefetch_related("terms").all()
+    )
     throttle_action_classes = {
         "create": [ContentCreateRateThrottle],
         "update": [ContentUpdateRateThrottle],
@@ -3164,7 +3808,9 @@ class TrickEntryViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
                 if status_filter == TrickEntry.Status.APPROVED:
                     queryset = queryset.filter(status=TrickEntry.Status.APPROVED)
                 elif status_filter == TrickEntry.Status.PENDING:
-                    queryset = queryset.filter(author=user, status=TrickEntry.Status.PENDING)
+                    queryset = queryset.filter(
+                        author=user, status=TrickEntry.Status.PENDING
+                    )
                 else:
                     queryset = queryset.none()
             elif status_filter != TrickEntry.Status.APPROVED:
@@ -3173,14 +3819,24 @@ class TrickEntryViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         search = self.request.query_params.get("search")
         if search:
             keyword = search.strip()
-            queryset = queryset.filter(Q(title__icontains=keyword) | Q(content_md__icontains=keyword))
+            queryset = queryset.filter(
+                Q(title__icontains=keyword) | Q(content_md__icontains=keyword)
+            )
+
+        term_id = self.request.query_params.get("term")
+        if term_id and term_id.isdigit():
+            queryset = queryset.filter(terms__id=int(term_id))
+
+        term_slug = self.request.query_params.get("term_slug")
+        if term_slug:
+            queryset = queryset.filter(terms__slug=term_slug.strip())
 
         order = self.request.query_params.get("order")
         if order == "created_oldest":
             return queryset.order_by("created_at")
         if order == "created_newest":
             return queryset.order_by("-created_at")
-        return queryset.order_by("-updated_at")
+        return queryset.order_by("-updated_at").distinct()
 
     def _normalize_title(self, request):
         raw_title = str(request.data.get("title", "") or "").strip()
@@ -3213,18 +3869,32 @@ class TrickEntryViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             serializer = self.get_serializer(data=payload)
             serializer.is_valid(raise_exception=True)
             is_direct_publish = is_manager(request.user)
-            next_status = TrickEntry.Status.APPROVED if is_direct_publish else TrickEntry.Status.PENDING
+            next_status = (
+                TrickEntry.Status.APPROVED
+                if is_direct_publish
+                else TrickEntry.Status.PENDING
+            )
             entry = serializer.save(author=request.user, status=next_status)
             log_event(
                 request.user,
-                ContributionEvent.EventType.ADMIN if is_direct_publish else ContributionEvent.EventType.ISSUE,
+                (
+                    ContributionEvent.EventType.ADMIN
+                    if is_direct_publish
+                    else ContributionEvent.EventType.ISSUE
+                ),
                 entry,
                 {
-                    "action": "create_trick_entry_direct_publish" if is_direct_publish else "create_trick_entry",
+                    "action": (
+                        "create_trick_entry_direct_publish"
+                        if is_direct_publish
+                        else "create_trick_entry"
+                    ),
                     "status": next_status,
                 },
             )
-            return Response(self.get_serializer(entry).data, status=status.HTTP_201_CREATED)
+            return Response(
+                self.get_serializer(entry).data, status=status.HTTP_201_CREATED
+            )
         except DatabaseError as exc:
             return schema_outdated_response(exc)
 
@@ -3233,7 +3903,10 @@ class TrickEntryViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             partial = kwargs.pop("partial", False)
             entry = self.get_object()
             if not (is_manager(request.user) or entry.author_id == request.user.id):
-                return Response({"detail": "No permission to edit this trick."}, status=status.HTTP_403_FORBIDDEN)
+                return Response(
+                    {"detail": "No permission to edit this trick."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
 
             payload = request.data.copy()
             payload["title"] = self._normalize_title(request)
@@ -3251,7 +3924,11 @@ class TrickEntryViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             serializer.save(status=next_status)
             log_event(
                 request.user,
-                ContributionEvent.EventType.ISSUE if entry.author_id == request.user.id else ContributionEvent.EventType.ADMIN,
+                (
+                    ContributionEvent.EventType.ISSUE
+                    if entry.author_id == request.user.id
+                    else ContributionEvent.EventType.ADMIN
+                ),
                 entry,
                 {"action": "update_trick_entry", "status": next_status},
             )
@@ -3267,10 +3944,17 @@ class TrickEntryViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         try:
             entry = self.get_object()
             if not (is_manager(request.user) or entry.author_id == request.user.id):
-                return Response({"detail": "No permission to delete this trick."}, status=status.HTTP_403_FORBIDDEN)
+                return Response(
+                    {"detail": "No permission to delete this trick."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
             log_event(
                 request.user,
-                ContributionEvent.EventType.ISSUE if entry.author_id == request.user.id else ContributionEvent.EventType.ADMIN,
+                (
+                    ContributionEvent.EventType.ISSUE
+                    if entry.author_id == request.user.id
+                    else ContributionEvent.EventType.ADMIN
+                ),
                 entry,
                 {"action": "delete_trick_entry"},
             )
@@ -3278,12 +3962,19 @@ class TrickEntryViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         except DatabaseError as exc:
             return schema_outdated_response(exc)
 
-    @action(detail=True, methods=["post"], permission_classes=[AdminOrSuperAdmin], url_path="set-status")
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[AdminOrSuperAdmin],
+        url_path="set-status",
+    )
     def set_status(self, request, pk=None):
         entry = self.get_object()
         next_status = request.data.get("status", "").strip()
         if next_status not in dict(TrickEntry.Status.choices):
-            return Response({"detail": "Invalid status."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Invalid status."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         entry.status = next_status
         entry.save(update_fields=["status", "updated_at"])
@@ -3296,9 +3987,158 @@ class TrickEntryViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         return Response(self.get_serializer(entry).data)
 
 
+class TrickTermViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
+    serializer_class = TrickTermSerializer
+    queryset = TrickTerm.objects.all().annotate(
+        usage_count=Count("trick_entries", distinct=True)
+    )
+    throttle_action_classes = {
+        "create": [ContentCreateRateThrottle],
+        "update": [ContentUpdateRateThrottle],
+        "partial_update": [ContentUpdateRateThrottle],
+        "destroy": [ContentDeleteRateThrottle],
+    }
+
+    def get_permissions(self):
+        if self.action in {"list", "retrieve"}:
+            return [AllowAny()]
+        return [AdminOrSuperAdmin()]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+        if not is_manager(user):
+            queryset = queryset.filter(is_active=True)
+
+        search = self.request.query_params.get("search")
+        if search:
+            keyword = search.strip()
+            queryset = queryset.filter(
+                Q(name__icontains=keyword) | Q(description__icontains=keyword)
+            )
+        return queryset.order_by("name")
+
+
+class TrickTermSuggestionViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
+    serializer_class = TrickTermSuggestionSerializer
+    queryset = (
+        TrickTermSuggestion.objects.select_related("proposer", "reviewer")
+        .prefetch_related("pending_trick_entries")
+        .all()
+    )
+    throttle_action_classes = {
+        "create": [ContentCreateRateThrottle],
+        "set_status": [ContentUpdateRateThrottle],
+    }
+
+    def get_permissions(self):
+        if self.action in {"list", "retrieve"}:
+            return [AuthenticatedAndNotBanned()]
+        if self.action == "create":
+            return [AuthenticatedAndNotBanned()]
+        return [AdminOrSuperAdmin()]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+
+        if not user or not user.is_authenticated:
+            return queryset.none()
+
+        if is_manager(user):
+            status_filter = self.request.query_params.get("status")
+            if status_filter in dict(TrickTermSuggestion.Status.choices):
+                queryset = queryset.filter(status=status_filter)
+            return queryset.order_by("-created_at")
+
+        queryset = queryset.filter(
+            Q(proposer=user) | Q(status=TrickTermSuggestion.Status.APPROVED)
+        )
+        status_filter = self.request.query_params.get("status")
+        if status_filter == TrickTermSuggestion.Status.PENDING:
+            queryset = queryset.filter(
+                proposer=user, status=TrickTermSuggestion.Status.PENDING
+            )
+        elif status_filter in {
+            TrickTermSuggestion.Status.APPROVED,
+            TrickTermSuggestion.Status.REJECTED,
+        }:
+            queryset = queryset.filter(status=status_filter)
+        return queryset.order_by("-created_at")
+
+    def create(self, request, *args, **kwargs):
+        payload = request.data.copy()
+        serializer = self.get_serializer(data=payload)
+        serializer.is_valid(raise_exception=True)
+        suggestion = serializer.save(proposer=request.user)
+        log_event(
+            request.user,
+            ContributionEvent.EventType.ISSUE,
+            suggestion,
+            {"action": "create_trick_term_suggestion", "name": suggestion.name},
+        )
+        return Response(
+            self.get_serializer(suggestion).data, status=status.HTTP_201_CREATED
+        )
+
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[AdminOrSuperAdmin],
+        url_path="set-status",
+    )
+    def set_status(self, request, pk=None):
+        suggestion = self.get_object()
+        next_status = str(request.data.get("status", "")).strip()
+        review_note = str(request.data.get("review_note", "") or "").strip()[:255]
+        if next_status not in dict(TrickTermSuggestion.Status.choices):
+            return Response(
+                {"detail": "Invalid status."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        with transaction.atomic():
+            suggestion.status = next_status
+            suggestion.reviewer = request.user
+            suggestion.review_note = review_note
+            suggestion.reviewed_at = timezone.now()
+            suggestion.save(
+                update_fields=[
+                    "status",
+                    "reviewer",
+                    "review_note",
+                    "reviewed_at",
+                    "updated_at",
+                ]
+            )
+
+            if next_status == TrickTermSuggestion.Status.APPROVED:
+                term, _ = TrickTerm.objects.get_or_create(
+                    name=suggestion.name,
+                    defaults={"is_active": True, "is_builtin": False},
+                )
+                if not term.is_active:
+                    term.is_active = True
+                    term.save(update_fields=["is_active", "updated_at"])
+
+                linked_entries = list(suggestion.pending_trick_entries.all())
+                for entry in linked_entries:
+                    entry.terms.add(term)
+                suggestion.pending_trick_entries.clear()
+
+        log_event(
+            request.user,
+            ContributionEvent.EventType.ADMIN,
+            suggestion,
+            {"action": "moderate_trick_term_suggestion", "status": next_status},
+        )
+        return Response(self.get_serializer(suggestion).data)
+
+
 class QuestionViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
     serializer_class = QuestionSerializer
-    queryset = Question.objects.select_related("author", "category").annotate(answers_count=Count("answers"))
+    queryset = Question.objects.select_related("author", "category").annotate(
+        answers_count=Count("answers")
+    )
     throttle_action_classes = {
         "create": [ContentCreateRateThrottle],
         "update": [ContentUpdateRateThrottle],
@@ -3347,7 +4187,9 @@ class QuestionViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
                 | Q(author=user, status=Question.Status.PENDING)
             )
         else:
-            queryset = queryset.filter(status__in=[Question.Status.OPEN, Question.Status.CLOSED])
+            queryset = queryset.filter(
+                status__in=[Question.Status.OPEN, Question.Status.CLOSED]
+            )
 
         if manager:
             author_filter = self.request.query_params.get("author")
@@ -3356,7 +4198,9 @@ class QuestionViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
                 if author_filter.isdigit():
                     queryset = queryset.filter(author_id=int(author_filter))
                 else:
-                    queryset = queryset.filter(author__username__icontains=author_filter)
+                    queryset = queryset.filter(
+                        author__username__icontains=author_filter
+                    )
 
         if status_filter in dict(Question.Status.choices):
             if manager or mine_only:
@@ -3379,7 +4223,9 @@ class QuestionViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         search = self.request.query_params.get("search")
         if search:
             token = search.strip()
-            queryset = queryset.filter(Q(title__icontains=token) | Q(content_md__icontains=token))
+            queryset = queryset.filter(
+                Q(title__icontains=token) | Q(content_md__icontains=token)
+            )
 
         order = self.request.query_params.get("order")
         if order == "oldest":
@@ -3396,11 +4242,19 @@ class QuestionViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        next_status = Question.Status.OPEN if is_manager(request.user) else Question.Status.PENDING
+        next_status = (
+            Question.Status.OPEN
+            if is_manager(request.user)
+            else Question.Status.PENDING
+        )
         question = serializer.save(
             author=request.user,
             status=next_status,
-            auto_close_at=build_question_auto_close_at() if next_status == Question.Status.OPEN else None,
+            auto_close_at=(
+                build_question_auto_close_at()
+                if next_status == Question.Status.OPEN
+                else None
+            ),
         )
         log_event(
             request.user,
@@ -3408,14 +4262,18 @@ class QuestionViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             question,
             {"action": "create_question", "status": next_status},
         )
-        return Response(self.get_serializer(question).data, status=status.HTTP_201_CREATED)
+        return Response(
+            self.get_serializer(question).data, status=status.HTTP_201_CREATED
+        )
 
     def update(self, request, *args, **kwargs):
         question = self.get_object()
         partial = kwargs.pop("partial", False)
         manager = is_manager(request.user)
         if question.author_id != request.user.id and not manager:
-            return Response({"detail": "No permission."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "No permission."}, status=status.HTTP_403_FORBIDDEN
+            )
 
         serializer = self.get_serializer(question, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
@@ -3426,7 +4284,11 @@ class QuestionViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         serializer.save(**save_kwargs)
         log_event(
             request.user,
-            ContributionEvent.EventType.ADMIN if manager else ContributionEvent.EventType.QUESTION,
+            (
+                ContributionEvent.EventType.ADMIN
+                if manager
+                else ContributionEvent.EventType.QUESTION
+            ),
             question,
             {"action": "update_question", "status": next_status},
         )
@@ -3438,7 +4300,11 @@ class QuestionViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
 
         if action == "close":
             if question.status not in {Question.Status.OPEN, Question.Status.CLOSED}:
-                return False, status.HTTP_400_BAD_REQUEST, "Only reviewed questions can be closed."
+                return (
+                    False,
+                    status.HTTP_400_BAD_REQUEST,
+                    "Only reviewed questions can be closed.",
+                )
             if question.author_id != operator.id and not manager:
                 return False, status.HTTP_403_FORBIDDEN, "No permission."
             question.status = Question.Status.CLOSED
@@ -3446,7 +4312,11 @@ class QuestionViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             question.save(update_fields=["status", "auto_close_at", "updated_at"])
             log_event(
                 operator,
-                ContributionEvent.EventType.ADMIN if manager else ContributionEvent.EventType.QUESTION,
+                (
+                    ContributionEvent.EventType.ADMIN
+                    if manager
+                    else ContributionEvent.EventType.QUESTION
+                ),
                 question,
                 {"action": "close_question"},
             )
@@ -3454,7 +4324,11 @@ class QuestionViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
 
         if action == "reopen":
             if question.status not in {Question.Status.OPEN, Question.Status.CLOSED}:
-                return False, status.HTTP_400_BAD_REQUEST, "Only reviewed questions can be reopened."
+                return (
+                    False,
+                    status.HTTP_400_BAD_REQUEST,
+                    "Only reviewed questions can be reopened.",
+                )
             if question.author_id != operator.id and not manager:
                 return False, status.HTTP_403_FORBIDDEN, "No permission."
             question.status = Question.Status.OPEN
@@ -3462,7 +4336,11 @@ class QuestionViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             question.save(update_fields=["status", "auto_close_at", "updated_at"])
             log_event(
                 operator,
-                ContributionEvent.EventType.ADMIN if manager else ContributionEvent.EventType.QUESTION,
+                (
+                    ContributionEvent.EventType.ADMIN
+                    if manager
+                    else ContributionEvent.EventType.QUESTION
+                ),
                 question,
                 {"action": "reopen_question"},
             )
@@ -3470,13 +4348,26 @@ class QuestionViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
 
         if action == "approve":
             if not manager:
-                return False, status.HTTP_403_FORBIDDEN, "Only admins can approve questions."
+                return (
+                    False,
+                    status.HTTP_403_FORBIDDEN,
+                    "Only admins can approve questions.",
+                )
             if question.status != Question.Status.PENDING:
-                return False, status.HTTP_400_BAD_REQUEST, "Question is not pending review."
+                return (
+                    False,
+                    status.HTTP_400_BAD_REQUEST,
+                    "Question is not pending review.",
+                )
             question.status = Question.Status.OPEN
             question.auto_close_at = build_question_auto_close_at()
             question.save(update_fields=["status", "auto_close_at", "updated_at"])
-            log_event(operator, ContributionEvent.EventType.ADMIN, question, {"action": "approve_question"})
+            log_event(
+                operator,
+                ContributionEvent.EventType.ADMIN,
+                question,
+                {"action": "approve_question"},
+            )
             if question.author_id != operator.id:
                 create_notification(
                     user=question.author,
@@ -3490,13 +4381,26 @@ class QuestionViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
 
         if action == "reject":
             if not manager:
-                return False, status.HTTP_403_FORBIDDEN, "Only admins can reject questions."
+                return (
+                    False,
+                    status.HTTP_403_FORBIDDEN,
+                    "Only admins can reject questions.",
+                )
             if question.status != Question.Status.PENDING:
-                return False, status.HTTP_400_BAD_REQUEST, "Question is not pending review."
+                return (
+                    False,
+                    status.HTTP_400_BAD_REQUEST,
+                    "Question is not pending review.",
+                )
             question.status = Question.Status.HIDDEN
             question.auto_close_at = None
             question.save(update_fields=["status", "auto_close_at", "updated_at"])
-            log_event(operator, ContributionEvent.EventType.ADMIN, question, {"action": "reject_question"})
+            log_event(
+                operator,
+                ContributionEvent.EventType.ADMIN,
+                question,
+                {"action": "reject_question"},
+            )
             if question.author_id != operator.id:
                 create_notification(
                     user=question.author,
@@ -3517,7 +4421,11 @@ class QuestionViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             question.save(update_fields=["status", "auto_close_at", "updated_at"])
             log_event(
                 operator,
-                ContributionEvent.EventType.ADMIN if manager else ContributionEvent.EventType.QUESTION,
+                (
+                    ContributionEvent.EventType.ADMIN
+                    if manager
+                    else ContributionEvent.EventType.QUESTION
+                ),
                 question,
                 {"action": "hide_question"},
             )
@@ -3527,14 +4435,26 @@ class QuestionViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             if question.author_id != operator.id and not manager:
                 return False, status.HTTP_403_FORBIDDEN, "No permission."
             if question.status != Question.Status.HIDDEN:
-                return False, status.HTTP_400_BAD_REQUEST, "Only hidden questions can be restored."
+                return (
+                    False,
+                    status.HTTP_400_BAD_REQUEST,
+                    "Only hidden questions can be restored.",
+                )
             next_status = Question.Status.OPEN if manager else Question.Status.PENDING
             question.status = next_status
-            question.auto_close_at = build_question_auto_close_at() if next_status == Question.Status.OPEN else None
+            question.auto_close_at = (
+                build_question_auto_close_at()
+                if next_status == Question.Status.OPEN
+                else None
+            )
             question.save(update_fields=["status", "auto_close_at", "updated_at"])
             log_event(
                 operator,
-                ContributionEvent.EventType.ADMIN if manager else ContributionEvent.EventType.QUESTION,
+                (
+                    ContributionEvent.EventType.ADMIN
+                    if manager
+                    else ContributionEvent.EventType.QUESTION
+                ),
                 question,
                 {"action": "restore_question", "status": next_status},
             )
@@ -3544,23 +4464,33 @@ class QuestionViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         question = self.get_object()
-        ok, error_status, detail = self._apply_question_moderation(question, request.user, "hide")
+        ok, error_status, detail = self._apply_question_moderation(
+            question, request.user, "hide"
+        )
         if not ok:
             return Response({"detail": detail}, status=error_status)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned])
+    @action(
+        detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned]
+    )
     def close(self, request, pk=None):
         question = self.get_object()
-        ok, error_status, detail = self._apply_question_moderation(question, request.user, "close")
+        ok, error_status, detail = self._apply_question_moderation(
+            question, request.user, "close"
+        )
         if not ok:
             return Response({"detail": detail}, status=error_status)
         return Response(self.get_serializer(question).data)
 
-    @action(detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned])
+    @action(
+        detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned]
+    )
     def reopen(self, request, pk=None):
         question = self.get_object()
-        ok, error_status, detail = self._apply_question_moderation(question, request.user, "reopen")
+        ok, error_status, detail = self._apply_question_moderation(
+            question, request.user, "reopen"
+        )
         if not ok:
             return Response({"detail": detail}, status=error_status)
         return Response(self.get_serializer(question).data)
@@ -3568,7 +4498,9 @@ class QuestionViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], permission_classes=[AdminOrSuperAdmin])
     def approve(self, request, pk=None):
         question = self.get_object()
-        ok, error_status, detail = self._apply_question_moderation(question, request.user, "approve")
+        ok, error_status, detail = self._apply_question_moderation(
+            question, request.user, "approve"
+        )
         if not ok:
             return Response({"detail": detail}, status=error_status)
         return Response(self.get_serializer(question).data)
@@ -3576,41 +4508,64 @@ class QuestionViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], permission_classes=[AdminOrSuperAdmin])
     def reject(self, request, pk=None):
         question = self.get_object()
-        ok, error_status, detail = self._apply_question_moderation(question, request.user, "reject")
+        ok, error_status, detail = self._apply_question_moderation(
+            question, request.user, "reject"
+        )
         if not ok:
             return Response({"detail": detail}, status=error_status)
         return Response(self.get_serializer(question).data)
 
-    @action(detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned])
+    @action(
+        detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned]
+    )
     def restore(self, request, pk=None):
         question = (
-            Question.objects.select_related("author", "category")
-            .filter(pk=pk)
-            .first()
+            Question.objects.select_related("author", "category").filter(pk=pk).first()
         )
         if not question:
-            return Response({"detail": "Question not found."}, status=status.HTTP_404_NOT_FOUND)
-        ok, error_status, detail = self._apply_question_moderation(question, request.user, "restore")
+            return Response(
+                {"detail": "Question not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+        ok, error_status, detail = self._apply_question_moderation(
+            question, request.user, "restore"
+        )
         if not ok:
             return Response({"detail": detail}, status=error_status)
         return Response(self.get_serializer(question).data)
 
-    @action(detail=False, methods=["post"], permission_classes=[AdminOrSuperAdmin], url_path="bulk-moderate")
+    @action(
+        detail=False,
+        methods=["post"],
+        permission_classes=[AdminOrSuperAdmin],
+        url_path="bulk-moderate",
+    )
     def bulk_moderate(self, request):
         raw_ids = request.data.get("ids")
         if not isinstance(raw_ids, list) or not raw_ids:
-            return Response({"detail": "ids must be a non-empty list."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "ids must be a non-empty list."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if len(raw_ids) > 200:
-            return Response({"detail": "Too many ids, max is 200."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Too many ids, max is 200."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         ids = []
         for raw_id in raw_ids:
             try:
                 question_id = int(raw_id)
             except (TypeError, ValueError):
-                return Response({"detail": "ids must contain integers."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"detail": "ids must contain integers."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             if question_id <= 0:
-                return Response({"detail": "ids must contain positive integers."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"detail": "ids must contain positive integers."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             if question_id not in ids:
                 ids.append(question_id)
 
@@ -3632,13 +4587,23 @@ class QuestionViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         for question_id in ids:
             question = question_map.get(question_id)
             if not question:
-                results.append({"id": question_id, "success": False, "detail": "Question not found or inaccessible."})
+                results.append(
+                    {
+                        "id": question_id,
+                        "success": False,
+                        "detail": "Question not found or inaccessible.",
+                    }
+                )
                 continue
 
-            ok, _, detail = self._apply_question_moderation(question, request.user, action_name)
+            ok, _, detail = self._apply_question_moderation(
+                question, request.user, action_name
+            )
             if ok:
                 success_count += 1
-                results.append({"id": question_id, "success": True, "status": question.status})
+                results.append(
+                    {"id": question_id, "success": True, "status": question.status}
+                )
             else:
                 results.append({"id": question_id, "success": False, "detail": detail})
 
@@ -3651,11 +4616,15 @@ class QuestionViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             }
         )
 
-    @action(detail=False, methods=["get"], permission_classes=[AuthenticatedAndNotBanned])
+    @action(
+        detail=False, methods=["get"], permission_classes=[AuthenticatedAndNotBanned]
+    )
     def mine(self, request):
         status_filter = request.query_params.get("status")
         status_filter = status_filter.strip() if isinstance(status_filter, str) else ""
-        queryset = Question.objects.filter(author=request.user).select_related("author", "category")
+        queryset = Question.objects.filter(author=request.user).select_related(
+            "author", "category"
+        )
         sync_question_auto_close_states(queryset)
         if status_filter in dict(Question.Status.choices):
             queryset = queryset.filter(status=status_filter)
@@ -3663,7 +4632,9 @@ class QuestionViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             queryset = queryset.exclude(status=Question.Status.HIDDEN)
         if status_filter == Question.Status.HIDDEN:
             hidden_ids = list(
-                Question.objects.filter(author=request.user, status=Question.Status.HIDDEN)
+                Question.objects.filter(
+                    author=request.user, status=Question.Status.HIDDEN
+                )
                 .order_by("-updated_at", "-id")
                 .values_list("id", flat=True)[:30]
             )
@@ -3678,7 +4649,9 @@ class QuestionViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
 
 class AnswerViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
     serializer_class = AnswerSerializer
-    queryset = Answer.objects.select_related("author", "question", "question__author").all()
+    queryset = Answer.objects.select_related(
+        "author", "question", "question__author"
+    ).all()
     throttle_action_classes = {
         "create": [ContentCreateRateThrottle],
         "update": [ContentUpdateRateThrottle],
@@ -3713,10 +4686,13 @@ class AnswerViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
                 if author_filter.isdigit():
                     queryset = queryset.filter(author_id=int(author_filter))
                 else:
-                    queryset = queryset.filter(author__username__icontains=author_filter)
+                    queryset = queryset.filter(
+                        author__username__icontains=author_filter
+                    )
         elif user.is_authenticated:
             queryset = queryset.filter(
-                Q(status=Answer.Status.VISIBLE) | Q(author=user, status=Answer.Status.PENDING)
+                Q(status=Answer.Status.VISIBLE)
+                | Q(author=user, status=Answer.Status.PENDING)
             )
         else:
             queryset = queryset.filter(status=Answer.Status.VISIBLE)
@@ -3748,16 +4724,27 @@ class AnswerViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         question = serializer.validated_data["question"]
         sync_question_auto_close_state(question)
         if question.status != Question.Status.OPEN:
-            return Response({"detail": "Question is closed."}, status=status.HTTP_400_BAD_REQUEST)
-        next_status = Answer.Status.VISIBLE if is_manager(request.user) else Answer.Status.PENDING
+            return Response(
+                {"detail": "Question is closed."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        next_status = (
+            Answer.Status.VISIBLE if is_manager(request.user) else Answer.Status.PENDING
+        )
         answer = serializer.save(author=request.user, status=next_status)
         log_event(
             request.user,
             ContributionEvent.EventType.ANSWER,
             answer,
-            {"action": "create_answer", "question_id": question.id, "status": next_status},
+            {
+                "action": "create_answer",
+                "question_id": question.id,
+                "status": next_status,
+            },
         )
-        if answer.status == Answer.Status.VISIBLE and question.author_id != request.user.id:
+        if (
+            answer.status == Answer.Status.VISIBLE
+            and question.author_id != request.user.id
+        ):
             create_notification(
                 user=question.author,
                 actor=request.user,
@@ -3766,14 +4753,19 @@ class AnswerViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
                 content=answer.content_md[:180],
                 link="/questions",
             )
-        return Response(self.get_serializer(answer).data, status=status.HTTP_201_CREATED)
+        return Response(
+            self.get_serializer(answer).data, status=status.HTTP_201_CREATED
+        )
 
     def update(self, request, *args, **kwargs):
         answer = self.get_object()
         partial = kwargs.pop("partial", False)
         manager = is_manager(request.user)
         if answer.author_id != request.user.id and not manager:
-            return Response({"detail": "No permission to edit this answer."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "No permission to edit this answer."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         serializer = self.get_serializer(answer, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         save_kwargs = {}
@@ -3784,7 +4776,11 @@ class AnswerViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         serializer.save(**save_kwargs)
         log_event(
             request.user,
-            ContributionEvent.EventType.ADMIN if manager else ContributionEvent.EventType.ANSWER,
+            (
+                ContributionEvent.EventType.ADMIN
+                if manager
+                else ContributionEvent.EventType.ANSWER
+            ),
             answer,
             {
                 "action": "update_answer",
@@ -3801,10 +4797,19 @@ class AnswerViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
 
         if action == "approve":
             if answer.status != Answer.Status.PENDING:
-                return False, status.HTTP_400_BAD_REQUEST, "Answer is not pending review."
+                return (
+                    False,
+                    status.HTTP_400_BAD_REQUEST,
+                    "Answer is not pending review.",
+                )
             answer.status = Answer.Status.VISIBLE
             answer.save(update_fields=["status", "updated_at"])
-            log_event(operator, ContributionEvent.EventType.ADMIN, answer, {"action": "approve_answer"})
+            log_event(
+                operator,
+                ContributionEvent.EventType.ADMIN,
+                answer,
+                {"action": "approve_answer"},
+            )
             if answer.author_id != operator.id:
                 create_notification(
                     user=answer.author,
@@ -3818,11 +4823,20 @@ class AnswerViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
 
         if action == "reject":
             if answer.status != Answer.Status.PENDING:
-                return False, status.HTTP_400_BAD_REQUEST, "Answer is not pending review."
+                return (
+                    False,
+                    status.HTTP_400_BAD_REQUEST,
+                    "Answer is not pending review.",
+                )
             answer.status = Answer.Status.HIDDEN
             answer.is_accepted = False
             answer.save(update_fields=["status", "is_accepted", "updated_at"])
-            log_event(operator, ContributionEvent.EventType.ADMIN, answer, {"action": "reject_answer"})
+            log_event(
+                operator,
+                ContributionEvent.EventType.ADMIN,
+                answer,
+                {"action": "reject_answer"},
+            )
             if answer.author_id != operator.id:
                 create_notification(
                     user=answer.author,
@@ -3839,7 +4853,12 @@ class AnswerViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             answer.status = Answer.Status.HIDDEN
             answer.is_accepted = False
             answer.save(update_fields=["status", "is_accepted", "updated_at"])
-            log_event(operator, ContributionEvent.EventType.ADMIN, answer, {"action": "hide_answer"})
+            log_event(
+                operator,
+                ContributionEvent.EventType.ADMIN,
+                answer,
+                {"action": "hide_answer"},
+            )
             return True, status.HTTP_200_OK, None
 
         return False, status.HTTP_400_BAD_REQUEST, "Invalid moderation action."
@@ -3847,28 +4866,50 @@ class AnswerViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         answer = self.get_object()
         if answer.author_id != request.user.id and not is_manager(request.user):
-            return Response({"detail": "No permission to remove this answer."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "No permission to remove this answer."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         answer.status = Answer.Status.HIDDEN
         answer.save(update_fields=["status", "updated_at"])
-        log_event(request.user, ContributionEvent.EventType.ANSWER, answer, {"action": "hide_answer"})
+        log_event(
+            request.user,
+            ContributionEvent.EventType.ANSWER,
+            answer,
+            {"action": "hide_answer"},
+        )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned])
+    @action(
+        detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned]
+    )
     def accept(self, request, pk=None):
         answer = self.get_object()
         question = answer.question
         sync_question_auto_close_state(question)
         if answer.status != Answer.Status.VISIBLE:
-            return Response({"detail": "Only visible answers can be accepted."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Only visible answers can be accepted."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if question.author_id != request.user.id and not is_manager(request.user):
-            return Response({"detail": "No permission."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "No permission."}, status=status.HTTP_403_FORBIDDEN
+            )
 
         with transaction.atomic():
-            Answer.objects.filter(question=question, is_accepted=True).update(is_accepted=False)
+            Answer.objects.filter(question=question, is_accepted=True).update(
+                is_accepted=False
+            )
             answer.is_accepted = True
             answer.save(update_fields=["is_accepted", "updated_at"])
 
-        log_event(request.user, ContributionEvent.EventType.ANSWER, answer, {"action": "accept_answer"})
+        log_event(
+            request.user,
+            ContributionEvent.EventType.ANSWER,
+            answer,
+            {"action": "accept_answer"},
+        )
         if answer.author_id != request.user.id:
             create_notification(
                 user=answer.author,
@@ -3883,7 +4924,9 @@ class AnswerViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], permission_classes=[AdminOrSuperAdmin])
     def approve(self, request, pk=None):
         answer = self.get_object()
-        ok, error_status, detail = self._apply_answer_moderation(answer, request.user, "approve")
+        ok, error_status, detail = self._apply_answer_moderation(
+            answer, request.user, "approve"
+        )
         if not ok:
             return Response({"detail": detail}, status=error_status)
         return Response(self.get_serializer(answer).data)
@@ -3891,27 +4934,46 @@ class AnswerViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], permission_classes=[AdminOrSuperAdmin])
     def reject(self, request, pk=None):
         answer = self.get_object()
-        ok, error_status, detail = self._apply_answer_moderation(answer, request.user, "reject")
+        ok, error_status, detail = self._apply_answer_moderation(
+            answer, request.user, "reject"
+        )
         if not ok:
             return Response({"detail": detail}, status=error_status)
         return Response(self.get_serializer(answer).data)
 
-    @action(detail=False, methods=["post"], permission_classes=[AdminOrSuperAdmin], url_path="bulk-moderate")
+    @action(
+        detail=False,
+        methods=["post"],
+        permission_classes=[AdminOrSuperAdmin],
+        url_path="bulk-moderate",
+    )
     def bulk_moderate(self, request):
         raw_ids = request.data.get("ids")
         if not isinstance(raw_ids, list) or not raw_ids:
-            return Response({"detail": "ids must be a non-empty list."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "ids must be a non-empty list."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if len(raw_ids) > 200:
-            return Response({"detail": "Too many ids, max is 200."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Too many ids, max is 200."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         ids = []
         for raw_id in raw_ids:
             try:
                 answer_id = int(raw_id)
             except (TypeError, ValueError):
-                return Response({"detail": "ids must contain integers."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"detail": "ids must contain integers."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             if answer_id <= 0:
-                return Response({"detail": "ids must contain positive integers."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"detail": "ids must contain positive integers."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             if answer_id not in ids:
                 ids.append(answer_id)
 
@@ -3933,13 +4995,23 @@ class AnswerViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
         for answer_id in ids:
             answer = answer_map.get(answer_id)
             if not answer:
-                results.append({"id": answer_id, "success": False, "detail": "Answer not found or inaccessible."})
+                results.append(
+                    {
+                        "id": answer_id,
+                        "success": False,
+                        "detail": "Answer not found or inaccessible.",
+                    }
+                )
                 continue
 
-            ok, _, detail = self._apply_answer_moderation(answer, request.user, action_name)
+            ok, _, detail = self._apply_answer_moderation(
+                answer, request.user, action_name
+            )
             if ok:
                 success_count += 1
-                results.append({"id": answer_id, "success": True, "status": answer.status})
+                results.append(
+                    {"id": answer_id, "success": True, "status": answer.status}
+                )
             else:
                 results.append({"id": answer_id, "success": False, "detail": detail})
 
@@ -3952,11 +5024,12 @@ class AnswerViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
             }
         )
 
-    @action(detail=False, methods=["get"], permission_classes=[AuthenticatedAndNotBanned])
+    @action(
+        detail=False, methods=["get"], permission_classes=[AuthenticatedAndNotBanned]
+    )
     def mine(self, request):
-        queryset = (
-            Answer.objects.filter(author=request.user)
-            .select_related("author", "question", "question__author")
+        queryset = Answer.objects.filter(author=request.user).select_related(
+            "author", "question", "question__author"
         )
         page = self.paginate_queryset(queryset)
         if page is not None:
@@ -3983,7 +5056,9 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
         include_all = self.request.query_params.get("all") == "1"
 
         manager_detail_actions = {"retrieve", "update", "partial_update", "destroy"}
-        can_access_all = is_manager(user) and (include_all or self.action in manager_detail_actions)
+        can_access_all = is_manager(user) and (
+            include_all or self.action in manager_detail_actions
+        )
 
         if not can_access_all:
             queryset = queryset.active()
@@ -3995,7 +5070,11 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         announcement = serializer.save(created_by=request.user)
         log_event(request.user, ContributionEvent.EventType.ANNOUNCEMENT, announcement)
-        recipients = User.objects.filter(is_active=True, is_banned=False).exclude(id=request.user.id).only("id", "is_active", "is_banned")
+        recipients = (
+            User.objects.filter(is_active=True, is_banned=False)
+            .exclude(id=request.user.id)
+            .only("id", "is_active", "is_banned")
+        )
         bulk_notify_users(
             users=recipients,
             actor=request.user,
@@ -4005,12 +5084,16 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
             link="/",
             level=UserNotification.Level.INFO,
         )
-        return Response(self.get_serializer(announcement).data, status=status.HTTP_201_CREATED)
+        return Response(
+            self.get_serializer(announcement).data, status=status.HTTP_201_CREATED
+        )
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", False)
         announcement = self.get_object()
-        serializer = self.get_serializer(announcement, data=request.data, partial=partial)
+        serializer = self.get_serializer(
+            announcement, data=request.data, partial=partial
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         log_event(
@@ -4031,19 +5114,32 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
         )
         return super().destroy(request, *args, **kwargs)
 
-    @action(detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned])
+    @action(
+        detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned]
+    )
     def acknowledge(self, request, pk=None):
         announcement = self.get_object()
-        AnnouncementRead.objects.get_or_create(user=request.user, announcement=announcement)
+        AnnouncementRead.objects.get_or_create(
+            user=request.user, announcement=announcement
+        )
         return Response({"acknowledged": True})
 
-    @action(detail=False, methods=["get"], permission_classes=[AuthenticatedAndNotBanned])
+    @action(
+        detail=False, methods=["get"], permission_classes=[AuthenticatedAndNotBanned]
+    )
     def unread(self, request):
-        queryset = Announcement.objects.active().exclude(read_by_users__user=request.user)
+        queryset = Announcement.objects.active().exclude(
+            read_by_users__user=request.user
+        )
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-    @action(detail=False, methods=["get"], permission_classes=[AllowAny], url_path="published-history")
+    @action(
+        detail=False,
+        methods=["get"],
+        permission_classes=[AllowAny],
+        url_path="published-history",
+    )
     def published_history(self, request):
         try:
             limit = int(request.query_params.get("limit", 30))
@@ -4051,7 +5147,9 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
             limit = 30
         limit = min(max(limit, 1), 100)
 
-        queryset = Announcement.objects.filter(is_published=True).order_by("-created_at")[:limit]
+        queryset = Announcement.objects.filter(is_published=True).order_by(
+            "-created_at"
+        )[:limit]
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -4072,10 +5170,17 @@ class TeamMemberViewSet(viewsets.GenericViewSet):
         serializer = self.get_serializer(self.get_queryset(), many=True)
         return Response(serializer.data)
 
-    @action(detail=False, methods=["get", "post", "patch", "delete"], permission_classes=[AuthenticatedAndNotBanned])
+    @action(
+        detail=False,
+        methods=["get", "post", "patch", "delete"],
+        permission_classes=[AuthenticatedAndNotBanned],
+    )
     def mine(self, request):
         if not is_manager(request.user):
-            return Response({"detail": "Only admins can manage team cards."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "Only admins can manage team cards."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         member = TeamMember.objects.filter(user=request.user).first()
         active_member = member if member and member.is_active else None
@@ -4083,7 +5188,13 @@ class TeamMemberViewSet(viewsets.GenericViewSet):
             return Response(
                 {
                     "exists": bool(active_member),
-                    "member": TeamMemberSerializer(active_member, context={"request": request}).data if active_member else None,
+                    "member": (
+                        TeamMemberSerializer(
+                            active_member, context={"request": request}
+                        ).data
+                        if active_member
+                        else None
+                    ),
                 }
             )
 
@@ -4094,7 +5205,9 @@ class TeamMemberViewSet(viewsets.GenericViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         partial = request.method == "PATCH"
-        serializer = TeamMemberUpsertSerializer(member, data=request.data, partial=partial)
+        serializer = TeamMemberUpsertSerializer(
+            member, data=request.data, partial=partial
+        )
         serializer.is_valid(raise_exception=True)
         created = member is None
         payload = dict(serializer.validated_data)
@@ -4112,7 +5225,9 @@ class TeamMemberViewSet(viewsets.GenericViewSet):
             member.is_active = True
             member.save(update_fields=[*payload.keys(), "is_active", "updated_at"])
         data = TeamMemberSerializer(member, context={"request": request}).data
-        return Response(data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+        return Response(
+            data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        )
 
 
 class ExtensionPageViewSet(viewsets.ModelViewSet):
@@ -4142,17 +5257,28 @@ class ExtensionPageViewSet(viewsets.ModelViewSet):
             return queryset.filter(is_enabled=True)
 
         if user.is_authenticated:
-            return queryset.filter(is_enabled=True).exclude(access_level=ExtensionPage.AccessLevel.ADMIN)
+            return queryset.filter(is_enabled=True).exclude(
+                access_level=ExtensionPage.AccessLevel.ADMIN
+            )
 
-        return queryset.filter(is_enabled=True, access_level=ExtensionPage.AccessLevel.PUBLIC)
+        return queryset.filter(
+            is_enabled=True, access_level=ExtensionPage.AccessLevel.PUBLIC
+        )
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         page = serializer.save()
-        log_event(request.user, ContributionEvent.EventType.ADMIN, page, {"action": "create_page"})
+        log_event(
+            request.user,
+            ContributionEvent.EventType.ADMIN,
+            page,
+            {"action": "create_page"},
+        )
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response(
+            serializer.data, status=status.HTTP_201_CREATED, headers=headers
+        )
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", False)
@@ -4160,12 +5286,22 @@ class ExtensionPageViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(page, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        log_event(request.user, ContributionEvent.EventType.ADMIN, page, {"action": "update_page"})
+        log_event(
+            request.user,
+            ContributionEvent.EventType.ADMIN,
+            page,
+            {"action": "update_page"},
+        )
         return Response(serializer.data)
 
     def destroy(self, request, *args, **kwargs):
         page = self.get_object()
-        log_event(request.user, ContributionEvent.EventType.ADMIN, page, {"action": "delete_page"})
+        log_event(
+            request.user,
+            ContributionEvent.EventType.ADMIN,
+            page,
+            {"action": "delete_page"},
+        )
         return super().destroy(request, *args, **kwargs)
 
 
@@ -4230,7 +5366,9 @@ class CompetitionZoneSectionViewSet(viewsets.ModelViewSet):
                 section,
                 {"action": "create_competition_zone_section"},
             )
-            return Response(self.get_serializer(section).data, status=status.HTTP_201_CREATED)
+            return Response(
+                self.get_serializer(section).data, status=status.HTTP_201_CREATED
+            )
         except DatabaseError as exc:
             return schema_outdated_response(exc)
 
@@ -4238,7 +5376,9 @@ class CompetitionZoneSectionViewSet(viewsets.ModelViewSet):
         try:
             partial = kwargs.pop("partial", False)
             section = self.get_object()
-            serializer = self.get_serializer(section, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                section, data=request.data, partial=partial
+            )
             serializer.is_valid(raise_exception=True)
             serializer.save()
             log_event(
@@ -4262,18 +5402,31 @@ class CompetitionZoneSectionViewSet(viewsets.ModelViewSet):
                 {"action": "delete_competition_zone_section"},
             )
             response = super().destroy(request, *args, **kwargs)
-            if related_page and not CompetitionZoneSection.objects.filter(page=related_page).exists():
+            if (
+                related_page
+                and not CompetitionZoneSection.objects.filter(
+                    page=related_page
+                ).exists()
+            ):
                 related_page.delete()
             return response
         except DatabaseError as exc:
             return schema_outdated_response(exc)
 
-    @action(detail=True, methods=["post"], permission_classes=[AdminOrSuperAdmin], url_path="move")
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[AdminOrSuperAdmin],
+        url_path="move",
+    )
     def move(self, request, pk=None):
         section = self.get_object()
         direction = parse_move_direction(request)
         if not direction:
-            return Response({"detail": "direction must be up or down."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "direction must be up or down."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         moved = move_ordered_instance(
             instance=section,
@@ -4282,7 +5435,10 @@ class CompetitionZoneSectionViewSet(viewsets.ModelViewSet):
             direction=direction,
         )
         if not moved:
-            return Response({"detail": "Section is already at the edge."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Section is already at the edge."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         section.refresh_from_db()
         log_event(
@@ -4350,12 +5506,20 @@ class HeaderNavigationItemViewSet(
         except DatabaseError as exc:
             return schema_outdated_response(exc)
 
-    @action(detail=True, methods=["post"], permission_classes=[AdminOrSuperAdmin], url_path="move")
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[AdminOrSuperAdmin],
+        url_path="move",
+    )
     def move(self, request, pk=None):
         item = self.get_object()
         direction = parse_move_direction(request)
         if not direction:
-            return Response({"detail": "direction must be up or down."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "direction must be up or down."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         moved = move_ordered_instance(
             instance=item,
@@ -4364,7 +5528,10 @@ class HeaderNavigationItemViewSet(
             direction=direction,
         )
         if not moved:
-            return Response({"detail": "Header item is already at the edge."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Header item is already at the edge."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         item.refresh_from_db()
         log_event(
@@ -4378,7 +5545,9 @@ class HeaderNavigationItemViewSet(
 
 class AssistantProviderConfigViewSet(viewsets.ModelViewSet):
     serializer_class = AssistantProviderConfigSerializer
-    queryset = AssistantProviderConfig.objects.select_related("created_by", "updated_by").all()
+    queryset = AssistantProviderConfig.objects.select_related(
+        "created_by", "updated_by"
+    ).all()
 
     def get_permissions(self):
         if self.action in {"list", "retrieve", "stats"}:
@@ -4386,7 +5555,9 @@ class AssistantProviderConfigViewSet(viewsets.ModelViewSet):
         return [SuperAdminOnly()]
 
     def perform_create(self, serializer):
-        config = serializer.save(created_by=self.request.user, updated_by=self.request.user)
+        config = serializer.save(
+            created_by=self.request.user, updated_by=self.request.user
+        )
         log_event(
             self.request.user,
             ContributionEvent.EventType.ADMIN,
@@ -4413,18 +5584,31 @@ class AssistantProviderConfigViewSet(viewsets.ModelViewSet):
         was_default = instance.is_default
         instance.delete()
         if was_default:
-            replacement = AssistantProviderConfig.objects.filter(is_enabled=True).order_by("id").first()
+            replacement = (
+                AssistantProviderConfig.objects.filter(is_enabled=True)
+                .order_by("id")
+                .first()
+            )
             if replacement:
                 replacement.is_default = True
-                replacement.save(update_fields=["is_default", "is_enabled", "updated_at"])
+                replacement.save(
+                    update_fields=["is_default", "is_enabled", "updated_at"]
+                )
 
-    @action(detail=True, methods=["post"], permission_classes=[SuperAdminOnly], url_path="set-default")
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[SuperAdminOnly],
+        url_path="set-default",
+    )
     def set_default(self, request, pk=None):
         config = self.get_object()
         config.is_default = True
         config.is_enabled = True
         config.updated_by = request.user
-        config.save(update_fields=["is_default", "is_enabled", "updated_by", "updated_at"])
+        config.save(
+            update_fields=["is_default", "is_enabled", "updated_by", "updated_at"]
+        )
         log_event(
             request.user,
             ContributionEvent.EventType.ADMIN,
@@ -4433,7 +5617,12 @@ class AssistantProviderConfigViewSet(viewsets.ModelViewSet):
         )
         return Response(self.get_serializer(config).data)
 
-    @action(detail=True, methods=["post"], permission_classes=[SuperAdminOnly], url_path="test-connection")
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[SuperAdminOnly],
+        url_path="test-connection",
+    )
     def test_connection(self, request, pk=None):
         config = self.get_object()
         test_started_at = timezone.now()
@@ -4470,7 +5659,9 @@ class AssistantProviderConfigViewSet(viewsets.ModelViewSet):
                 {
                     "action": "test_assistant_provider_config",
                     "success": True,
-                    "response_ms": int((timezone.now() - test_started_at).total_seconds() * 1000),
+                    "response_ms": int(
+                        (timezone.now() - test_started_at).total_seconds() * 1000
+                    ),
                 },
             )
             return Response(
@@ -4506,7 +5697,12 @@ class AssistantProviderConfigViewSet(viewsets.ModelViewSet):
             )
             return Response({"detail": str(exc)}, status=exc.status_code)
 
-    @action(detail=False, methods=["get"], permission_classes=[AdminOrSuperAdmin], url_path="stats")
+    @action(
+        detail=False,
+        methods=["get"],
+        permission_classes=[AdminOrSuperAdmin],
+        url_path="stats",
+    )
     def stats(self, request):
         now = timezone.now()
         day_start = now - timedelta(hours=24)
@@ -4525,9 +5721,13 @@ class AssistantProviderConfigViewSet(viewsets.ModelViewSet):
             last_7d = config.interaction_logs.filter(created_at__gte=week_start)
             last_24h_requests = last_24h.count()
             last_24h_success = last_24h.filter(success=True).count()
-            last_24h_tokens = int(last_24h.aggregate(total=Sum("total_tokens")).get("total") or 0)
+            last_24h_tokens = int(
+                last_24h.aggregate(total=Sum("total_tokens")).get("total") or 0
+            )
             last_7d_requests = last_7d.count()
-            last_7d_tokens = int(last_7d.aggregate(total=Sum("total_tokens")).get("total") or 0)
+            last_7d_tokens = int(
+                last_7d.aggregate(total=Sum("total_tokens")).get("total") or 0
+            )
             totals["last_24h_requests"] += last_24h_requests
             totals["last_24h_success"] += last_24h_success
             totals["last_24h_tokens"] += last_24h_tokens
@@ -4592,7 +5792,10 @@ class AssistantChatView(APIView):
                 session_id=session_id,
                 error_message="assistant disabled",
             )
-            return Response({"detail": "AI assistant is currently unavailable."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            return Response(
+                {"detail": "AI assistant is currently unavailable."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
 
         started_at = timezone.now()
         try:
@@ -4632,7 +5835,9 @@ class AssistantChatView(APIView):
                     completion_tokens=usage.get("completion_tokens", 0),
                     total_tokens=usage.get("total_tokens", 0),
                     source_count=len(sources),
-                    response_ms=int((timezone.now() - started_at).total_seconds() * 1000),
+                    response_ms=int(
+                        (timezone.now() - started_at).total_seconds() * 1000
+                    ),
                     session_id=session_id,
                 )
                 return Response(
@@ -4663,7 +5868,9 @@ class AssistantChatView(APIView):
                     prompt_chars=len(message),
                     response_chars=len(answer),
                     source_count=0,
-                    response_ms=int((timezone.now() - started_at).total_seconds() * 1000),
+                    response_ms=int(
+                        (timezone.now() - started_at).total_seconds() * 1000
+                    ),
                     session_id=session_id,
                 )
                 return Response(
@@ -4672,7 +5879,11 @@ class AssistantChatView(APIView):
                         "answer": answer,
                         "sources": [],
                         "model": config.model_name,
-                        "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+                        "usage": {
+                            "prompt_tokens": 0,
+                            "completion_tokens": 0,
+                            "total_tokens": 0,
+                        },
                     }
                 )
 
@@ -4682,8 +5893,12 @@ class AssistantChatView(APIView):
                 history=history,
                 sources=sources,
             )
-            raw_answer = (result.get("content") or "").strip() or "站内当前没有足够信息回答这个问题。"
-            raw_answer = strip_assistant_self_reference(raw_answer, assistant_name=config.assistant_name)
+            raw_answer = (
+                result.get("content") or ""
+            ).strip() or "站内当前没有足够信息回答这个问题。"
+            raw_answer = strip_assistant_self_reference(
+                raw_answer, assistant_name=config.assistant_name
+            )
             answer = apply_brattish_tone_to_answer(raw_answer, seed_text=message)
             usage = result.get("usage") or {}
             answer = append_source_hint_to_answer(answer, sources)
@@ -4729,7 +5944,9 @@ class AssistantChatView(APIView):
                 session_id=session_id,
                 error_message=str(exc),
             )
-            api_logger.warning("Assistant chat failed status=%s detail=%s", exc.status_code, str(exc))
+            api_logger.warning(
+                "Assistant chat failed status=%s detail=%s", exc.status_code, str(exc)
+            )
             return Response({"detail": str(exc)}, status=exc.status_code)
 
 
@@ -4761,7 +5978,12 @@ class FriendlyLinkViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         link = serializer.save(created_by=request.user)
-        log_event(request.user, ContributionEvent.EventType.ADMIN, link, {"action": "create_friendly_link"})
+        log_event(
+            request.user,
+            ContributionEvent.EventType.ADMIN,
+            link,
+            {"action": "create_friendly_link"},
+        )
         return Response(self.get_serializer(link).data, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
@@ -4770,18 +5992,30 @@ class FriendlyLinkViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(link, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        log_event(request.user, ContributionEvent.EventType.ADMIN, link, {"action": "update_friendly_link"})
+        log_event(
+            request.user,
+            ContributionEvent.EventType.ADMIN,
+            link,
+            {"action": "update_friendly_link"},
+        )
         return Response(serializer.data)
 
     def destroy(self, request, *args, **kwargs):
         link = self.get_object()
-        log_event(request.user, ContributionEvent.EventType.ADMIN, link, {"action": "delete_friendly_link"})
+        log_event(
+            request.user,
+            ContributionEvent.EventType.ADMIN,
+            link,
+            {"action": "delete_friendly_link"},
+        )
         return super().destroy(request, *args, **kwargs)
 
 
 class CompetitionNoticeViewSet(viewsets.ModelViewSet):
     serializer_class = CompetitionNoticeSerializer
-    queryset = CompetitionNotice.objects.select_related("created_by", "updated_by").all()
+    queryset = CompetitionNotice.objects.select_related(
+        "created_by", "updated_by"
+    ).all()
 
     def get_permissions(self):
         if self.action in {"list", "retrieve", "taxonomy"}:
@@ -4790,9 +6024,15 @@ class CompetitionNoticeViewSet(viewsets.ModelViewSet):
 
     def _ensure_editor(self, request):
         if request.user.is_banned:
-            return Response({"detail": "Banned users cannot edit competition content."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "Banned users cannot edit competition content."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         if not can_manage_competition(request.user):
-            return Response({"detail": "Only school/admin users can edit competition notices."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "Only school/admin users can edit competition notices."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         return None
 
     def get_queryset(self):
@@ -4826,7 +6066,9 @@ class CompetitionNoticeViewSet(viewsets.ModelViewSet):
         search = self.request.query_params.get("search")
         if search:
             token = search.strip()
-            queryset = queryset.filter(Q(title__icontains=token) | Q(content_md__icontains=token))
+            queryset = queryset.filter(
+                Q(title__icontains=token) | Q(content_md__icontains=token)
+            )
 
         order = self.request.query_params.get("order")
         if order == "oldest":
@@ -4842,8 +6084,15 @@ class CompetitionNoticeViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             notice = serializer.save(created_by=request.user, updated_by=request.user)
-            log_event(request.user, ContributionEvent.EventType.ADMIN, notice, {"action": "create_competition_notice"})
-            return Response(self.get_serializer(notice).data, status=status.HTTP_201_CREATED)
+            log_event(
+                request.user,
+                ContributionEvent.EventType.ADMIN,
+                notice,
+                {"action": "create_competition_notice"},
+            )
+            return Response(
+                self.get_serializer(notice).data, status=status.HTTP_201_CREATED
+            )
         except DatabaseError as exc:
             return schema_outdated_response(exc)
 
@@ -4858,7 +6107,12 @@ class CompetitionNoticeViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(notice, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             serializer.save(updated_by=request.user)
-            log_event(request.user, ContributionEvent.EventType.ADMIN, notice, {"action": "update_competition_notice"})
+            log_event(
+                request.user,
+                ContributionEvent.EventType.ADMIN,
+                notice,
+                {"action": "update_competition_notice"},
+            )
             return Response(serializer.data)
         except DatabaseError as exc:
             return schema_outdated_response(exc)
@@ -4870,7 +6124,12 @@ class CompetitionNoticeViewSet(viewsets.ModelViewSet):
                 return denied
 
             notice = self.get_object()
-            log_event(request.user, ContributionEvent.EventType.ADMIN, notice, {"action": "delete_competition_notice"})
+            log_event(
+                request.user,
+                ContributionEvent.EventType.ADMIN,
+                notice,
+                {"action": "delete_competition_notice"},
+            )
             return super().destroy(request, *args, **kwargs)
         except DatabaseError as exc:
             return schema_outdated_response(exc)
@@ -4900,8 +6159,18 @@ class CompetitionNoticeViewSet(viewsets.ModelViewSet):
             data = []
             for series_key, series_label in CompetitionNotice.Series.choices:
                 series_qs = queryset.filter(series=series_key)
-                years = sorted(set(series_qs.exclude(year__isnull=True).values_list("year", flat=True)), reverse=True)
-                if series_key in {CompetitionNotice.Series.ICPC, CompetitionNotice.Series.CCPC}:
+                years = sorted(
+                    set(
+                        series_qs.exclude(year__isnull=True).values_list(
+                            "year", flat=True
+                        )
+                    ),
+                    reverse=True,
+                )
+                if series_key in {
+                    CompetitionNotice.Series.ICPC,
+                    CompetitionNotice.Series.CCPC,
+                }:
                     stage_keys = [
                         CompetitionNotice.Stage.REGIONAL,
                         CompetitionNotice.Stage.INVITATIONAL,
@@ -4935,7 +6204,9 @@ class CompetitionNoticeViewSet(viewsets.ModelViewSet):
 
 class CompetitionScheduleEntryViewSet(viewsets.ModelViewSet):
     serializer_class = CompetitionScheduleEntrySerializer
-    queryset = CompetitionScheduleEntry.objects.select_related("announcement", "created_by", "updated_by").all()
+    queryset = CompetitionScheduleEntry.objects.select_related(
+        "announcement", "created_by", "updated_by"
+    ).all()
 
     def get_permissions(self):
         if self.action in {"list", "retrieve", "years"}:
@@ -4944,9 +6215,15 @@ class CompetitionScheduleEntryViewSet(viewsets.ModelViewSet):
 
     def _ensure_editor(self, request):
         if request.user.is_banned:
-            return Response({"detail": "Banned users cannot edit competition content."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "Banned users cannot edit competition content."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         if not can_manage_competition(request.user):
-            return Response({"detail": "Only school/admin users can edit competition schedules."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "Only school/admin users can edit competition schedules."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         return None
 
     def get_queryset(self):
@@ -4960,7 +6237,9 @@ class CompetitionScheduleEntryViewSet(viewsets.ModelViewSet):
             permission_check=can_manage_competition,
         )
         if not can_access_hidden:
-            queryset = queryset.filter(Q(announcement__isnull=True) | Q(announcement__is_visible=True))
+            queryset = queryset.filter(
+                Q(announcement__isnull=True) | Q(announcement__is_visible=True)
+            )
 
         year = self.request.query_params.get("year")
         if isinstance(year, str) and year.strip():
@@ -4971,7 +6250,9 @@ class CompetitionScheduleEntryViewSet(viewsets.ModelViewSet):
 
         competition_type = self.request.query_params.get("competition_type")
         if competition_type:
-            queryset = queryset.filter(competition_type__icontains=competition_type.strip())
+            queryset = queryset.filter(
+                competition_type__icontains=competition_type.strip()
+            )
 
         series = self.request.query_params.get("series")
         if series in dict(CompetitionNotice.Series.choices):
@@ -4991,8 +6272,15 @@ class CompetitionScheduleEntryViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             entry = serializer.save(created_by=request.user, updated_by=request.user)
-            log_event(request.user, ContributionEvent.EventType.ADMIN, entry, {"action": "create_competition_schedule"})
-            return Response(self.get_serializer(entry).data, status=status.HTTP_201_CREATED)
+            log_event(
+                request.user,
+                ContributionEvent.EventType.ADMIN,
+                entry,
+                {"action": "create_competition_schedule"},
+            )
+            return Response(
+                self.get_serializer(entry).data, status=status.HTTP_201_CREATED
+            )
         except DatabaseError as exc:
             return schema_outdated_response(exc)
 
@@ -5007,7 +6295,12 @@ class CompetitionScheduleEntryViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(entry, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             serializer.save(updated_by=request.user)
-            log_event(request.user, ContributionEvent.EventType.ADMIN, entry, {"action": "update_competition_schedule"})
+            log_event(
+                request.user,
+                ContributionEvent.EventType.ADMIN,
+                entry,
+                {"action": "update_competition_schedule"},
+            )
             return Response(serializer.data)
         except DatabaseError as exc:
             return schema_outdated_response(exc)
@@ -5019,7 +6312,12 @@ class CompetitionScheduleEntryViewSet(viewsets.ModelViewSet):
                 return denied
 
             entry = self.get_object()
-            log_event(request.user, ContributionEvent.EventType.ADMIN, entry, {"action": "delete_competition_schedule"})
+            log_event(
+                request.user,
+                ContributionEvent.EventType.ADMIN,
+                entry,
+                {"action": "delete_competition_schedule"},
+            )
             return super().destroy(request, *args, **kwargs)
         except DatabaseError as exc:
             return schema_outdated_response(exc)
@@ -5043,9 +6341,13 @@ class CompetitionScheduleEntryViewSet(viewsets.ModelViewSet):
             include_hidden = request.query_params.get("include_hidden") == "1"
             queryset = CompetitionScheduleEntry.objects.all()
             if not (can_manage_competition(user) and include_hidden):
-                queryset = queryset.filter(Q(announcement__isnull=True) | Q(announcement__is_visible=True))
+                queryset = queryset.filter(
+                    Q(announcement__isnull=True) | Q(announcement__is_visible=True)
+                )
 
-            years = sorted(set(queryset.values_list("event_date__year", flat=True)), reverse=True)
+            years = sorted(
+                set(queryset.values_list("event_date__year", flat=True)), reverse=True
+            )
             if not years:
                 years = [2026]
             return Response({"years": years})
@@ -5055,7 +6357,9 @@ class CompetitionScheduleEntryViewSet(viewsets.ModelViewSet):
 
 class CompetitionPracticeLinkViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CompetitionPracticeLinkSerializer
-    queryset = CompetitionPracticeLink.objects.select_related("created_by", "updated_by").all()
+    queryset = CompetitionPracticeLink.objects.select_related(
+        "created_by", "updated_by"
+    ).all()
     permission_classes = [AllowAny]
 
     def get_permissions(self):
@@ -5109,7 +6413,12 @@ class CompetitionPracticeLinkViewSet(viewsets.ReadOnlyModelViewSet):
         except DatabaseError as exc:
             return schema_outdated_response(exc)
 
-    @action(detail=True, methods=["delete"], permission_classes=[AdminOrSuperAdmin], url_path="remove")
+    @action(
+        detail=True,
+        methods=["delete"],
+        permission_classes=[AdminOrSuperAdmin],
+        url_path="remove",
+    )
     def remove(self, request, pk=None):
         try:
             entry = self.get_object()
@@ -5158,7 +6467,9 @@ class CompetitionPracticeLinkViewSet(viewsets.ReadOnlyModelViewSet):
                     "sources": sorted(
                         {
                             value
-                            for value in queryset.exclude(source_file="").values_list("source_file", flat=True)
+                            for value in queryset.exclude(source_file="").values_list(
+                                "source_file", flat=True
+                            )
                         }
                     ),
                 }
@@ -5167,7 +6478,9 @@ class CompetitionPracticeLinkViewSet(viewsets.ReadOnlyModelViewSet):
             return schema_outdated_response(exc)
 
 
-class CompetitionPracticeLinkProposalViewSet(ActionThrottleMixin, viewsets.ModelViewSet):
+class CompetitionPracticeLinkProposalViewSet(
+    ActionThrottleMixin, viewsets.ModelViewSet
+):
     serializer_class = CompetitionPracticeLinkProposalSerializer
     queryset = CompetitionPracticeLinkProposal.objects.select_related(
         "target_entry",
@@ -5213,7 +6526,9 @@ class CompetitionPracticeLinkProposalViewSet(ActionThrottleMixin, viewsets.Model
                 proposal,
                 {"action": "create_competition_practice_proposal"},
             )
-            return Response(self.get_serializer(proposal).data, status=status.HTTP_201_CREATED)
+            return Response(
+                self.get_serializer(proposal).data, status=status.HTTP_201_CREATED
+            )
         except DatabaseError as exc:
             return schema_outdated_response(exc)
 
@@ -5221,17 +6536,31 @@ class CompetitionPracticeLinkProposalViewSet(ActionThrottleMixin, viewsets.Model
         try:
             partial = kwargs.pop("partial", False)
             proposal = self.get_object()
-            if not (is_manager(request.user) or proposal.proposer_id == request.user.id):
-                return Response({"detail": "No permission to edit this proposal."}, status=status.HTTP_403_FORBIDDEN)
+            if not (
+                is_manager(request.user) or proposal.proposer_id == request.user.id
+            ):
+                return Response(
+                    {"detail": "No permission to edit this proposal."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
             if proposal.status != CompetitionPracticeLinkProposal.Status.PENDING:
-                return Response({"detail": "Only pending proposals can be edited."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"detail": "Only pending proposals can be edited."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-            serializer = self.get_serializer(proposal, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                proposal, data=request.data, partial=partial
+            )
             serializer.is_valid(raise_exception=True)
             serializer.save()
             log_event(
                 request.user,
-                ContributionEvent.EventType.ISSUE if proposal.proposer_id == request.user.id else ContributionEvent.EventType.ADMIN,
+                (
+                    ContributionEvent.EventType.ISSUE
+                    if proposal.proposer_id == request.user.id
+                    else ContributionEvent.EventType.ADMIN
+                ),
                 proposal,
                 {"action": "update_competition_practice_proposal"},
             )
@@ -5246,13 +6575,25 @@ class CompetitionPracticeLinkProposalViewSet(ActionThrottleMixin, viewsets.Model
     def destroy(self, request, *args, **kwargs):
         try:
             proposal = self.get_object()
-            if not (is_manager(request.user) or proposal.proposer_id == request.user.id):
-                return Response({"detail": "No permission to delete this proposal."}, status=status.HTTP_403_FORBIDDEN)
+            if not (
+                is_manager(request.user) or proposal.proposer_id == request.user.id
+            ):
+                return Response(
+                    {"detail": "No permission to delete this proposal."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
             if proposal.status != CompetitionPracticeLinkProposal.Status.PENDING:
-                return Response({"detail": "Only pending proposals can be deleted."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"detail": "Only pending proposals can be deleted."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             log_event(
                 request.user,
-                ContributionEvent.EventType.ISSUE if proposal.proposer_id == request.user.id else ContributionEvent.EventType.ADMIN,
+                (
+                    ContributionEvent.EventType.ISSUE
+                    if proposal.proposer_id == request.user.id
+                    else ContributionEvent.EventType.ADMIN
+                ),
                 proposal,
                 {"action": "delete_competition_practice_proposal"},
             )
@@ -5277,7 +6618,11 @@ class CompetitionPracticeLinkProposalViewSet(ActionThrottleMixin, viewsets.Model
 
     def _apply_review_action(self, proposal, reviewer, *, action, review_note=""):
         if not self._ensure_manager(reviewer):
-            return False, status.HTTP_403_FORBIDDEN, "Only admins can review practice-link proposals."
+            return (
+                False,
+                status.HTTP_403_FORBIDDEN,
+                "Only admins can review practice-link proposals.",
+            )
         if proposal.status != CompetitionPracticeLinkProposal.Status.PENDING:
             return False, status.HTTP_400_BAD_REQUEST, "Proposal is already reviewed."
 
@@ -5290,7 +6635,10 @@ class CompetitionPracticeLinkProposalViewSet(ActionThrottleMixin, viewsets.Model
                 target = proposal.target_entry
                 if target is None:
                     next_display_order = (
-                        CompetitionPracticeLink.objects.order_by("-display_order").values_list("display_order", flat=True).first() or 0
+                        CompetitionPracticeLink.objects.order_by("-display_order")
+                        .values_list("display_order", flat=True)
+                        .first()
+                        or 0
                     )
                     target = CompetitionPracticeLink.objects.create(
                         source_key=f"manual-proposal-{proposal.id}",
@@ -5350,7 +6698,15 @@ class CompetitionPracticeLinkProposalViewSet(ActionThrottleMixin, viewsets.Model
             proposal.reviewer = reviewer
             proposal.review_note = review_note
             proposal.reviewed_at = now
-            proposal.save(update_fields=["status", "reviewer", "review_note", "reviewed_at", "updated_at"])
+            proposal.save(
+                update_fields=[
+                    "status",
+                    "reviewer",
+                    "review_note",
+                    "reviewed_at",
+                    "updated_at",
+                ]
+            )
         else:
             return False, status.HTTP_400_BAD_REQUEST, "Invalid review action."
 
@@ -5366,9 +6722,17 @@ class CompetitionPracticeLinkProposalViewSet(ActionThrottleMixin, viewsets.Model
                 actor=reviewer,
                 target=proposal,
                 title=f"补题链接申请已{ '通过' if action == 'approve' else '驳回' }：{proposal.proposed_short_name}",
-                content=review_note[:180] if review_note else "管理员已处理你的补题链接申请。",
+                content=(
+                    review_note[:180]
+                    if review_note
+                    else "管理员已处理你的补题链接申请。"
+                ),
                 link="/competition",
-                level=UserNotification.Level.WARNING if action == "reject" else UserNotification.Level.INFO,
+                level=(
+                    UserNotification.Level.WARNING
+                    if action == "reject"
+                    else UserNotification.Level.INFO
+                ),
             )
         return True, status.HTTP_200_OK, None
 
@@ -5412,18 +6776,24 @@ class CompetitionCalendarEventViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         now = timezone.now()
-        queryset = filter_visible_competition_calendar_events(super().get_queryset(), now=now)
+        queryset = filter_visible_competition_calendar_events(
+            super().get_queryset(), now=now
+        )
 
         requested_sites = []
         raw_sites = self.request.query_params.get("sites", "")
         if raw_sites:
-            requested_sites.extend(item.strip() for item in raw_sites.split(",") if item.strip())
+            requested_sites.extend(
+                item.strip() for item in raw_sites.split(",") if item.strip()
+            )
 
         raw_site = self.request.query_params.get("site", "")
         if raw_site:
             requested_sites.append(raw_site.strip())
 
-        valid_sites = {key for key, _label in CompetitionCalendarEvent.SourceSite.choices}
+        valid_sites = {
+            key for key, _label in CompetitionCalendarEvent.SourceSite.choices
+        }
         normalized_sites = [site for site in requested_sites if site in valid_sites]
         if normalized_sites:
             queryset = queryset.filter(source_site__in=normalized_sites)
@@ -5445,11 +6815,15 @@ class CompetitionCalendarEventViewSet(viewsets.ReadOnlyModelViewSet):
                 | Q(source_id__icontains=token)
             )
 
-        start_from = parse_datetime_query(self.request.query_params.get("start_from", ""), end_of_day=False)
+        start_from = parse_datetime_query(
+            self.request.query_params.get("start_from", ""), end_of_day=False
+        )
         if start_from:
             queryset = queryset.filter(end_time__gte=start_from)
 
-        end_to = parse_datetime_query(self.request.query_params.get("end_to", ""), end_of_day=True)
+        end_to = parse_datetime_query(
+            self.request.query_params.get("end_to", ""), end_of_day=True
+        )
         if end_to:
             queryset = queryset.filter(start_time__lte=end_to)
 
@@ -5473,12 +6847,18 @@ class CompetitionCalendarEventViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=["get"], permission_classes=[AllowAny])
     def taxonomy(self, request):
         try:
-            queryset = filter_visible_competition_calendar_events(CompetitionCalendarEvent.objects.all())
+            queryset = filter_visible_competition_calendar_events(
+                CompetitionCalendarEvent.objects.all()
+            )
             count_map = {
                 item["source_site"]: item["count"]
                 for item in queryset.values("source_site").annotate(count=Count("id"))
             }
-            latest_sync_at = queryset.order_by("-last_synced_at").values_list("last_synced_at", flat=True).first()
+            latest_sync_at = (
+                queryset.order_by("-last_synced_at")
+                .values_list("last_synced_at", flat=True)
+                .first()
+            )
             return Response(
                 {
                     "sources": [
@@ -5503,7 +6883,9 @@ class UserManagementViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        queryset = super().get_queryset().exclude(username=DELETED_USER_PLACEHOLDER_USERNAME)
+        queryset = (
+            super().get_queryset().exclude(username=DELETED_USER_PLACEHOLDER_USERNAME)
+        )
 
         role_filter = self.request.query_params.get("role")
         if role_filter in dict(User.Role.choices):
@@ -5534,24 +6916,39 @@ class UserManagementViewSet(viewsets.ReadOnlyModelViewSet):
 
     def list(self, request, *args, **kwargs):
         if not is_manager(request.user):
-            return Response({"detail": "No permission."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "No permission."}, status=status.HTTP_403_FORBIDDEN
+            )
         return super().list(request, *args, **kwargs)
 
     def retrieve(self, request, *args, **kwargs):
         if not is_manager(request.user):
-            return Response({"detail": "No permission."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "No permission."}, status=status.HTTP_403_FORBIDDEN
+            )
         return super().retrieve(request, *args, **kwargs)
 
     @action(detail=True, methods=["post"], permission_classes=[AdminOrSuperAdmin])
     def ban(self, request, pk=None):
         target = self.get_object()
         if target.role == User.Role.SUPERADMIN:
-            return Response({"detail": "Super admin cannot be banned."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "Super admin cannot be banned."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         if target.id == request.user.id:
-            return Response({"detail": "You cannot ban yourself."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "You cannot ban yourself."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         target.ban(request.data.get("reason", ""))
         Token.objects.filter(user=target).delete()
-        log_event(request.user, ContributionEvent.EventType.ADMIN, target, {"action": "ban_user"})
+        log_event(
+            request.user,
+            ContributionEvent.EventType.ADMIN,
+            target,
+            {"action": "ban_user"},
+        )
         record_security_event(
             event_type=SecurityAuditLog.EventType.USER_BANNED,
             request=request,
@@ -5567,7 +6964,12 @@ class UserManagementViewSet(viewsets.ReadOnlyModelViewSet):
     def unban(self, request, pk=None):
         target = self.get_object()
         target.unban()
-        log_event(request.user, ContributionEvent.EventType.ADMIN, target, {"action": "unban_user"})
+        log_event(
+            request.user,
+            ContributionEvent.EventType.ADMIN,
+            target,
+            {"action": "unban_user"},
+        )
         record_security_event(
             event_type=SecurityAuditLog.EventType.USER_UNBANNED,
             request=request,
@@ -5583,13 +6985,24 @@ class UserManagementViewSet(viewsets.ReadOnlyModelViewSet):
     def soft_delete(self, request, pk=None):
         target = self.get_object()
         if target.role == User.Role.SUPERADMIN:
-            return Response({"detail": "Super admin cannot be deleted."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "Super admin cannot be deleted."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         if target.id == request.user.id:
-            return Response({"detail": "You cannot delete yourself."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "You cannot delete yourself."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         target.is_active = False
         target.save(update_fields=["is_active"])
         Token.objects.filter(user=target).delete()
-        log_event(request.user, ContributionEvent.EventType.ADMIN, target, {"action": "soft_delete_user"})
+        log_event(
+            request.user,
+            ContributionEvent.EventType.ADMIN,
+            target,
+            {"action": "soft_delete_user"},
+        )
         record_security_event(
             event_type=SecurityAuditLog.EventType.USER_SOFT_DELETED,
             request=request,
@@ -5605,9 +7018,15 @@ class UserManagementViewSet(viewsets.ReadOnlyModelViewSet):
     def hard_delete(self, request, pk=None):
         target = self.get_object()
         if target.role == User.Role.SUPERADMIN:
-            return Response({"detail": "Super admin cannot be permanently deleted."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "Super admin cannot be permanently deleted."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         if target.id == request.user.id:
-            return Response({"detail": "You cannot permanently delete yourself."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "You cannot permanently delete yourself."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if target.is_active:
             return Response(
                 {"detail": "Please soft-delete the user before permanent deletion."},
@@ -5619,7 +7038,9 @@ class UserManagementViewSet(viewsets.ReadOnlyModelViewSet):
         placeholder = get_deleted_user_placeholder()
 
         with transaction.atomic():
-            reassign_protected_user_relations(source_user=target, placeholder_user=placeholder)
+            reassign_protected_user_relations(
+                source_user=target, placeholder_user=placeholder
+            )
             log_event(
                 request.user,
                 ContributionEvent.EventType.ADMIN,
@@ -5648,7 +7069,10 @@ class UserManagementViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=["post"], permission_classes=[AdminOrSuperAdmin])
     def reactivate(self, request, pk=None):
         target = self.get_object()
-        if target.role == User.Role.SUPERADMIN and request.user.role != User.Role.SUPERADMIN:
+        if (
+            target.role == User.Role.SUPERADMIN
+            and request.user.role != User.Role.SUPERADMIN
+        ):
             return Response(
                 {"detail": "Only super admins can reactivate super admin accounts."},
                 status=status.HTTP_403_FORBIDDEN,
@@ -5656,7 +7080,12 @@ class UserManagementViewSet(viewsets.ReadOnlyModelViewSet):
         if not target.is_active:
             target.is_active = True
             target.save(update_fields=["is_active"])
-            log_event(request.user, ContributionEvent.EventType.ADMIN, target, {"action": "reactivate_user"})
+            log_event(
+                request.user,
+                ContributionEvent.EventType.ADMIN,
+                target,
+                {"action": "reactivate_user"},
+            )
             record_security_event(
                 event_type=SecurityAuditLog.EventType.USER_REACTIVATED,
                 request=request,
@@ -5668,23 +7097,38 @@ class UserManagementViewSet(viewsets.ReadOnlyModelViewSet):
             )
         return Response(self.get_serializer(target).data)
 
-    @action(detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned])
+    @action(
+        detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned]
+    )
     def set_role(self, request, pk=None):
         if request.user.role != User.Role.SUPERADMIN:
-            return Response({"detail": "Only super admins can change roles."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "Only super admins can change roles."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         target = self.get_object()
         role = request.data.get("role")
         valid_roles = dict(User.Role.choices)
         if role not in valid_roles:
-            return Response({"detail": "Invalid role."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Invalid role."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         if target.id == request.user.id and role != User.Role.SUPERADMIN:
-            return Response({"detail": "Cannot downgrade your own super admin role."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Cannot downgrade your own super admin role."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         target.role = role
         target.save(update_fields=["role"])
-        log_event(request.user, ContributionEvent.EventType.ADMIN, target, {"action": "set_role", "role": role})
+        log_event(
+            request.user,
+            ContributionEvent.EventType.ADMIN,
+            target,
+            {"action": "set_role", "role": role},
+        )
         record_security_event(
             event_type=SecurityAuditLog.EventType.USER_ROLE_CHANGED,
             request=request,
@@ -5696,22 +7140,39 @@ class UserManagementViewSet(viewsets.ReadOnlyModelViewSet):
         )
         return Response(self.get_serializer(target).data)
 
-    @action(detail=False, methods=["post"], permission_classes=[AdminOrSuperAdmin], url_path="bulk-action")
+    @action(
+        detail=False,
+        methods=["post"],
+        permission_classes=[AdminOrSuperAdmin],
+        url_path="bulk-action",
+    )
     def bulk_action(self, request):
         raw_ids = request.data.get("ids")
         if not isinstance(raw_ids, list) or not raw_ids:
-            return Response({"detail": "ids must be a non-empty list."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "ids must be a non-empty list."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if len(raw_ids) > 200:
-            return Response({"detail": "Too many ids, max is 200."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Too many ids, max is 200."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         ids = []
         for raw_id in raw_ids:
             try:
                 user_id = int(raw_id)
             except (TypeError, ValueError):
-                return Response({"detail": "ids must contain integers."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"detail": "ids must contain integers."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             if user_id <= 0:
-                return Response({"detail": "ids must contain positive integers."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"detail": "ids must contain positive integers."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             if user_id not in ids:
                 ids.append(user_id)
 
@@ -5719,7 +7180,9 @@ class UserManagementViewSet(viewsets.ReadOnlyModelViewSet):
         supported_actions = {"ban", "unban", "soft_delete", "reactivate", "set_role"}
         if action_name not in supported_actions:
             return Response(
-                {"detail": f"action must be one of: {', '.join(sorted(supported_actions))}."},
+                {
+                    "detail": f"action must be one of: {', '.join(sorted(supported_actions))}."
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -5732,7 +7195,9 @@ class UserManagementViewSet(viewsets.ReadOnlyModelViewSet):
                 )
             role_value = request.data.get("role")
             if role_value not in dict(User.Role.choices):
-                return Response({"detail": "Invalid role."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"detail": "Invalid role."}, status=status.HTTP_400_BAD_REQUEST
+                )
 
         reason = request.data.get("reason", "")
         target_map = {item.id: item for item in User.objects.filter(id__in=ids)}
@@ -5743,34 +7208,80 @@ class UserManagementViewSet(viewsets.ReadOnlyModelViewSet):
         for user_id in ids:
             target = target_map.get(user_id)
             if not target:
-                results.append({"id": user_id, "success": False, "detail": "User not found."})
+                results.append(
+                    {"id": user_id, "success": False, "detail": "User not found."}
+                )
                 continue
             if is_deleted_user_placeholder(target):
-                results.append({"id": user_id, "success": False, "detail": "System placeholder user cannot be modified."})
-                continue
-
-            if action_name in {"ban", "soft_delete"} and target.id == request.user.id:
-                results.append({"id": user_id, "success": False, "detail": "You cannot operate on yourself."})
-                continue
-
-            if action_name in {"ban", "soft_delete"} and target.role == User.Role.SUPERADMIN:
-                results.append({"id": user_id, "success": False, "detail": "Super admin cannot be modified by this action."})
-                continue
-
-            if action_name == "reactivate" and target.role == User.Role.SUPERADMIN and request.user.role != User.Role.SUPERADMIN:
                 results.append(
-                    {"id": user_id, "success": False, "detail": "Only super admins can reactivate super admin accounts."}
+                    {
+                        "id": user_id,
+                        "success": False,
+                        "detail": "System placeholder user cannot be modified.",
+                    }
                 )
                 continue
 
-            if action_name == "set_role" and target.id == request.user.id and role_value != User.Role.SUPERADMIN:
-                results.append({"id": user_id, "success": False, "detail": "Cannot downgrade your own super admin role."})
+            if action_name in {"ban", "soft_delete"} and target.id == request.user.id:
+                results.append(
+                    {
+                        "id": user_id,
+                        "success": False,
+                        "detail": "You cannot operate on yourself.",
+                    }
+                )
+                continue
+
+            if (
+                action_name in {"ban", "soft_delete"}
+                and target.role == User.Role.SUPERADMIN
+            ):
+                results.append(
+                    {
+                        "id": user_id,
+                        "success": False,
+                        "detail": "Super admin cannot be modified by this action.",
+                    }
+                )
+                continue
+
+            if (
+                action_name == "reactivate"
+                and target.role == User.Role.SUPERADMIN
+                and request.user.role != User.Role.SUPERADMIN
+            ):
+                results.append(
+                    {
+                        "id": user_id,
+                        "success": False,
+                        "detail": "Only super admins can reactivate super admin accounts.",
+                    }
+                )
+                continue
+
+            if (
+                action_name == "set_role"
+                and target.id == request.user.id
+                and role_value != User.Role.SUPERADMIN
+            ):
+                results.append(
+                    {
+                        "id": user_id,
+                        "success": False,
+                        "detail": "Cannot downgrade your own super admin role.",
+                    }
+                )
                 continue
 
             if action_name == "ban":
                 target.ban(reason)
                 Token.objects.filter(user=target).delete()
-                log_event(request.user, ContributionEvent.EventType.ADMIN, target, {"action": "ban_user_bulk"})
+                log_event(
+                    request.user,
+                    ContributionEvent.EventType.ADMIN,
+                    target,
+                    {"action": "ban_user_bulk"},
+                )
                 record_security_event(
                     event_type=SecurityAuditLog.EventType.USER_BANNED,
                     request=request,
@@ -5782,7 +7293,12 @@ class UserManagementViewSet(viewsets.ReadOnlyModelViewSet):
                 )
             elif action_name == "unban":
                 target.unban()
-                log_event(request.user, ContributionEvent.EventType.ADMIN, target, {"action": "unban_user_bulk"})
+                log_event(
+                    request.user,
+                    ContributionEvent.EventType.ADMIN,
+                    target,
+                    {"action": "unban_user_bulk"},
+                )
                 record_security_event(
                     event_type=SecurityAuditLog.EventType.USER_UNBANNED,
                     request=request,
@@ -5797,7 +7313,12 @@ class UserManagementViewSet(viewsets.ReadOnlyModelViewSet):
                     target.is_active = False
                     target.save(update_fields=["is_active"])
                 Token.objects.filter(user=target).delete()
-                log_event(request.user, ContributionEvent.EventType.ADMIN, target, {"action": "soft_delete_user_bulk"})
+                log_event(
+                    request.user,
+                    ContributionEvent.EventType.ADMIN,
+                    target,
+                    {"action": "soft_delete_user_bulk"},
+                )
                 record_security_event(
                     event_type=SecurityAuditLog.EventType.USER_SOFT_DELETED,
                     request=request,
@@ -5811,7 +7332,12 @@ class UserManagementViewSet(viewsets.ReadOnlyModelViewSet):
                 if not target.is_active:
                     target.is_active = True
                     target.save(update_fields=["is_active"])
-                log_event(request.user, ContributionEvent.EventType.ADMIN, target, {"action": "reactivate_user_bulk"})
+                log_event(
+                    request.user,
+                    ContributionEvent.EventType.ADMIN,
+                    target,
+                    {"action": "reactivate_user_bulk"},
+                )
                 record_security_event(
                     event_type=SecurityAuditLog.EventType.USER_REACTIVATED,
                     request=request,
@@ -5869,9 +7395,13 @@ class UserManagementViewSet(viewsets.ReadOnlyModelViewSet):
         search = request.query_params.get("search")
         if search:
             token = search.strip()
-            queryset = queryset.filter(Q(username__icontains=token) | Q(school_name__icontains=token))
+            queryset = queryset.filter(
+                Q(username__icontains=token) | Q(school_name__icontains=token)
+            )
         queryset = queryset.order_by("role", "username")[:200]
-        return Response(UserPublicSerializer(queryset, many=True, context={"request": request}).data)
+        return Response(
+            UserPublicSerializer(queryset, many=True, context={"request": request}).data
+        )
 
 
 class UserNotificationViewSet(viewsets.ReadOnlyModelViewSet):
@@ -5895,23 +7425,44 @@ class UserNotificationViewSet(viewsets.ReadOnlyModelViewSet):
         search = self.request.query_params.get("search")
         if search:
             token = search.strip()
-            queryset = queryset.filter(Q(title__icontains=token) | Q(content__icontains=token))
+            queryset = queryset.filter(
+                Q(title__icontains=token) | Q(content__icontains=token)
+            )
 
         return queryset.order_by("is_read", "-created_at")
 
-    @action(detail=True, methods=["post"], permission_classes=[AuthenticatedAndNotBanned], url_path="mark-read")
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[AuthenticatedAndNotBanned],
+        url_path="mark-read",
+    )
     def mark_read(self, request, pk=None):
         notification = self.get_object()
         notification.mark_read()
         return Response(self.get_serializer(notification).data)
 
-    @action(detail=False, methods=["post"], permission_classes=[AuthenticatedAndNotBanned], url_path="mark-all-read")
+    @action(
+        detail=False,
+        methods=["post"],
+        permission_classes=[AuthenticatedAndNotBanned],
+        url_path="mark-all-read",
+    )
     def mark_all_read(self, request):
         now = timezone.now()
-        updated = self.get_queryset().filter(is_read=False).update(is_read=True, read_at=now, updated_at=now)
+        updated = (
+            self.get_queryset()
+            .filter(is_read=False)
+            .update(is_read=True, read_at=now, updated_at=now)
+        )
         return Response({"updated": updated})
 
-    @action(detail=False, methods=["get"], permission_classes=[AuthenticatedAndNotBanned], url_path="unread-count")
+    @action(
+        detail=False,
+        methods=["get"],
+        permission_classes=[AuthenticatedAndNotBanned],
+        url_path="unread-count",
+    )
     def unread_count(self, request):
         count = self.get_queryset().filter(is_read=False).count()
         return Response({"count": count})
@@ -5919,7 +7470,9 @@ class UserNotificationViewSet(viewsets.ReadOnlyModelViewSet):
 
 class SecurityAuditLogViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = SecurityAuditLogSerializer
-    queryset = SecurityAuditLog.objects.select_related("user").all().order_by("-created_at")
+    queryset = (
+        SecurityAuditLog.objects.select_related("user").all().order_by("-created_at")
+    )
     permission_classes = [AdminOrSuperAdmin]
 
     def get_queryset(self):
@@ -5948,11 +7501,15 @@ class SecurityAuditLogViewSet(viewsets.ReadOnlyModelViewSet):
         if detail:
             queryset = queryset.filter(detail__icontains=detail.strip())
 
-        start_at = parse_datetime_query(self.request.query_params.get("start_at", ""), end_of_day=False)
+        start_at = parse_datetime_query(
+            self.request.query_params.get("start_at", ""), end_of_day=False
+        )
         if start_at:
             queryset = queryset.filter(created_at__gte=start_at)
 
-        end_at = parse_datetime_query(self.request.query_params.get("end_at", ""), end_of_day=True)
+        end_at = parse_datetime_query(
+            self.request.query_params.get("end_at", ""), end_of_day=True
+        )
         if end_at:
             queryset = queryset.filter(created_at__lte=end_at)
 
@@ -5970,7 +7527,12 @@ class SecurityAuditLogViewSet(viewsets.ReadOnlyModelViewSet):
         except DatabaseError as exc:
             return schema_outdated_response(exc)
 
-    @action(detail=False, methods=["get"], permission_classes=[AdminOrSuperAdmin], url_path="export")
+    @action(
+        detail=False,
+        methods=["get"],
+        permission_classes=[AdminOrSuperAdmin],
+        url_path="export",
+    )
     def export(self, request):
         try:
             queryset = self.get_queryset().select_related("user")
@@ -6000,7 +7562,9 @@ class SecurityAuditLogViewSet(viewsets.ReadOnlyModelViewSet):
                 writer.writerow(
                     [
                         event.id,
-                        timezone.localtime(event.created_at).strftime("%Y-%m-%d %H:%M:%S"),
+                        timezone.localtime(event.created_at).strftime(
+                            "%Y-%m-%d %H:%M:%S"
+                        ),
                         event.event_type,
                         int(bool(event.success)),
                         event.username or "",
@@ -6015,7 +7579,12 @@ class SecurityAuditLogViewSet(viewsets.ReadOnlyModelViewSet):
         except DatabaseError as exc:
             return schema_outdated_response(exc)
 
-    @action(detail=False, methods=["get"], permission_classes=[AdminOrSuperAdmin], url_path="summary")
+    @action(
+        detail=False,
+        methods=["get"],
+        permission_classes=[AdminOrSuperAdmin],
+        url_path="summary",
+    )
     def summary(self, request):
         try:
             queryset = self.get_queryset()
@@ -6082,7 +7651,9 @@ class SecurityAuditLogViewSet(viewsets.ReadOnlyModelViewSet):
 
 class ContributionEventViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ContributionEventSerializer
-    queryset = ContributionEvent.objects.select_related("user").all().order_by("-created_at")
+    queryset = (
+        ContributionEvent.objects.select_related("user").all().order_by("-created_at")
+    )
     permission_classes = [AdminOrSuperAdmin]
 
     def get_queryset(self):
@@ -6109,21 +7680,33 @@ class ContributionEventViewSet(viewsets.ReadOnlyModelViewSet):
             token = search.strip().lower()
             matched_ids = []
             for event in queryset.only("id", "target_type", "payload"):
-                if token in str(event.target_type or "").lower() or token in str(event.payload or "").lower():
+                if (
+                    token in str(event.target_type or "").lower()
+                    or token in str(event.payload or "").lower()
+                ):
                     matched_ids.append(event.id)
             queryset = queryset.filter(id__in=matched_ids)
 
-        start_at = parse_datetime_query(self.request.query_params.get("start_at", ""), end_of_day=False)
+        start_at = parse_datetime_query(
+            self.request.query_params.get("start_at", ""), end_of_day=False
+        )
         if start_at:
             queryset = queryset.filter(created_at__gte=start_at)
 
-        end_at = parse_datetime_query(self.request.query_params.get("end_at", ""), end_of_day=True)
+        end_at = parse_datetime_query(
+            self.request.query_params.get("end_at", ""), end_of_day=True
+        )
         if end_at:
             queryset = queryset.filter(created_at__lte=end_at)
 
         return queryset
 
-    @action(detail=False, methods=["get"], permission_classes=[AdminOrSuperAdmin], url_path="export")
+    @action(
+        detail=False,
+        methods=["get"],
+        permission_classes=[AdminOrSuperAdmin],
+        url_path="export",
+    )
     def export(self, request):
         queryset = self.get_queryset().select_related("user")
         response = HttpResponse(content_type="text/csv; charset=utf-8")
@@ -6133,7 +7716,18 @@ class ContributionEventViewSet(viewsets.ReadOnlyModelViewSet):
         response.write("\ufeff")
 
         writer = csv.writer(response)
-        writer.writerow(["id", "created_at", "event_type", "target_type", "target_id", "user_id", "username", "payload"])
+        writer.writerow(
+            [
+                "id",
+                "created_at",
+                "event_type",
+                "target_type",
+                "target_id",
+                "user_id",
+                "username",
+                "payload",
+            ]
+        )
 
         for event in queryset:
             writer.writerow(
@@ -6163,14 +7757,26 @@ class AdminOverviewView(APIView):
             )
             role_map = {item["role"]: item["count"] for item in role_counts}
 
-            article_status_counts = Article.objects.values("status").annotate(count=Count("id"))
-            article_status_map = {item["status"]: item["count"] for item in article_status_counts}
+            article_status_counts = Article.objects.values("status").annotate(
+                count=Count("id")
+            )
+            article_status_map = {
+                item["status"]: item["count"] for item in article_status_counts
+            }
 
-            ticket_status_counts = IssueTicket.objects.values("status").annotate(count=Count("id"))
-            ticket_status_map = {item["status"]: item["count"] for item in ticket_status_counts}
+            ticket_status_counts = IssueTicket.objects.values("status").annotate(
+                count=Count("id")
+            )
+            ticket_status_map = {
+                item["status"]: item["count"] for item in ticket_status_counts
+            }
 
-            revision_status_counts = RevisionProposal.objects.values("status").annotate(count=Count("id"))
-            revision_status_map = {item["status"]: item["count"] for item in revision_status_counts}
+            revision_status_counts = RevisionProposal.objects.values("status").annotate(
+                count=Count("id")
+            )
+            revision_status_map = {
+                item["status"]: item["count"] for item in revision_status_counts
+            }
 
             recent_events = ContributionEvent.objects.select_related("user").all()[:10]
             event_type_counts = (
@@ -6209,7 +7815,9 @@ class AdminOverviewView(APIView):
                     "users": {
                         "total": User.objects.count(),
                         "active": User.objects.filter(is_active=True).count(),
-                        "banned": User.objects.filter(is_active=True, is_banned=True).count(),
+                        "banned": User.objects.filter(
+                            is_active=True, is_banned=True
+                        ).count(),
                         "by_role": {
                             "normal": role_map.get(User.Role.NORMAL, 0),
                             "school": role_map.get(User.Role.SCHOOL, 0),
@@ -6220,20 +7828,42 @@ class AdminOverviewView(APIView):
                     "content": {
                         "categories": Category.objects.count(),
                         "articles_total": Article.objects.count(),
-                        "articles_published": article_status_map.get(Article.Status.PUBLISHED, 0),
-                        "articles_hidden": article_status_map.get(Article.Status.HIDDEN, 0),
-                        "articles_draft": article_status_map.get(Article.Status.DRAFT, 0),
+                        "articles_published": article_status_map.get(
+                            Article.Status.PUBLISHED, 0
+                        ),
+                        "articles_hidden": article_status_map.get(
+                            Article.Status.HIDDEN, 0
+                        ),
+                        "articles_draft": article_status_map.get(
+                            Article.Status.DRAFT, 0
+                        ),
                         "comments_total": ArticleComment.objects.count(),
-                        "comments_hidden": ArticleComment.objects.filter(status=ArticleComment.Status.HIDDEN).count(),
+                        "comments_hidden": ArticleComment.objects.filter(
+                            status=ArticleComment.Status.HIDDEN
+                        ).count(),
                     },
                     "workflow": {
-                        "tickets_open": ticket_status_map.get(IssueTicket.Status.OPEN, 0),
-                        "tickets_in_progress": ticket_status_map.get(IssueTicket.Status.IN_PROGRESS, 0),
-                        "tickets_resolved": ticket_status_map.get(IssueTicket.Status.RESOLVED, 0),
-                        "revisions_pending": revision_status_map.get(RevisionProposal.Status.PENDING, 0),
-                        "questions_pending": Question.objects.filter(status=Question.Status.PENDING).count(),
-                        "questions_open": Question.objects.filter(status=Question.Status.OPEN).count(),
-                        "answers_pending": Answer.objects.filter(status=Answer.Status.PENDING).count(),
+                        "tickets_open": ticket_status_map.get(
+                            IssueTicket.Status.OPEN, 0
+                        ),
+                        "tickets_in_progress": ticket_status_map.get(
+                            IssueTicket.Status.IN_PROGRESS, 0
+                        ),
+                        "tickets_resolved": ticket_status_map.get(
+                            IssueTicket.Status.RESOLVED, 0
+                        ),
+                        "revisions_pending": revision_status_map.get(
+                            RevisionProposal.Status.PENDING, 0
+                        ),
+                        "questions_pending": Question.objects.filter(
+                            status=Question.Status.PENDING
+                        ).count(),
+                        "questions_open": Question.objects.filter(
+                            status=Question.Status.OPEN
+                        ).count(),
+                        "answers_pending": Answer.objects.filter(
+                            status=Answer.Status.PENDING
+                        ).count(),
                         "answers_total": Answer.objects.count(),
                     },
                     "announcements": {
@@ -6245,7 +7875,9 @@ class AdminOverviewView(APIView):
                         "event_type_counts": event_type_series,
                         "daily_events": daily_events,
                     },
-                    "recent_events": ContributionEventSerializer(recent_events, many=True).data,
+                    "recent_events": ContributionEventSerializer(
+                        recent_events, many=True
+                    ).data,
                 }
             )
         except DatabaseError as exc:
@@ -6258,19 +7890,22 @@ class HomeSummaryView(APIView):
     def get(self, request):
         try:
             announcements = Announcement.objects.active()[:5]
-            featured_articles = (
-                Article.objects.filter(status=Article.Status.PUBLISHED, is_featured=True)
-                .select_related("category", "author")[:8]
-            )
+            featured_articles = Article.objects.filter(
+                status=Article.Status.PUBLISHED, is_featured=True
+            ).select_related("category", "author")[:8]
             if not featured_articles:
-                featured_articles = Article.objects.filter(status=Article.Status.PUBLISHED).select_related("category", "author")[:8]
+                featured_articles = Article.objects.filter(
+                    status=Article.Status.PUBLISHED
+                ).select_related("category", "author")[:8]
 
             categories = Category.objects.filter(is_visible=True, parent__isnull=True)
             extension_pages = ExtensionPage.objects.filter(
                 is_enabled=True,
                 access_level=ExtensionPage.AccessLevel.PUBLIC,
             )
-            team_members = TeamMember.objects.select_related("user").filter(is_active=True)
+            team_members = TeamMember.objects.select_related("user").filter(
+                is_active=True
+            )
 
             return Response(
                 {
@@ -6289,7 +7924,9 @@ class HomeSummaryView(APIView):
                         context={"request": request},
                     ).data,
                     "categories": CategorySerializer(categories, many=True).data,
-                    "extension_pages": ExtensionPageSerializer(extension_pages, many=True).data,
+                    "extension_pages": ExtensionPageSerializer(
+                        extension_pages, many=True
+                    ).data,
                     "team_members": TeamMemberSerializer(
                         team_members,
                         many=True,

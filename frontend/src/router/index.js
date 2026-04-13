@@ -18,8 +18,16 @@ const RevisionReviewPage = () => import("../pages/RevisionReviewPage.vue");
 
 const manageSections = [
   { path: "users", name: "manage-users", section: "users" },
-  { path: "competition-wiki", name: "manage-competition-wiki", section: "competition-wiki" },
-  { path: "competition-zone", name: "manage-competition-zone", section: "competition-zone" },
+  {
+    path: "competition-wiki",
+    name: "manage-competition-wiki",
+    section: "competition-wiki",
+  },
+  {
+    path: "competition-zone",
+    name: "manage-competition-zone",
+    section: "competition-zone",
+  },
   { path: "assistant", name: "manage-assistant", section: "assistant" },
   { path: "events", name: "manage-events", section: "events" },
   { path: "security", name: "manage-security", section: "security" },
@@ -31,24 +39,46 @@ const reviewSections = [
   { path: "/review/tickets", name: "review-tickets", section: "tickets" },
   { path: "/review/comments", name: "review-comments", section: "comments" },
   { path: "/review/tricks", name: "review-tricks", section: "tricks" },
+  {
+    path: "/review/trick-terms",
+    name: "review-trick-terms",
+    section: "trick_terms",
+  },
   { path: "/review/questions", name: "review-questions", section: "questions" },
   { path: "/review/answers", name: "review-answers", section: "answers" },
 ];
 
 const routes = [
   { path: "/", name: "home", component: HomePage },
-  { path: "/announcements", name: "announcements", component: AnnouncementsPage },
+  {
+    path: "/announcements",
+    name: "announcements",
+    component: AnnouncementsPage,
+  },
   {
     path: "/competition-calendar",
     name: "competition-calendar",
     redirect: { name: "competitions", query: { tab: "calendar" } },
   },
-  { path: "/competitions", name: "competitions", component: CompetitionZonePage },
-  { path: "/friendly-links", name: "friendly-links", component: FriendlyLinksPage },
+  {
+    path: "/competitions",
+    name: "competitions",
+    component: CompetitionZonePage,
+  },
+  {
+    path: "/friendly-links",
+    name: "friendly-links",
+    component: FriendlyLinksPage,
+  },
   { path: "/wiki", name: "wiki", component: WikiPage },
   { path: "/wiki/:id", name: "article", component: ArticlePage, props: true },
   { path: "/questions", name: "questions", component: QaPage },
-  { path: "/profile", name: "profile", component: ProfilePage, meta: { requiresAuth: true } },
+  {
+    path: "/profile",
+    name: "profile",
+    component: ProfilePage,
+    meta: { requiresAuth: true },
+  },
   {
     path: "/extra/tricks",
     name: "extra-tricks",
@@ -72,7 +102,9 @@ const routes = [
   {
     path: "/manage/:legacySection",
     redirect: (to) => {
-      const match = manageSections.find((item) => item.section === to.params.legacySection);
+      const match = manageSections.find(
+        (item) => item.section === to.params.legacySection,
+      );
       return match ? { name: match.name } : { name: "admin" };
     },
     meta: { requiresManager: true },
@@ -88,7 +120,13 @@ const routes = [
     path: "/review/submissions",
     redirect: { name: "review-tickets" },
   },
-  { path: "/review/revisions/:id", name: "review-revision", component: RevisionReviewPage, props: true, meta: { requiresManager: true } },
+  {
+    path: "/review/revisions/:id",
+    name: "review-revision",
+    component: RevisionReviewPage,
+    props: true,
+    meta: { requiresManager: true },
+  },
   { path: "/auth", name: "auth", component: AuthPage },
 ];
 
@@ -100,9 +138,14 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   const auth = useAuthStore();
 
-  if (to.name === "competitions" && String(to.query.tab || "").trim() === "qa") {
+  if (
+    to.name === "competitions" &&
+    String(to.query.tab || "").trim() === "qa"
+  ) {
     const questionId = String(to.query.question || "").trim();
-    return questionId ? { name: "questions", query: { question: questionId } } : { name: "questions" };
+    return questionId
+      ? { name: "questions", query: { question: questionId } }
+      : { name: "questions" };
   }
 
   if (auth.token && !auth.user) {

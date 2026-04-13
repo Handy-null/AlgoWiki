@@ -43,6 +43,8 @@ from .models import (
     SecurityAuditLog,
     TeamMember,
     TrickEntry,
+    TrickTerm,
+    TrickTermSuggestion,
     UserNotification,
     User,
 )
@@ -125,16 +127,24 @@ def build_register_challenge():
 
 def validate_register_challenge(*, token: str, answer, website: str = ""):
     if str(website or "").strip():
-        raise serializers.ValidationError({"non_field_errors": ["Verification failed."]})
+        raise serializers.ValidationError(
+            {"non_field_errors": ["Verification failed."]}
+        )
 
     if not str(token or "").strip():
-        raise serializers.ValidationError({"captcha_token": ["Please refresh the verification challenge."]})
+        raise serializers.ValidationError(
+            {"captcha_token": ["Please refresh the verification challenge."]}
+        )
 
     answer_text = str(answer or "").strip()
     if not answer_text:
-        raise serializers.ValidationError({"captcha_answer": ["Please enter the verification result."]})
+        raise serializers.ValidationError(
+            {"captcha_answer": ["Please enter the verification result."]}
+        )
     if not REGISTER_CAPTCHA_INTEGER_RE.fullmatch(answer_text):
-        raise serializers.ValidationError({"captcha_answer": ["Verification answer must be an integer."]})
+        raise serializers.ValidationError(
+            {"captcha_answer": ["Verification answer must be an integer."]}
+        )
 
     try:
         payload = signing.loads(
@@ -154,11 +164,15 @@ def validate_register_challenge(*, token: str, answer, website: str = ""):
     nonce = str(payload.get("nonce", "")).strip()
     digest = str(payload.get("digest", "")).strip()
     if not nonce or not digest:
-        raise serializers.ValidationError({"captcha_answer": ["Verification failed, please refresh and try again."]})
+        raise serializers.ValidationError(
+            {"captcha_answer": ["Verification failed, please refresh and try again."]}
+        )
 
     expected_digest = _build_register_captcha_digest(nonce, int(answer_text))
     if not secrets.compare_digest(expected_digest, digest):
-        raise serializers.ValidationError({"captcha_answer": ["Verification answer is incorrect."]})
+        raise serializers.ValidationError(
+            {"captcha_answer": ["Verification answer is incorrect."]}
+        )
 
 
 class UserPublicSerializer(serializers.ModelSerializer):
@@ -183,7 +197,10 @@ class UserPublicSerializer(serializers.ModelSerializer):
         return bool(
             user
             and user.is_authenticated
-            and (user.pk == instance.pk or user.role in {User.Role.ADMIN, User.Role.SUPERADMIN})
+            and (
+                user.pk == instance.pk
+                or user.role in {User.Role.ADMIN, User.Role.SUPERADMIN}
+            )
         )
 
     def to_representation(self, instance):
@@ -271,7 +288,9 @@ class UserProfileSettingsSerializer(serializers.ModelSerializer):
 
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):
-    school_name = serializers.CharField(required=False, allow_blank=True, max_length=120)
+    school_name = serializers.CharField(
+        required=False, allow_blank=True, max_length=120
+    )
     bio = serializers.CharField(required=False, allow_blank=True)
     avatar_url = serializers.URLField(required=False, allow_blank=True)
 
@@ -287,7 +306,11 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
         attrs = super().validate(attrs)
         if "email" in self.initial_data:
             raise serializers.ValidationError(
-                {"email": ["Use the email verification flow to change your email address."]}
+                {
+                    "email": [
+                        "Use the email verification flow to change your email address."
+                    ]
+                }
             )
         return attrs
 
@@ -308,15 +331,31 @@ class PasswordChangeCodeSerializer(serializers.Serializer):
         confirm_password = attrs.get("confirm_password", "")
 
         if not user.check_password(old_password):
-            raise serializers.ValidationError({"old_password": "Current password is incorrect."})
+            raise serializers.ValidationError(
+                {"old_password": "Current password is incorrect."}
+            )
         if not normalize_email(user.email):
-            raise serializers.ValidationError({"non_field_errors": ["Please set an email address before changing password."]})
+            raise serializers.ValidationError(
+                {
+                    "non_field_errors": [
+                        "Please set an email address before changing password."
+                    ]
+                }
+            )
         if new_password != confirm_password:
-            raise serializers.ValidationError({"confirm_password": "The two new passwords do not match."})
+            raise serializers.ValidationError(
+                {"confirm_password": "The two new passwords do not match."}
+            )
         if old_password == new_password:
-            raise serializers.ValidationError({"new_password": "New password must be different from the old password."})
+            raise serializers.ValidationError(
+                {
+                    "new_password": "New password must be different from the old password."
+                }
+            )
         if is_password_reused(user, new_password):
-            raise serializers.ValidationError({"new_password": "Cannot reuse recent password."})
+            raise serializers.ValidationError(
+                {"new_password": "Cannot reuse recent password."}
+            )
         try:
             validate_password(new_password, user=user)
         except DjangoValidationError as exc:
@@ -336,7 +375,10 @@ class PasswordChangeCodeSerializer(serializers.Serializer):
             user=user,
         )
         if wait_seconds:
-            raise Throttled(wait=wait_seconds, detail="Please wait before requesting another password change code.")
+            raise Throttled(
+                wait=wait_seconds,
+                detail="Please wait before requesting another password change code.",
+            )
 
         window_wait_seconds = get_email_code_window_wait_seconds(
             purpose=EmailVerificationTicket.Purpose.CHANGE_PASSWORD,
@@ -385,10 +427,18 @@ class PasswordChangeSerializer(serializers.Serializer):
             purpose=EmailVerificationTicket.Purpose.CHANGE_PASSWORD,
         )
         if ticket.user_id != user.id:
-            raise serializers.ValidationError({"ticket_token": ["Verification session does not belong to the current account."]})
+            raise serializers.ValidationError(
+                {
+                    "ticket_token": [
+                        "Verification session does not belong to the current account."
+                    ]
+                }
+            )
         validate_email_code(ticket, attrs.get("code", ""))
         if not ticket.password_hash_snapshot:
-            raise serializers.ValidationError({"ticket_token": ["Verification session is invalid."]})
+            raise serializers.ValidationError(
+                {"ticket_token": ["Verification session is invalid."]}
+            )
 
         attrs["ticket"] = ticket
         attrs["user"] = user
@@ -423,7 +473,11 @@ class ImageUploadSerializer(serializers.Serializer):
             raise serializers.ValidationError("Unsupported image format.")
 
         content_type = str(getattr(value, "content_type", "") or "").lower()
-        if allowed_content_types and content_type and content_type not in allowed_content_types:
+        if (
+            allowed_content_types
+            and content_type
+            and content_type not in allowed_content_types
+        ):
             raise serializers.ValidationError("Unsupported image content type.")
 
         return value
@@ -433,10 +487,14 @@ class RegisterEmailCodeSerializer(serializers.Serializer):
     username = serializers.CharField()
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, min_length=8)
-    school_name = serializers.CharField(required=False, allow_blank=True, max_length=120)
+    school_name = serializers.CharField(
+        required=False, allow_blank=True, max_length=120
+    )
     captcha_token = serializers.CharField(write_only=True)
     captcha_answer = serializers.CharField(write_only=True)
-    website = serializers.CharField(write_only=True, required=False, allow_blank=True, default="")
+    website = serializers.CharField(
+        write_only=True, required=False, allow_blank=True, default=""
+    )
 
     def validate_username(self, value):
         username = str(value or "").strip()
@@ -479,14 +537,20 @@ class RegisterEmailCodeSerializer(serializers.Serializer):
             email=email,
         )
         if wait_seconds:
-            raise Throttled(wait=wait_seconds, detail="Please wait before requesting another registration code.")
+            raise Throttled(
+                wait=wait_seconds,
+                detail="Please wait before requesting another registration code.",
+            )
 
         window_wait_seconds = get_email_code_window_wait_seconds(
             purpose=EmailVerificationTicket.Purpose.REGISTER,
             email=email,
         )
         if window_wait_seconds:
-            raise Throttled(wait=window_wait_seconds, detail="Too many registration codes requested. Please retry later.")
+            raise Throttled(
+                wait=window_wait_seconds,
+                detail="Too many registration codes requested. Please retry later.",
+            )
 
         validated_data.pop("captcha_token", None)
         validated_data.pop("captcha_answer", None)
@@ -527,11 +591,21 @@ class RegisterSerializer(serializers.Serializer):
         username = str(ticket.username_snapshot or "").strip()
         email = normalize_email(ticket.email)
         if not username or not email or not ticket.password_hash_snapshot:
-            raise serializers.ValidationError({"ticket_token": ["Registration session is incomplete. Please restart the registration flow."]})
+            raise serializers.ValidationError(
+                {
+                    "ticket_token": [
+                        "Registration session is incomplete. Please restart the registration flow."
+                    ]
+                }
+            )
         if User.objects.filter(username__iexact=username).exists():
-            raise serializers.ValidationError({"username": ["This username is already in use."]})
+            raise serializers.ValidationError(
+                {"username": ["This username is already in use."]}
+            )
         if User.objects.filter(email__iexact=email).exists():
-            raise serializers.ValidationError({"email": ["This email is already in use."]})
+            raise serializers.ValidationError(
+                {"email": ["This email is already in use."]}
+            )
 
         attrs["ticket"] = ticket
         return attrs
@@ -571,16 +645,24 @@ class PasswordResetCodeSerializer(serializers.Serializer):
             email=email,
         )
         if wait_seconds:
-            raise Throttled(wait=wait_seconds, detail="Please wait before requesting another reset code.")
+            raise Throttled(
+                wait=wait_seconds,
+                detail="Please wait before requesting another reset code.",
+            )
 
         window_wait_seconds = get_email_code_window_wait_seconds(
             purpose=EmailVerificationTicket.Purpose.RESET_PASSWORD,
             email=email,
         )
         if window_wait_seconds:
-            raise Throttled(wait=window_wait_seconds, detail="Too many reset codes requested. Please retry later.")
+            raise Throttled(
+                wait=window_wait_seconds,
+                detail="Too many reset codes requested. Please retry later.",
+            )
 
-        user = User.objects.filter(email__iexact=email, is_active=True, is_banned=False).first()
+        user = User.objects.filter(
+            email__iexact=email, is_active=True, is_banned=False
+        ).first()
         ticket, code = create_email_verification_ticket(
             purpose=EmailVerificationTicket.Purpose.RESET_PASSWORD,
             email=email,
@@ -616,14 +698,20 @@ class PasswordResetSerializer(serializers.Serializer):
 
         user = ticket.user
         if user is None or not user.is_active or user.is_banned:
-            raise serializers.ValidationError({"code": ["Verification code is invalid."]})
+            raise serializers.ValidationError(
+                {"code": ["Verification code is invalid."]}
+            )
 
         new_password = attrs.get("new_password", "")
         confirm_password = attrs.get("confirm_password", "")
         if new_password != confirm_password:
-            raise serializers.ValidationError({"confirm_password": "The two new passwords do not match."})
+            raise serializers.ValidationError(
+                {"confirm_password": "The two new passwords do not match."}
+            )
         if is_password_reused(user, new_password):
-            raise serializers.ValidationError({"new_password": "Cannot reuse recent password."})
+            raise serializers.ValidationError(
+                {"new_password": "Cannot reuse recent password."}
+            )
         try:
             validate_password(new_password, user=user)
         except DjangoValidationError as exc:
@@ -659,13 +747,17 @@ class EmailChangeCodeSerializer(serializers.Serializer):
 
         email = normalize_email(attrs.get("email", ""))
         if not user.check_password(attrs.get("current_password", "")):
-            raise serializers.ValidationError({"current_password": "Current password is incorrect."})
+            raise serializers.ValidationError(
+                {"current_password": "Current password is incorrect."}
+            )
 
         current_email = normalize_email(user.email)
         if email != current_email:
             validate_unique_email(email, exclude_user=user)
         elif user.email_verified_at:
-            raise serializers.ValidationError({"email": "Current email is already verified."})
+            raise serializers.ValidationError(
+                {"email": "Current email is already verified."}
+            )
 
         attrs["email"] = email
         attrs["user"] = user
@@ -682,7 +774,10 @@ class EmailChangeCodeSerializer(serializers.Serializer):
             user=user,
         )
         if wait_seconds:
-            raise Throttled(wait=wait_seconds, detail="Please wait before requesting another email code.")
+            raise Throttled(
+                wait=wait_seconds,
+                detail="Please wait before requesting another email code.",
+            )
 
         window_wait_seconds = get_email_code_window_wait_seconds(
             purpose=EmailVerificationTicket.Purpose.CHANGE_EMAIL,
@@ -690,7 +785,10 @@ class EmailChangeCodeSerializer(serializers.Serializer):
             user=user,
         )
         if window_wait_seconds:
-            raise Throttled(wait=window_wait_seconds, detail="Too many email verification codes requested. Please retry later.")
+            raise Throttled(
+                wait=window_wait_seconds,
+                detail="Too many email verification codes requested. Please retry later.",
+            )
 
         ticket, code = create_email_verification_ticket(
             purpose=EmailVerificationTicket.Purpose.CHANGE_EMAIL,
@@ -726,7 +824,13 @@ class EmailChangeSerializer(serializers.Serializer):
             purpose=EmailVerificationTicket.Purpose.CHANGE_EMAIL,
         )
         if ticket.user_id != user.id:
-            raise serializers.ValidationError({"ticket_token": ["Verification session does not belong to the current account."]})
+            raise serializers.ValidationError(
+                {
+                    "ticket_token": [
+                        "Verification session does not belong to the current account."
+                    ]
+                }
+            )
         validate_email_code(ticket, attrs.get("code", ""))
 
         if normalize_email(ticket.email) != normalize_email(user.email):
@@ -769,12 +873,17 @@ class LoginSerializer(serializers.Serializer):
                 success=False,
                 detail="account temporarily locked due to failed attempts",
             )
-            raise Throttled(wait=wait_seconds, detail="Too many failed attempts, please try again later.")
+            raise Throttled(
+                wait=wait_seconds,
+                detail="Too many failed attempts, please try again later.",
+            )
 
         user = authenticate(username=username, password=password)
         if not user:
             register_login_failure(username, client_ip)
-            is_locked_after, wait_seconds_after = check_login_locked(username, client_ip)
+            is_locked_after, wait_seconds_after = check_login_locked(
+                username, client_ip
+            )
             if is_locked_after:
                 record_security_event(
                     event_type=SecurityAuditLog.EventType.LOGIN_LOCKED,
@@ -783,7 +892,10 @@ class LoginSerializer(serializers.Serializer):
                     success=False,
                     detail="lock triggered after failed login",
                 )
-                raise Throttled(wait=wait_seconds_after, detail="Too many failed attempts, please try again later.")
+                raise Throttled(
+                    wait=wait_seconds_after,
+                    detail="Too many failed attempts, please try again later.",
+                )
             record_security_event(
                 event_type=SecurityAuditLog.EventType.LOGIN_FAILED,
                 request=request,
@@ -959,7 +1071,9 @@ class ArticleDetailSerializer(ArticleSerializer):
 
         approved_revisions = getattr(obj, "approved_revision_proposals", None)
         if approved_revisions is None:
-            approved_revisions = obj.revision_proposals.filter(status=RevisionProposal.Status.APPROVED).select_related("proposer")
+            approved_revisions = obj.revision_proposals.filter(
+                status=RevisionProposal.Status.APPROVED
+            ).select_related("proposer")
 
         for proposal in approved_revisions:
             record(
@@ -977,7 +1091,9 @@ class ArticleDetailSerializer(ArticleSerializer):
                 item["user"].id,
             ),
         )
-        return ArticleContributorSerializer(contributors, many=True, context=self.context).data
+        return ArticleContributorSerializer(
+            contributors, many=True, context=self.context
+        ).data
 
 
 class ArticleCommentSerializer(serializers.ModelSerializer):
@@ -1004,11 +1120,17 @@ class ArticleCommentSerializer(serializers.ModelSerializer):
         parent = attrs.get("parent")
         if parent:
             if not article:
-                raise serializers.ValidationError({"parent": "Parent comment requires a target article."})
+                raise serializers.ValidationError(
+                    {"parent": "Parent comment requires a target article."}
+                )
             if parent.article_id != article.id:
-                raise serializers.ValidationError({"parent": "Parent comment must belong to the same article."})
+                raise serializers.ValidationError(
+                    {"parent": "Parent comment must belong to the same article."}
+                )
             if parent.status != ArticleComment.Status.VISIBLE:
-                raise serializers.ValidationError({"parent": "Parent comment is not available."})
+                raise serializers.ValidationError(
+                    {"parent": "Parent comment is not available."}
+                )
         return attrs
 
 
@@ -1016,7 +1138,9 @@ class RevisionProposalSerializer(serializers.ModelSerializer):
     proposer = UserPublicSerializer(read_only=True)
     reviewer = UserPublicSerializer(read_only=True)
     article_title = serializers.CharField(source="article.title", read_only=True)
-    article_content_md = serializers.CharField(source="article.content_md", read_only=True)
+    article_content_md = serializers.CharField(
+        source="article.content_md", read_only=True
+    )
 
     class Meta:
         model = RevisionProposal
@@ -1053,7 +1177,9 @@ class RevisionProposalSerializer(serializers.ModelSerializer):
         next_article = attrs.get("article")
         if next_article and next_article.id != self.instance.article_id:
             raise serializers.ValidationError(
-                {"article": "Cannot change the target article of an existing revision proposal."}
+                {
+                    "article": "Cannot change the target article of an existing revision proposal."
+                }
             )
         return attrs
 
@@ -1061,8 +1187,12 @@ class RevisionProposalSerializer(serializers.ModelSerializer):
 class IssueTicketSerializer(serializers.ModelSerializer):
     author = UserPublicSerializer(read_only=True)
     assignee = UserPublicSerializer(read_only=True)
-    related_article_title = serializers.CharField(source="related_article.title", read_only=True)
-    visibility_label = serializers.CharField(source="get_visibility_display", read_only=True)
+    related_article_title = serializers.CharField(
+        source="related_article.title", read_only=True
+    )
+    visibility_label = serializers.CharField(
+        source="get_visibility_display", read_only=True
+    )
 
     class Meta:
         model = IssueTicket
@@ -1094,6 +1224,19 @@ class IssueTicketSerializer(serializers.ModelSerializer):
 
 class TrickEntrySerializer(serializers.ModelSerializer):
     author = UserPublicSerializer(read_only=True)
+    terms = serializers.SerializerMethodField(read_only=True)
+    term_ids = serializers.PrimaryKeyRelatedField(
+        source="terms",
+        queryset=TrickTerm.objects.filter(is_active=True),
+        many=True,
+        required=False,
+        write_only=True,
+    )
+    pending_term_names = serializers.ListField(
+        child=serializers.CharField(max_length=80),
+        required=False,
+        write_only=True,
+    )
 
     class Meta:
         model = TrickEntry
@@ -1102,6 +1245,9 @@ class TrickEntrySerializer(serializers.ModelSerializer):
             "title",
             "content_md",
             "author",
+            "terms",
+            "term_ids",
+            "pending_term_names",
             "status",
             "created_at",
             "updated_at",
@@ -1115,6 +1261,174 @@ class TrickEntrySerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "title": {"required": False, "allow_blank": True},
         }
+
+    def get_terms(self, obj):
+        ordered_terms = sorted(obj.terms.all(), key=lambda term: str(term.name or ""))
+        return [
+            {
+                "id": term.id,
+                "name": term.name,
+                "slug": term.slug,
+            }
+            for term in ordered_terms
+        ]
+
+    def _normalize_term_name(self, value):
+        return " ".join(str(value or "").strip().split())
+
+    def validate_pending_term_names(self, value):
+        cleaned = []
+        seen = set()
+        for item in value or []:
+            display = self._normalize_term_name(item)
+            if not display:
+                continue
+            if len(display) > 80:
+                raise serializers.ValidationError("自定义词条名称过长。")
+            normalized = display.lower()
+            if not re.search(r"[A-Za-z0-9\u4e00-\u9fff]", normalized):
+                raise serializers.ValidationError(
+                    "自定义词条名称无效，请输入有意义的名称。"
+                )
+            if normalized in seen:
+                continue
+            seen.add(normalized)
+            cleaned.append(display)
+        return cleaned
+
+    def _bind_pending_terms(self, entry, pending_term_names, proposer):
+        if not pending_term_names:
+            return
+
+        for raw_name in pending_term_names:
+            display_name = self._normalize_term_name(raw_name)
+            if not display_name:
+                continue
+
+            normalized_name = display_name.lower()
+
+            direct_term = TrickTerm.objects.filter(
+                name__iexact=display_name, is_active=True
+            ).first()
+            if direct_term:
+                entry.terms.add(direct_term)
+                continue
+
+            suggestion = (
+                TrickTermSuggestion.objects.filter(
+                    normalized_name=normalized_name,
+                    status=TrickTermSuggestion.Status.PENDING,
+                )
+                .order_by("-created_at")
+                .first()
+            )
+            if not suggestion:
+                suggestion = TrickTermSuggestion.objects.create(
+                    name=display_name,
+                    normalized_name=normalized_name,
+                    proposer=proposer,
+                    status=TrickTermSuggestion.Status.PENDING,
+                )
+            entry.pending_term_suggestions.add(suggestion)
+
+    def create(self, validated_data):
+        pending_term_names = validated_data.pop("pending_term_names", [])
+        entry = super().create(validated_data)
+        request = self.context.get("request")
+        proposer = getattr(request, "user", None) or entry.author
+        self._bind_pending_terms(entry, pending_term_names, proposer)
+        return entry
+
+    def update(self, instance, validated_data):
+        pending_term_names = validated_data.pop("pending_term_names", [])
+        entry = super().update(instance, validated_data)
+        request = self.context.get("request")
+        proposer = getattr(request, "user", None) or entry.author
+        self._bind_pending_terms(entry, pending_term_names, proposer)
+        return entry
+
+
+class TrickTermSerializer(serializers.ModelSerializer):
+    usage_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = TrickTerm
+        fields = [
+            "id",
+            "name",
+            "slug",
+            "description",
+            "is_active",
+            "is_builtin",
+            "usage_count",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["slug", "usage_count", "created_at", "updated_at"]
+
+
+class TrickTermSuggestionSerializer(serializers.ModelSerializer):
+    proposer = UserPublicSerializer(read_only=True)
+    reviewer = UserPublicSerializer(read_only=True)
+    linked_tricks = serializers.SerializerMethodField(read_only=True)
+    linked_tricks_count = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = TrickTermSuggestion
+        fields = [
+            "id",
+            "name",
+            "normalized_name",
+            "proposer",
+            "status",
+            "reviewer",
+            "review_note",
+            "reviewed_at",
+            "linked_tricks",
+            "linked_tricks_count",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "normalized_name",
+            "proposer",
+            "status",
+            "reviewer",
+            "review_note",
+            "reviewed_at",
+            "created_at",
+            "updated_at",
+        ]
+
+    def validate_name(self, value):
+        normalized = " ".join(str(value or "").strip().split()).lower()
+        if not normalized:
+            raise serializers.ValidationError("词条名称不能为空。")
+        if len(normalized) > 80:
+            raise serializers.ValidationError("词条名称过长。")
+        # Require at least one meaningful character (CJK/letter/digit),
+        # preventing placeholders like "??" from being submitted.
+        if not re.search(r"[A-Za-z0-9\u4e00-\u9fff]", normalized):
+            raise serializers.ValidationError("词条名称无效，请输入有意义的名称。")
+        return " ".join(str(value or "").strip().split())
+
+    def create(self, validated_data):
+        name = validated_data["name"]
+        normalized_name = " ".join(name.strip().split()).lower()
+        validated_data["normalized_name"] = normalized_name
+        return super().create(validated_data)
+
+    def get_linked_tricks(self, obj):
+        return [
+            {
+                "id": item.id,
+                "title": item.title,
+            }
+            for item in obj.pending_trick_entries.all().order_by("-created_at")[:5]
+        ]
+
+    def get_linked_tricks_count(self, obj):
+        return obj.pending_trick_entries.count()
 
 
 class CompetitionZoneSectionSerializer(serializers.ModelSerializer):
@@ -1146,20 +1460,29 @@ class CompetitionZoneSectionSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         instance = getattr(self, "instance", None)
-        target_type = attrs.get("target_type", getattr(instance, "target_type", CompetitionZoneSection.TargetType.BUILTIN))
+        target_type = attrs.get(
+            "target_type",
+            getattr(instance, "target_type", CompetitionZoneSection.TargetType.BUILTIN),
+        )
         builtin_view = attrs.get("builtin_view", getattr(instance, "builtin_view", ""))
         page = attrs.get("page", getattr(instance, "page", None))
 
         if target_type == CompetitionZoneSection.TargetType.BUILTIN:
             if builtin_view not in dict(CompetitionZoneSection.BuiltinView.choices):
-                raise serializers.ValidationError({"builtin_view": "A valid built-in target is required."})
+                raise serializers.ValidationError(
+                    {"builtin_view": "A valid built-in target is required."}
+                )
             attrs["page"] = None
         else:
             attrs["builtin_view"] = ""
             if page is None:
-                raise serializers.ValidationError({"page": "A page target is required."})
+                raise serializers.ValidationError(
+                    {"page": "A page target is required."}
+                )
             if not page.is_enabled:
-                raise serializers.ValidationError({"page": "Selected page is disabled."})
+                raise serializers.ValidationError(
+                    {"page": "Selected page is disabled."}
+                )
         return attrs
 
 
@@ -1251,7 +1574,13 @@ class AnswerSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["author", "is_accepted", "status", "created_at", "updated_at"]
+        read_only_fields = [
+            "author",
+            "is_accepted",
+            "status",
+            "created_at",
+            "updated_at",
+        ]
 
 
 class QuestionSerializer(serializers.ModelSerializer):
@@ -1273,7 +1602,13 @@ class QuestionSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["author", "status", "answers_count", "created_at", "updated_at"]
+        read_only_fields = [
+            "author",
+            "status",
+            "answers_count",
+            "created_at",
+            "updated_at",
+        ]
 
 
 class AnnouncementSerializer(serializers.ModelSerializer):
@@ -1386,18 +1721,24 @@ class CompetitionNoticeSerializer(serializers.ModelSerializer):
         instance = getattr(self, "instance", None)
         series = attrs.get("series", getattr(instance, "series", None))
         year = attrs.get("year", getattr(instance, "year", None))
-        stage = attrs.get("stage", getattr(instance, "stage", CompetitionNotice.Stage.GENERAL))
+        stage = attrs.get(
+            "stage", getattr(instance, "stage", CompetitionNotice.Stage.GENERAL)
+        )
 
         if series in {CompetitionNotice.Series.ICPC, CompetitionNotice.Series.CCPC}:
             if year is None:
-                raise serializers.ValidationError({"year": "ICPC/CCPC 公告必须填写年份。"})
+                raise serializers.ValidationError(
+                    {"year": "ICPC/CCPC 公告必须填写年份。"}
+                )
             if stage not in {
                 CompetitionNotice.Stage.REGIONAL,
                 CompetitionNotice.Stage.INVITATIONAL,
                 CompetitionNotice.Stage.PROVINCIAL,
                 CompetitionNotice.Stage.NETWORK,
             }:
-                raise serializers.ValidationError({"stage": "ICPC/CCPC 公告必须选择“区域赛/邀请赛/省赛/网络赛”之一。"})
+                raise serializers.ValidationError(
+                    {"stage": "ICPC/CCPC 公告必须选择“区域赛/邀请赛/省赛/网络赛”之一。"}
+                )
         else:
             attrs["year"] = None
             attrs["stage"] = CompetitionNotice.Stage.GENERAL
@@ -1406,10 +1747,18 @@ class CompetitionNoticeSerializer(serializers.ModelSerializer):
 
 
 class CompetitionScheduleEntrySerializer(serializers.ModelSerializer):
-    announcement_title = serializers.CharField(source="announcement.title", read_only=True)
-    announcement_series = serializers.CharField(source="announcement.series", read_only=True)
-    announcement_year = serializers.IntegerField(source="announcement.year", read_only=True)
-    announcement_stage = serializers.CharField(source="announcement.stage", read_only=True)
+    announcement_title = serializers.CharField(
+        source="announcement.title", read_only=True
+    )
+    announcement_series = serializers.CharField(
+        source="announcement.series", read_only=True
+    )
+    announcement_year = serializers.IntegerField(
+        source="announcement.year", read_only=True
+    )
+    announcement_stage = serializers.CharField(
+        source="announcement.stage", read_only=True
+    )
     created_by = UserPublicSerializer(read_only=True)
     updated_by = UserPublicSerializer(read_only=True)
     can_edit = serializers.SerializerMethodField()
@@ -1510,10 +1859,18 @@ class CompetitionPracticeLinkSerializer(serializers.ModelSerializer):
 class CompetitionPracticeLinkProposalSerializer(serializers.ModelSerializer):
     proposer = UserPublicSerializer(read_only=True)
     reviewer = UserPublicSerializer(read_only=True)
-    target_entry_summary = serializers.CharField(source="target_entry.short_name", read_only=True)
-    proposed_series_label = serializers.CharField(source="get_proposed_series_display", read_only=True)
-    proposed_stage_label = serializers.CharField(source="get_proposed_stage_display", read_only=True)
-    proposed_practice_links_text = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    target_entry_summary = serializers.CharField(
+        source="target_entry.short_name", read_only=True
+    )
+    proposed_series_label = serializers.CharField(
+        source="get_proposed_series_display", read_only=True
+    )
+    proposed_stage_label = serializers.CharField(
+        source="get_proposed_stage_display", read_only=True
+    )
+    proposed_practice_links_text = serializers.CharField(
+        write_only=True, required=False, allow_blank=True
+    )
     practice_links_text = serializers.SerializerMethodField()
 
     class Meta:
@@ -1561,7 +1918,9 @@ class CompetitionPracticeLinkProposalSerializer(serializers.ModelSerializer):
         ]
 
     def get_practice_links_text(self, obj):
-        return practice_links_to_text(obj.proposed_practice_links, obj.proposed_practice_links_note)
+        return practice_links_to_text(
+            obj.proposed_practice_links, obj.proposed_practice_links_note
+        )
 
     def validate_proposed_year(self, value):
         if value < 2000 or value > 2099:
@@ -1594,7 +1953,9 @@ class CompetitionPracticeLinkProposalSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         instance = getattr(self, "instance", None)
-        target_entry = attrs.get("target_entry", getattr(instance, "target_entry", None))
+        target_entry = attrs.get(
+            "target_entry", getattr(instance, "target_entry", None)
+        )
         if (
             instance
             and "target_entry" in attrs
@@ -1603,7 +1964,9 @@ class CompetitionPracticeLinkProposalSerializer(serializers.ModelSerializer):
             and target_entry.id != instance.target_entry_id
         ):
             raise serializers.ValidationError(
-                {"target_entry": "Cannot change the target entry of an existing proposal."}
+                {
+                    "target_entry": "Cannot change the target entry of an existing proposal."
+                }
             )
 
         text = None
@@ -1617,7 +1980,9 @@ class CompetitionPracticeLinkProposalSerializer(serializers.ModelSerializer):
             attrs["proposed_practice_links"] = links
             attrs["proposed_practice_links_note"] = note
 
-        event_date = attrs.get("proposed_event_date", getattr(instance, "proposed_event_date", None))
+        event_date = attrs.get(
+            "proposed_event_date", getattr(instance, "proposed_event_date", None)
+        )
         event_date_text = attrs.get(
             "proposed_event_date_text",
             getattr(instance, "proposed_event_date_text", ""),
@@ -1629,7 +1994,9 @@ class CompetitionPracticeLinkProposalSerializer(serializers.ModelSerializer):
 
 
 class CompetitionCalendarEventSerializer(serializers.ModelSerializer):
-    source_site_label = serializers.CharField(source="get_source_site_display", read_only=True)
+    source_site_label = serializers.CharField(
+        source="get_source_site_display", read_only=True
+    )
     status = serializers.SerializerMethodField()
     duration_label = serializers.SerializerMethodField()
     time_range_label = serializers.SerializerMethodField()
@@ -1703,10 +2070,14 @@ class ContributionEventSerializer(serializers.ModelSerializer):
 
 
 class AssistantProviderConfigSerializer(serializers.ModelSerializer):
-    provider_label = serializers.CharField(source="get_provider_display", read_only=True)
+    provider_label = serializers.CharField(
+        source="get_provider_display", read_only=True
+    )
     has_api_key = serializers.SerializerMethodField()
     api_key_masked = serializers.SerializerMethodField()
-    api_key_input = serializers.CharField(write_only=True, required=False, allow_blank=True, trim_whitespace=True)
+    api_key_input = serializers.CharField(
+        write_only=True, required=False, allow_blank=True, trim_whitespace=True
+    )
     created_by = UserPublicSerializer(read_only=True)
     updated_by = UserPublicSerializer(read_only=True)
 
@@ -1853,7 +2224,9 @@ class AssistantPublicConfigSerializer(serializers.Serializer):
     enabled = serializers.BooleanField()
     assistant_name = serializers.CharField()
     welcome_message = serializers.CharField()
-    suggested_questions = serializers.ListField(child=serializers.CharField(), allow_empty=True)
+    suggested_questions = serializers.ListField(
+        child=serializers.CharField(), allow_empty=True
+    )
 
 
 class AssistantChatHistoryItemSerializer(serializers.Serializer):
@@ -1865,8 +2238,12 @@ class AssistantChatRequestSerializer(serializers.Serializer):
     message = serializers.CharField(allow_blank=False, max_length=1500)
     session_id = serializers.CharField(required=False, allow_blank=True, max_length=64)
     history = AssistantChatHistoryItemSerializer(many=True, required=False)
-    current_path = serializers.CharField(required=False, allow_blank=True, max_length=255)
-    current_title = serializers.CharField(required=False, allow_blank=True, max_length=120)
+    current_path = serializers.CharField(
+        required=False, allow_blank=True, max_length=255
+    )
+    current_title = serializers.CharField(
+        required=False, allow_blank=True, max_length=120
+    )
 
     def validate_message(self, value):
         value = (value or "").strip()

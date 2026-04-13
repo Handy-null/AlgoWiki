@@ -37,6 +37,8 @@ from .models import (
     SecurityAuditLog,
     TeamMember,
     TrickEntry,
+    TrickTerm,
+    TrickTermSuggestion,
     PasswordHistory,
     UserNotification,
     LoginAttempt,
@@ -257,7 +259,9 @@ class AuthApiTests(APITestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn("request_id", response.data)
-        self.assertEqual(response.headers.get("X-Request-ID"), response.data["request_id"])
+        self.assertEqual(
+            response.headers.get("X-Request-ID"), response.data["request_id"]
+        )
 
 
 class AuthSecurityHardeningTests(APITestCase):
@@ -346,7 +350,9 @@ class AuthSecurityHardeningTests(APITestCase):
 class CostControlApiTests(APITestCase):
     def setUp(self):
         cache.clear()
-        self.category = Category.objects.create(name="Cost Control", slug="cost-control")
+        self.category = Category.objects.create(
+            name="Cost Control", slug="cost-control"
+        )
         self.user = User.objects.create_user(
             username="cost_user",
             password="Password123",
@@ -372,11 +378,20 @@ class CostControlApiTests(APITestCase):
 
     def test_export_endpoints_are_disabled(self):
         article_pdf = self.client.get(f"/api/articles/{self.article.id}/export-pdf/")
-        article_markdown = self.client.get(f"/api/articles/{self.article.id}/export-markdown-bundle/")
+        article_markdown = self.client.get(
+            f"/api/articles/{self.article.id}/export-markdown-bundle/"
+        )
         collection_pdf = self.client.get("/api/articles/export-collection-pdf/")
-        collection_markdown = self.client.get("/api/articles/export-collection-markdown-bundle/")
+        collection_markdown = self.client.get(
+            "/api/articles/export-collection-markdown-bundle/"
+        )
 
-        for response in (article_pdf, article_markdown, collection_pdf, collection_markdown):
+        for response in (
+            article_pdf,
+            article_markdown,
+            collection_pdf,
+            collection_markdown,
+        ):
             self.assertEqual(response.status_code, 404)
             self.assertIn("disabled", response.data["detail"].lower())
 
@@ -390,7 +405,9 @@ class CostControlApiTests(APITestCase):
             for _ in range(4)
         ]
 
-        self.assertEqual([response.status_code for response in responses[:3]], [200, 200, 200])
+        self.assertEqual(
+            [response.status_code for response in responses[:3]], [200, 200, 200]
+        )
         self.assertEqual(responses[3].status_code, 429)
 
     def test_question_submission_is_rate_limited(self):
@@ -399,13 +416,19 @@ class CostControlApiTests(APITestCase):
         responses = [
             self.client.post(
                 "/api/questions/",
-                {"title": f"Q{index}", "content_md": "body", "category": self.category.id},
+                {
+                    "title": f"Q{index}",
+                    "content_md": "body",
+                    "category": self.category.id,
+                },
                 format="json",
             )
             for index in range(1, 5)
         ]
 
-        self.assertEqual([response.status_code for response in responses[:3]], [201, 201, 201])
+        self.assertEqual(
+            [response.status_code for response in responses[:3]], [201, 201, 201]
+        )
         self.assertEqual(responses[3].status_code, 429)
 
     def test_question_update_is_rate_limited(self):
@@ -420,7 +443,9 @@ class CostControlApiTests(APITestCase):
             for index in range(1, 5)
         ]
 
-        self.assertEqual([response.status_code for response in responses[:3]], [200, 200, 200])
+        self.assertEqual(
+            [response.status_code for response in responses[:3]], [200, 200, 200]
+        )
         self.assertEqual(responses[3].status_code, 429)
 
 
@@ -439,7 +464,9 @@ class ImageUploadApiTests(APITestCase):
         )
         self.admin_token = Token.objects.create(user=self.admin)
         self.temp_media_dir = tempfile.TemporaryDirectory()
-        self.override = override_settings(MEDIA_ROOT=self.temp_media_dir.name, MEDIA_URL="/media/")
+        self.override = override_settings(
+            MEDIA_ROOT=self.temp_media_dir.name, MEDIA_URL="/media/"
+        )
         self.override.enable()
 
     def tearDown(self):
@@ -455,7 +482,9 @@ class ImageUploadApiTests(APITestCase):
             b"\xa2\x00\x00\x00\x00IEND\xaeB`\x82"
         )
         upload = SimpleUploadedFile("tiny.png", image_bytes, content_type="image/png")
-        response = self.client.post("/api/uploads/image/", {"image": upload}, format="multipart")
+        response = self.client.post(
+            "/api/uploads/image/", {"image": upload}, format="multipart"
+        )
         self.assertEqual(response.status_code, 403)
         self.assertIn("Only admins can upload images", response.data["detail"])
 
@@ -468,7 +497,9 @@ class ImageUploadApiTests(APITestCase):
             b"\xa2\x00\x00\x00\x00IEND\xaeB`\x82"
         )
         upload = SimpleUploadedFile("tiny.png", image_bytes, content_type="image/png")
-        response = self.client.post("/api/uploads/image/", {"image": upload}, format="multipart")
+        response = self.client.post(
+            "/api/uploads/image/", {"image": upload}, format="multipart"
+        )
         self.assertEqual(response.status_code, 201)
         self.assertIn("url", response.data)
         self.assertIn("/media/wiki-uploads/", response.data["url"])
@@ -480,8 +511,12 @@ class ImageUploadApiTests(APITestCase):
 
     def test_upload_rejects_non_image_extension(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
-        bad_file = SimpleUploadedFile("notes.txt", b"not-image", content_type="text/plain")
-        response = self.client.post("/api/uploads/image/", {"image": bad_file}, format="multipart")
+        bad_file = SimpleUploadedFile(
+            "notes.txt", b"not-image", content_type="text/plain"
+        )
+        response = self.client.post(
+            "/api/uploads/image/", {"image": bad_file}, format="multipart"
+        )
         self.assertEqual(response.status_code, 400)
         self.assertIn("image", response.data)
 
@@ -497,10 +532,14 @@ class DeploymentAccessTests(APITestCase):
         self.assertIn("storage", response.data)
         self.assertIn("media", response.data)
         self.assertTrue(response.headers.get("X-Request-ID"))
-        self.assertEqual(response.headers.get("X-Request-ID"), response.data["request_id"])
+        self.assertEqual(
+            response.headers.get("X-Request-ID"), response.data["request_id"]
+        )
 
     def test_health_endpoint_uses_client_request_id_header(self):
-        response = self.client.get("/api/health/", HTTP_X_REQUEST_ID="manual-health-check")
+        response = self.client.get(
+            "/api/health/", HTTP_X_REQUEST_ID="manual-health-check"
+        )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["request_id"], "manual-health-check")
@@ -509,11 +548,17 @@ class DeploymentAccessTests(APITestCase):
     def test_frontend_dist_is_served_when_enabled(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             dist_dir = Path(temp_dir)
-            (dist_dir / "index.html").write_text("<html><body>algowiki frontend</body></html>", encoding="utf-8")
+            (dist_dir / "index.html").write_text(
+                "<html><body>algowiki frontend</body></html>", encoding="utf-8"
+            )
             (dist_dir / "assets").mkdir()
-            (dist_dir / "assets" / "app.js").write_text("console.log('algowiki');", encoding="utf-8")
+            (dist_dir / "assets" / "app.js").write_text(
+                "console.log('algowiki');", encoding="utf-8"
+            )
 
-            with override_settings(SERVE_FRONTEND=True, FRONTEND_DIST_DIR=str(dist_dir)):
+            with override_settings(
+                SERVE_FRONTEND=True, FRONTEND_DIST_DIR=str(dist_dir)
+            ):
                 root_response = self.client.get("/")
                 asset_response = self.client.get("/assets/app.js")
                 root_body = b"".join(root_response.streaming_content)
@@ -574,7 +619,9 @@ class SecurityAuditEndpointTests(APITestCase):
         items = response.data.get("results", response.data)
         self.assertTrue(items)
         for item in items:
-            self.assertEqual(item["event_type"], SecurityAuditLog.EventType.LOGIN_FAILED)
+            self.assertEqual(
+                item["event_type"], SecurityAuditLog.EventType.LOGIN_FAILED
+            )
             self.assertFalse(item["success"])
 
     def test_security_logs_detail_and_ip_filters(self):
@@ -586,7 +633,9 @@ class SecurityAuditEndpointTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         items = response.data.get("results", response.data)
         self.assertEqual(len(items), 1)
-        self.assertEqual(items[0]["event_type"], SecurityAuditLog.EventType.LOGIN_FAILED)
+        self.assertEqual(
+            items[0]["event_type"], SecurityAuditLog.EventType.LOGIN_FAILED
+        )
 
     def test_admin_can_export_security_logs(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
@@ -660,7 +709,9 @@ class SeedCommandTests(APITestCase):
             "## 二级章节\n"
             "二级正文\n"
         )
-        tmp_file = tempfile.NamedTemporaryFile("w", suffix=".md", encoding="utf-8", delete=False)
+        tmp_file = tempfile.NamedTemporaryFile(
+            "w", suffix=".md", encoding="utf-8", delete=False
+        )
         try:
             tmp_file.write(markdown)
             tmp_file.close()
@@ -723,16 +774,22 @@ class SeedCommandTests(APITestCase):
             skip_demo_users=True,
         )
 
-        self.assertTrue(TeamMember.objects.filter(display_id="Null_Resot", is_active=True).exists())
+        self.assertTrue(
+            TeamMember.objects.filter(display_id="Null_Resot", is_active=True).exists()
+        )
         self.assertGreaterEqual(FriendlyLink.objects.filter(is_enabled=True).count(), 6)
-        self.assertGreaterEqual(CompetitionNotice.objects.filter(is_visible=True).count(), 4)
+        self.assertGreaterEqual(
+            CompetitionNotice.objects.filter(is_visible=True).count(), 4
+        )
         self.assertGreaterEqual(CompetitionScheduleEntry.objects.count(), 4)
         self.assertGreaterEqual(
             TrickEntry.objects.filter(status=TrickEntry.Status.APPROVED).count(),
             2,
         )
 
-    def test_seed_xcpc_reference_content_syncs_bundled_snapshot_and_prunes_stale_articles(self):
+    def test_seed_xcpc_reference_content_syncs_bundled_snapshot_and_prunes_stale_articles(
+        self,
+    ):
         call_command(
             "seed_initial_data",
             superadmin_username="seed_xcpc_admin",
@@ -772,9 +829,15 @@ class RolePermissionTests(APITestCase):
             moderation_scope=Category.ModerationScope.SCHOOL,
         )
 
-        self.normal_user = User.objects.create_user(username="normal", password="Password123", role=User.Role.NORMAL)
-        self.school_user = User.objects.create_user(username="school", password="Password123", role=User.Role.SCHOOL)
-        self.admin_user = User.objects.create_user(username="admin", password="Password123", role=User.Role.ADMIN)
+        self.normal_user = User.objects.create_user(
+            username="normal", password="Password123", role=User.Role.NORMAL
+        )
+        self.school_user = User.objects.create_user(
+            username="school", password="Password123", role=User.Role.SCHOOL
+        )
+        self.admin_user = User.objects.create_user(
+            username="admin", password="Password123", role=User.Role.ADMIN
+        )
 
         self.normal_token = Token.objects.create(user=self.normal_user)
         self.school_token = Token.objects.create(user=self.school_user)
@@ -900,9 +963,13 @@ class StarFlowTests(APITestCase):
     def setUp(self):
         self.category = Category.objects.create(name="DS", slug="ds")
         self.other_category = Category.objects.create(name="Math", slug="math")
-        self.user = User.objects.create_user(username="u1", password="Password123", role=User.Role.NORMAL)
+        self.user = User.objects.create_user(
+            username="u1", password="Password123", role=User.Role.NORMAL
+        )
         self.token = Token.objects.create(user=self.user)
-        self.author = User.objects.create_user(username="author", password="Password123", role=User.Role.ADMIN)
+        self.author = User.objects.create_user(
+            username="author", password="Password123", role=User.Role.ADMIN
+        )
         self.article = Article.objects.create(
             title="A1",
             summary="s",
@@ -932,11 +999,16 @@ class StarFlowTests(APITestCase):
 
         response_starred = self.client.get("/api/articles/starred/")
         self.assertEqual(response_starred.status_code, 200)
-        ids = {item["id"] for item in response_starred.data.get("results", response_starred.data)}
+        ids = {
+            item["id"]
+            for item in response_starred.data.get("results", response_starred.data)
+        }
         self.assertEqual(ids, set())
 
     def test_starred_endpoint_returns_only_current_user_collection(self):
-        other_user = User.objects.create_user(username="u2", password="Password123", role=User.Role.NORMAL)
+        other_user = User.objects.create_user(
+            username="u2", password="Password123", role=User.Role.NORMAL
+        )
         other_token = Token.objects.create(user=other_user)
 
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
@@ -950,7 +1022,10 @@ class StarFlowTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {other_token.key}")
         other_response = self.client.get("/api/articles/starred/")
         self.assertEqual(other_response.status_code, 200)
-        other_ids = {item["id"] for item in other_response.data.get("results", other_response.data)}
+        other_ids = {
+            item["id"]
+            for item in other_response.data.get("results", other_response.data)
+        }
         self.assertEqual(other_ids, set())
 
     def test_starred_endpoint_requires_authentication(self):
@@ -964,12 +1039,20 @@ class StarFlowTests(APITestCase):
 
         search_response = self.client.get("/api/articles/starred/", {"search": "math"})
         self.assertEqual(search_response.status_code, 200)
-        search_ids = {item["id"] for item in search_response.data.get("results", search_response.data)}
+        search_ids = {
+            item["id"]
+            for item in search_response.data.get("results", search_response.data)
+        }
         self.assertEqual(search_ids, {self.article2.id})
 
-        category_response = self.client.get("/api/articles/starred/", {"category": self.category.slug})
+        category_response = self.client.get(
+            "/api/articles/starred/", {"category": self.category.slug}
+        )
         self.assertEqual(category_response.status_code, 200)
-        category_ids = {item["id"] for item in category_response.data.get("results", category_response.data)}
+        category_ids = {
+            item["id"]
+            for item in category_response.data.get("results", category_response.data)
+        }
         self.assertEqual(category_ids, {self.article.id})
 
     def test_starred_endpoint_orders_by_recent_star_time(self):
@@ -987,10 +1070,18 @@ class StarFlowTests(APITestCase):
 class ArticleContributorApiTests(APITestCase):
     def setUp(self):
         self.category = Category.objects.create(name="Wiki", slug="wiki")
-        self.creator = User.objects.create_user(username="creator", password="Password123", role=User.Role.ADMIN)
-        self.alice = User.objects.create_user(username="alice", password="Password123", role=User.Role.NORMAL)
-        self.bob = User.objects.create_user(username="bob", password="Password123", role=User.Role.NORMAL)
-        self.reviewer = User.objects.create_user(username="reviewer", password="Password123", role=User.Role.ADMIN)
+        self.creator = User.objects.create_user(
+            username="creator", password="Password123", role=User.Role.ADMIN
+        )
+        self.alice = User.objects.create_user(
+            username="alice", password="Password123", role=User.Role.NORMAL
+        )
+        self.bob = User.objects.create_user(
+            username="bob", password="Password123", role=User.Role.NORMAL
+        )
+        self.reviewer = User.objects.create_user(
+            username="reviewer", password="Password123", role=User.Role.ADMIN
+        )
 
         self.article = Article.objects.create(
             title="Contributors Article",
@@ -1080,7 +1171,10 @@ class ArticleContributorApiTests(APITestCase):
         self.assertEqual(response.status_code, 200)
 
         contributors = response.data["contributors"]
-        self.assertEqual([item["user"]["username"] for item in contributors], ["creator", "alice", "bob"])
+        self.assertEqual(
+            [item["user"]["username"] for item in contributors],
+            ["creator", "alice", "bob"],
+        )
 
         def parse_api_datetime(value):
             return timezone.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
@@ -1092,28 +1186,46 @@ class ArticleContributorApiTests(APITestCase):
         creator_payload = contributors[0]
         self.assertTrue(creator_payload["is_creator"])
         self.assertEqual(creator_payload["approved_revision_count"], 0)
-        assert_api_datetime_equal(creator_payload["first_contributed_at"], self.creator_time)
-        assert_api_datetime_equal(creator_payload["last_contributed_at"], self.creator_time)
+        assert_api_datetime_equal(
+            creator_payload["first_contributed_at"], self.creator_time
+        )
+        assert_api_datetime_equal(
+            creator_payload["last_contributed_at"], self.creator_time
+        )
 
         alice_payload = contributors[1]
         self.assertFalse(alice_payload["is_creator"])
         self.assertEqual(alice_payload["approved_revision_count"], 2)
-        assert_api_datetime_equal(alice_payload["first_contributed_at"], self.alice_first_time)
-        assert_api_datetime_equal(alice_payload["last_contributed_at"], self.alice_second_time)
+        assert_api_datetime_equal(
+            alice_payload["first_contributed_at"], self.alice_first_time
+        )
+        assert_api_datetime_equal(
+            alice_payload["last_contributed_at"], self.alice_second_time
+        )
 
         bob_payload = contributors[2]
         self.assertFalse(bob_payload["is_creator"])
         self.assertEqual(bob_payload["approved_revision_count"], 1)
-        assert_api_datetime_equal(bob_payload["first_contributed_at"], self.bob_approved_time)
-        assert_api_datetime_equal(bob_payload["last_contributed_at"], self.bob_approved_time)
+        assert_api_datetime_equal(
+            bob_payload["first_contributed_at"], self.bob_approved_time
+        )
+        assert_api_datetime_equal(
+            bob_payload["last_contributed_at"], self.bob_approved_time
+        )
 
 
 class QuestionSecurityTests(APITestCase):
     def setUp(self):
         self.category = Category.objects.create(name="Basic", slug="basic")
-        self.author = User.objects.create_user(username="author2", password="Password123", role=User.Role.NORMAL)
-        self.other = User.objects.create_user(username="other2", password="Password123", role=User.Role.NORMAL)
-        self.admin = User.objects.create_user(username="admin_q", password="Password123", role=User.Role.ADMIN)
+        self.author = User.objects.create_user(
+            username="author2", password="Password123", role=User.Role.NORMAL
+        )
+        self.other = User.objects.create_user(
+            username="other2", password="Password123", role=User.Role.NORMAL
+        )
+        self.admin = User.objects.create_user(
+            username="admin_q", password="Password123", role=User.Role.ADMIN
+        )
         self.author_token = Token.objects.create(user=self.author)
         self.other_token = Token.objects.create(user=self.other)
         self.admin_token = Token.objects.create(user=self.admin)
@@ -1144,15 +1256,24 @@ class QuestionSecurityTests(APITestCase):
         self.assertEqual(self.question.status, Question.Status.HIDDEN)
 
         list_response = self.client.get("/api/questions/")
-        list_ids = {item["id"] for item in list_response.data.get("results", list_response.data)}
+        list_ids = {
+            item["id"] for item in list_response.data.get("results", list_response.data)
+        }
         self.assertNotIn(self.question.id, list_ids)
 
         mine_response = self.client.get("/api/questions/", {"mine": "1"})
-        mine_ids = {item["id"] for item in mine_response.data.get("results", mine_response.data)}
+        mine_ids = {
+            item["id"] for item in mine_response.data.get("results", mine_response.data)
+        }
         self.assertNotIn(self.question.id, mine_ids)
 
-        deleted_response = self.client.get("/api/questions/", {"mine": "1", "status": Question.Status.HIDDEN})
-        deleted_ids = {item["id"] for item in deleted_response.data.get("results", deleted_response.data)}
+        deleted_response = self.client.get(
+            "/api/questions/", {"mine": "1", "status": Question.Status.HIDDEN}
+        )
+        deleted_ids = {
+            item["id"]
+            for item in deleted_response.data.get("results", deleted_response.data)
+        }
         self.assertIn(self.question.id, deleted_ids)
 
     def test_owner_can_restore_hidden_question_back_to_pending(self):
@@ -1160,7 +1281,9 @@ class QuestionSecurityTests(APITestCase):
         self.question.save(update_fields=["status", "updated_at"])
 
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.author_token.key}")
-        response = self.client.post(f"/api/questions/{self.question.id}/restore/", format="json")
+        response = self.client.post(
+            f"/api/questions/{self.question.id}/restore/", format="json"
+        )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["status"], Question.Status.PENDING)
 
@@ -1170,7 +1293,9 @@ class QuestionSecurityTests(APITestCase):
     def test_hidden_question_archive_keeps_latest_thirty_for_owner(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.author_token.key}")
 
-        Question.objects.filter(id=self.question.id).update(status=Question.Status.HIDDEN)
+        Question.objects.filter(id=self.question.id).update(
+            status=Question.Status.HIDDEN
+        )
         for index in range(35):
             Question.objects.create(
                 title=f"Hidden {index}",
@@ -1180,12 +1305,17 @@ class QuestionSecurityTests(APITestCase):
                 status=Question.Status.HIDDEN,
             )
 
-        response = self.client.get("/api/questions/", {"mine": "1", "status": Question.Status.HIDDEN})
+        response = self.client.get(
+            "/api/questions/", {"mine": "1", "status": Question.Status.HIDDEN}
+        )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["count"], 30)
         items = list(response.data.get("results", response.data))
         if response.data.get("next"):
-            page2 = self.client.get("/api/questions/", {"mine": "1", "status": Question.Status.HIDDEN, "page": 2})
+            page2 = self.client.get(
+                "/api/questions/",
+                {"mine": "1", "status": Question.Status.HIDDEN, "page": 2},
+            )
             self.assertEqual(page2.status_code, 200)
             items.extend(page2.data.get("results", page2.data))
         self.assertEqual(len(items), 30)
@@ -1212,18 +1342,28 @@ class QuestionSecurityTests(APITestCase):
         ids = {item["id"] for item in response.data.get("results", response.data)}
         self.assertEqual(ids, {self.question.id})
 
-    def test_manager_default_question_list_hides_hidden_questions_but_allows_hidden_filter(self):
+    def test_manager_default_question_list_hides_hidden_questions_but_allows_hidden_filter(
+        self,
+    ):
         self.question.status = Question.Status.HIDDEN
         self.question.save(update_fields=["status", "updated_at"])
 
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
 
         default_response = self.client.get("/api/questions/")
-        default_ids = {item["id"] for item in default_response.data.get("results", default_response.data)}
+        default_ids = {
+            item["id"]
+            for item in default_response.data.get("results", default_response.data)
+        }
         self.assertNotIn(self.question.id, default_ids)
 
-        hidden_response = self.client.get("/api/questions/", {"status": Question.Status.HIDDEN})
-        hidden_ids = {item["id"] for item in hidden_response.data.get("results", hidden_response.data)}
+        hidden_response = self.client.get(
+            "/api/questions/", {"status": Question.Status.HIDDEN}
+        )
+        hidden_ids = {
+            item["id"]
+            for item in hidden_response.data.get("results", hidden_response.data)
+        }
         self.assertIn(self.question.id, hidden_ids)
 
     def test_manager_can_filter_questions_by_author(self):
@@ -1237,7 +1377,11 @@ class QuestionSecurityTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.author_token.key}")
         create_response = self.client.post(
             "/api/questions/",
-            {"title": "Pending question", "content_md": "please review", "category": self.category.id},
+            {
+                "title": "Pending question",
+                "content_md": "please review",
+                "category": self.category.id,
+            },
             format="json",
         )
         self.assertEqual(create_response.status_code, 201)
@@ -1246,21 +1390,31 @@ class QuestionSecurityTests(APITestCase):
 
         self.client.credentials()
         public_response = self.client.get("/api/questions/")
-        public_ids = {item["id"] for item in public_response.data.get("results", public_response.data)}
+        public_ids = {
+            item["id"]
+            for item in public_response.data.get("results", public_response.data)
+        }
         self.assertNotIn(question_id, public_ids)
 
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.author_token.key}")
         own_response = self.client.get("/api/questions/")
-        own_ids = {item["id"] for item in own_response.data.get("results", own_response.data)}
+        own_ids = {
+            item["id"] for item in own_response.data.get("results", own_response.data)
+        }
         self.assertIn(question_id, own_ids)
 
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
-        approve_response = self.client.post(f"/api/questions/{question_id}/approve/", format="json")
+        approve_response = self.client.post(
+            f"/api/questions/{question_id}/approve/", format="json"
+        )
         self.assertEqual(approve_response.status_code, 200)
 
         self.client.credentials()
         visible_response = self.client.get("/api/questions/")
-        visible_ids = {item["id"] for item in visible_response.data.get("results", visible_response.data)}
+        visible_ids = {
+            item["id"]
+            for item in visible_response.data.get("results", visible_response.data)
+        }
         self.assertIn(question_id, visible_ids)
 
     def test_author_editing_visible_question_reverts_to_pending(self):
@@ -1278,7 +1432,10 @@ class QuestionSecurityTests(APITestCase):
 
         self.client.credentials()
         public_response = self.client.get("/api/questions/")
-        public_ids = {item["id"] for item in public_response.data.get("results", public_response.data)}
+        public_ids = {
+            item["id"]
+            for item in public_response.data.get("results", public_response.data)
+        }
         self.assertNotIn(self.question.id, public_ids)
 
 
@@ -1329,22 +1486,39 @@ class AnswerModerationTests(APITestCase):
         answer_id = create_response.data["id"]
 
         self.client.credentials()
-        public_response = self.client.get("/api/answers/", {"question": self.question.id})
-        public_ids = {item["id"] for item in public_response.data.get("results", public_response.data)}
+        public_response = self.client.get(
+            "/api/answers/", {"question": self.question.id}
+        )
+        public_ids = {
+            item["id"]
+            for item in public_response.data.get("results", public_response.data)
+        }
         self.assertNotIn(answer_id, public_ids)
 
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.responder_token.key}")
-        owner_response = self.client.get("/api/answers/", {"question": self.question.id})
-        owner_ids = {item["id"] for item in owner_response.data.get("results", owner_response.data)}
+        owner_response = self.client.get(
+            "/api/answers/", {"question": self.question.id}
+        )
+        owner_ids = {
+            item["id"]
+            for item in owner_response.data.get("results", owner_response.data)
+        }
         self.assertIn(answer_id, owner_ids)
 
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
-        approve_response = self.client.post(f"/api/answers/{answer_id}/approve/", format="json")
+        approve_response = self.client.post(
+            f"/api/answers/{answer_id}/approve/", format="json"
+        )
         self.assertEqual(approve_response.status_code, 200)
 
         self.client.credentials()
-        visible_response = self.client.get("/api/answers/", {"question": self.question.id})
-        visible_ids = {item["id"] for item in visible_response.data.get("results", visible_response.data)}
+        visible_response = self.client.get(
+            "/api/answers/", {"question": self.question.id}
+        )
+        visible_ids = {
+            item["id"]
+            for item in visible_response.data.get("results", visible_response.data)
+        }
         self.assertIn(answer_id, visible_ids)
 
     def test_author_editing_visible_answer_reverts_to_pending(self):
@@ -1361,18 +1535,29 @@ class AnswerModerationTests(APITestCase):
         self.assertEqual(self.answer.status, Answer.Status.PENDING)
 
         self.client.credentials()
-        public_response = self.client.get("/api/answers/", {"question": self.question.id})
-        public_ids = {item["id"] for item in public_response.data.get("results", public_response.data)}
+        public_response = self.client.get(
+            "/api/answers/", {"question": self.question.id}
+        )
+        public_ids = {
+            item["id"]
+            for item in public_response.data.get("results", public_response.data)
+        }
         self.assertNotIn(self.answer.id, public_ids)
 
 
 class ArticleCommentFlowTests(APITestCase):
     def setUp(self):
         self.category = Category.objects.create(name="Comment", slug="comment")
-        self.author = User.objects.create_user(username="article_author", password="Password123", role=User.Role.ADMIN)
+        self.author = User.objects.create_user(
+            username="article_author", password="Password123", role=User.Role.ADMIN
+        )
         self.author_token = Token.objects.create(user=self.author)
-        self.user = User.objects.create_user(username="comment_user", password="Password123", role=User.Role.NORMAL)
-        self.other = User.objects.create_user(username="comment_other", password="Password123", role=User.Role.NORMAL)
+        self.user = User.objects.create_user(
+            username="comment_user", password="Password123", role=User.Role.NORMAL
+        )
+        self.other = User.objects.create_user(
+            username="comment_other", password="Password123", role=User.Role.NORMAL
+        )
         self.token = Token.objects.create(user=self.user)
         self.other_token = Token.objects.create(user=self.other)
         self.article_a = Article.objects.create(
@@ -1466,15 +1651,29 @@ class ArticleCommentFlowTests(APITestCase):
         pending_id = create_response.data["id"]
 
         self.client.credentials()
-        public_list_response = self.client.get("/api/comments/", {"article": self.article_a.id})
+        public_list_response = self.client.get(
+            "/api/comments/", {"article": self.article_a.id}
+        )
         self.assertEqual(public_list_response.status_code, 200)
-        public_ids = {item["id"] for item in public_list_response.data.get("results", public_list_response.data)}
+        public_ids = {
+            item["id"]
+            for item in public_list_response.data.get(
+                "results", public_list_response.data
+            )
+        }
         self.assertNotIn(pending_id, public_ids)
 
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
-        owner_list_response = self.client.get("/api/comments/", {"article": self.article_a.id})
+        owner_list_response = self.client.get(
+            "/api/comments/", {"article": self.article_a.id}
+        )
         self.assertEqual(owner_list_response.status_code, 200)
-        owner_ids = {item["id"] for item in owner_list_response.data.get("results", owner_list_response.data)}
+        owner_ids = {
+            item["id"]
+            for item in owner_list_response.data.get(
+                "results", owner_list_response.data
+            )
+        }
         self.assertIn(pending_id, owner_ids)
 
     def test_admin_can_approve_pending_comment(self):
@@ -1485,7 +1684,9 @@ class ArticleCommentFlowTests(APITestCase):
             status=ArticleComment.Status.PENDING,
         )
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.author_token.key}")
-        response = self.client.post(f"/api/comments/{pending.id}/approve/", {"review_note": "ok"}, format="json")
+        response = self.client.post(
+            f"/api/comments/{pending.id}/approve/", {"review_note": "ok"}, format="json"
+        )
         self.assertEqual(response.status_code, 200)
         pending.refresh_from_db()
         self.assertEqual(pending.status, ArticleComment.Status.VISIBLE)
@@ -1555,8 +1756,13 @@ class ArticleCommentFlowTests(APITestCase):
         self.assertEqual(self.parent.status, ArticleComment.Status.PENDING)
 
         self.client.credentials()
-        public_response = self.client.get("/api/comments/", {"article": self.article_a.id})
-        public_ids = {item["id"] for item in public_response.data.get("results", public_response.data)}
+        public_response = self.client.get(
+            "/api/comments/", {"article": self.article_a.id}
+        )
+        public_ids = {
+            item["id"]
+            for item in public_response.data.get("results", public_response.data)
+        }
         self.assertNotIn(self.parent.id, public_ids)
 
 
@@ -1678,7 +1884,9 @@ class ProfileAndMineEndpointsTests(APITestCase):
         self.assertIsNotNone(match)
         return match.group(1)
 
-    def request_and_confirm_password_change(self, *, token: str, old_password: str, new_password: str):
+    def request_and_confirm_password_change(
+        self, *, token: str, old_password: str, new_password: str
+    ):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {token}")
         code_response = self.client.post(
             "/api/me/change-password-code/",
@@ -1719,9 +1927,15 @@ class ProfileAndMineEndpointsTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("profile_settings", response.data)
         self.assertEqual(response.data["user"]["school_name"], "Algo University")
-        self.assertEqual(response.data["user"]["bio"], "Competitive programming learner")
-        self.assertEqual(response.data["user"]["avatar_url"], "https://example.com/avatar.png")
-        self.assertEqual(response.data["profile_settings"]["school_name"], "Algo University")
+        self.assertEqual(
+            response.data["user"]["bio"], "Competitive programming learner"
+        )
+        self.assertEqual(
+            response.data["user"]["avatar_url"], "https://example.com/avatar.png"
+        )
+        self.assertEqual(
+            response.data["profile_settings"]["school_name"], "Algo University"
+        )
         self.user.refresh_from_db()
         self.assertEqual(self.user.school_name, "Algo University")
         self.assertEqual(self.user.bio, "Competitive programming learner")
@@ -1736,10 +1950,16 @@ class ProfileAndMineEndpointsTests(APITestCase):
         response = self.client.get("/api/me/")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["user"]["school_name"], "Algo University")
-        self.assertEqual(response.data["user"]["bio"], "Competitive programming learner")
-        self.assertEqual(response.data["user"]["avatar_url"], "https://example.com/avatar.png")
+        self.assertEqual(
+            response.data["user"]["bio"], "Competitive programming learner"
+        )
+        self.assertEqual(
+            response.data["user"]["avatar_url"], "https://example.com/avatar.png"
+        )
         self.assertIn("profile_settings", response.data)
-        self.assertEqual(response.data["profile_settings"]["email"], "student@example.com")
+        self.assertEqual(
+            response.data["profile_settings"]["email"], "student@example.com"
+        )
         self.assertFalse(response.data["profile_settings"]["email_verified"])
 
     def test_public_question_author_profile_fields_are_hidden(self):
@@ -1751,7 +1971,9 @@ class ProfileAndMineEndpointsTests(APITestCase):
         response = self.client.get("/api/questions/")
         self.assertEqual(response.status_code, 200)
         items = response.data.get("results", response.data)
-        question_payload = next(item for item in items if item["id"] == self.other_question.id)
+        question_payload = next(
+            item for item in items if item["id"] == self.other_question.id
+        )
 
         self.assertEqual(question_payload["author"]["username"], self.other.username)
         self.assertEqual(question_payload["author"]["school_name"], "")
@@ -1830,11 +2052,19 @@ class ProfileAndMineEndpointsTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
 
         default_response = self.client.get("/api/questions/mine/")
-        default_ids = {item["id"] for item in default_response.data.get("results", default_response.data)}
+        default_ids = {
+            item["id"]
+            for item in default_response.data.get("results", default_response.data)
+        }
         self.assertNotIn(self.my_question.id, default_ids)
 
-        hidden_response = self.client.get("/api/questions/mine/", {"status": Question.Status.HIDDEN})
-        hidden_ids = {item["id"] for item in hidden_response.data.get("results", hidden_response.data)}
+        hidden_response = self.client.get(
+            "/api/questions/mine/", {"status": Question.Status.HIDDEN}
+        )
+        hidden_ids = {
+            item["id"]
+            for item in hidden_response.data.get("results", hidden_response.data)
+        }
         self.assertIn(self.my_question.id, hidden_ids)
 
     def test_change_password_rotates_token_and_accepts_new_password(self):
@@ -1928,7 +2158,9 @@ class ProfileAndMineEndpointsTests(APITestCase):
 
         self.assertEqual(third_change.status_code, 400)
         self.assertIn("Cannot reuse recent password.", str(third_change.data))
-        self.assertGreaterEqual(PasswordHistory.objects.filter(user=self.user).count(), 2)
+        self.assertGreaterEqual(
+            PasswordHistory.objects.filter(user=self.user).count(), 2
+        )
 
     def test_mine_events_endpoint_with_filter(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
@@ -2039,7 +2271,9 @@ class ProfileAndMineEndpointsTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
         response = self.client.delete(f"/api/revisions/{self.my_revision.id}/")
         self.assertEqual(response.status_code, 204)
-        self.assertFalse(RevisionProposal.objects.filter(id=self.my_revision.id).exists())
+        self.assertFalse(
+            RevisionProposal.objects.filter(id=self.my_revision.id).exists()
+        )
 
     def test_user_cannot_cancel_non_pending_revision(self):
         self.my_revision.status = RevisionProposal.Status.REJECTED
@@ -2047,7 +2281,9 @@ class ProfileAndMineEndpointsTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
         response = self.client.delete(f"/api/revisions/{self.my_revision.id}/")
         self.assertEqual(response.status_code, 400)
-        self.assertTrue(RevisionProposal.objects.filter(id=self.my_revision.id).exists())
+        self.assertTrue(
+            RevisionProposal.objects.filter(id=self.my_revision.id).exists()
+        )
 
     def test_revision_creation_rejects_more_than_five_pending_items(self):
         for index in range(4):
@@ -2128,12 +2364,15 @@ class ProfileAndMineEndpointsTests(APITestCase):
         self.assertEqual(response.data["status"], RevisionProposal.Status.APPROVED)
         self.revision_article.refresh_from_db()
         self.assertEqual(self.revision_article.summary, "")
-        self.assertEqual(self.revision_article.content_md, "content after clearing summary")
+        self.assertEqual(
+            self.revision_article.content_md, "content after clearing summary"
+        )
         self.assertEqual(self.revision_article.last_editor_id, admin.id)
 
 
 class TrickEntryFlowTests(APITestCase):
     def setUp(self):
+        cache.clear()
         self.user = User.objects.create_user(
             username="trick_user",
             password="Password123",
@@ -2171,6 +2410,10 @@ class TrickEntryFlowTests(APITestCase):
             author=self.user,
             status=TrickEntry.Status.REJECTED,
         )
+        self.term, _ = TrickTerm.objects.get_or_create(
+            name="树状数组",
+            defaults={"is_active": True, "is_builtin": True},
+        )
 
     def test_public_list_only_returns_approved_entries(self):
         response = self.client.get("/api/tricks/")
@@ -2197,6 +2440,7 @@ class TrickEntryFlowTests(APITestCase):
             "/api/tricks/",
             {
                 "content_md": "sample trick\\n\\n![img](/wiki-assets/debug.png)",
+                "term_ids": [self.term.id],
             },
             format="json",
         )
@@ -2204,6 +2448,8 @@ class TrickEntryFlowTests(APITestCase):
         self.assertEqual(response.data["author"]["username"], self.user.username)
         self.assertEqual(response.data["status"], TrickEntry.Status.PENDING)
         self.assertTrue(response.data["title"])
+        self.assertEqual(len(response.data.get("terms") or []), 1)
+        self.assertEqual(response.data["terms"][0]["id"], self.term.id)
 
     def test_admin_can_create_trick_entry_with_approved_status(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
@@ -2275,7 +2521,9 @@ class TrickEntryFlowTests(APITestCase):
 
     def test_admin_can_filter_pending_entries(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
-        response = self.client.get("/api/tricks/", {"include_all": 1, "status": TrickEntry.Status.PENDING})
+        response = self.client.get(
+            "/api/tricks/", {"include_all": 1, "status": TrickEntry.Status.PENDING}
+        )
         self.assertEqual(response.status_code, 200)
         items = response.data.get("results", response.data)
         ids = {item["id"] for item in items}
@@ -2283,15 +2531,104 @@ class TrickEntryFlowTests(APITestCase):
         self.assertNotIn(self.approved.id, ids)
         self.assertNotIn(self.rejected.id, ids)
 
+    def test_can_filter_tricks_by_term(self):
+        self.approved.terms.add(self.term)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
+        response = self.client.get("/api/tricks/", {"term": self.term.id})
+        self.assertEqual(response.status_code, 200)
+        items = response.data.get("results", response.data)
+        ids = {item["id"] for item in items}
+        self.assertIn(self.approved.id, ids)
+        self.assertNotIn(self.pending.id, ids)
+
+    def test_trick_can_submit_pending_terms_and_show_after_term_approved(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
+        create_resp = self.client.post(
+            "/api/tricks/",
+            {
+                "content_md": "pending term sample",
+                "pending_term_names": ["点分治专用"],
+            },
+            format="json",
+        )
+        self.assertEqual(create_resp.status_code, 201)
+        self.assertEqual(create_resp.data["terms"], [])
+
+        entry_id = create_resp.data["id"]
+        entry = TrickEntry.objects.get(pk=entry_id)
+        suggestion = TrickTermSuggestion.objects.get(normalized_name="点分治专用")
+        self.assertTrue(
+            entry.pending_term_suggestions.filter(pk=suggestion.pk).exists()
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
+        moderate_resp = self.client.post(
+            f"/api/trick-term-suggestions/{suggestion.id}/set-status/",
+            {"status": TrickTermSuggestion.Status.APPROVED},
+            format="json",
+        )
+        self.assertEqual(moderate_resp.status_code, 200)
+
+        entry.refresh_from_db()
+        self.assertTrue(entry.terms.filter(name="点分治专用").exists())
+        self.assertFalse(
+            entry.pending_term_suggestions.filter(pk=suggestion.pk).exists()
+        )
+
+
+class TrickTermSuggestionFlowTests(APITestCase):
+    def setUp(self):
+        cache.clear()
+        self.user = User.objects.create_user(
+            username="term_user", password="Password123", role=User.Role.NORMAL
+        )
+        self.admin = User.objects.create_user(
+            username="term_admin", password="Password123", role=User.Role.ADMIN
+        )
+        self.user_token = Token.objects.create(user=self.user)
+        self.admin_token = Token.objects.create(user=self.admin)
+
+    def test_authenticated_user_can_create_term_suggestion(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.user_token.key}")
+        response = self.client.post(
+            "/api/trick-term-suggestions/", {"name": "虚树"}, format="json"
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["status"], TrickTermSuggestion.Status.PENDING)
+
+    def test_admin_can_approve_term_suggestion_and_create_term(self):
+        suggestion = TrickTermSuggestion.objects.create(
+            name="点分治",
+            normalized_name="点分治",
+            proposer=self.user,
+            status=TrickTermSuggestion.Status.PENDING,
+        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
+        response = self.client.post(
+            f"/api/trick-term-suggestions/{suggestion.id}/set-status/",
+            {"status": TrickTermSuggestion.Status.APPROVED},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        suggestion.refresh_from_db()
+        self.assertEqual(suggestion.status, TrickTermSuggestion.Status.APPROVED)
+        self.assertTrue(TrickTerm.objects.filter(name="点分治").exists())
+
 
 class IssueTicketAdminTests(APITestCase):
     def setUp(self):
         self.category = Category.objects.create(name="Ops", slug="ops")
-        self.admin = User.objects.create_user(username="ticket_admin", password="Password123", role=User.Role.ADMIN)
+        self.admin = User.objects.create_user(
+            username="ticket_admin", password="Password123", role=User.Role.ADMIN
+        )
         self.admin_token = Token.objects.create(user=self.admin)
 
-        self.author_a = User.objects.create_user(username="ticket_author_a", password="Password123", role=User.Role.NORMAL)
-        self.author_b = User.objects.create_user(username="ticket_author_b", password="Password123", role=User.Role.NORMAL)
+        self.author_a = User.objects.create_user(
+            username="ticket_author_a", password="Password123", role=User.Role.NORMAL
+        )
+        self.author_b = User.objects.create_user(
+            username="ticket_author_b", password="Password123", role=User.Role.NORMAL
+        )
         self.author_a_token = Token.objects.create(user=self.author_a)
         self.author_b_token = Token.objects.create(user=self.author_b)
         self.school_assignee = User.objects.create_user(
@@ -2377,7 +2714,9 @@ class IssueTicketAdminTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.author_b_token.key}")
         list_response = self.client.get("/api/issues/")
         self.assertEqual(list_response.status_code, 200)
-        list_ids = {item["id"] for item in list_response.data.get("results", list_response.data)}
+        list_ids = {
+            item["id"] for item in list_response.data.get("results", list_response.data)
+        }
         self.assertIn(self.ticket_assigned.id, list_ids)
         self.assertIn(self.ticket_unassigned.id, list_ids)
         self.assertNotIn(pending_id, list_ids)
@@ -2393,14 +2732,21 @@ class IssueTicketAdminTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.author_b_token.key}")
         visible_response = self.client.get("/api/issues/")
         self.assertEqual(visible_response.status_code, 200)
-        visible_ids = {item["id"] for item in visible_response.data.get("results", visible_response.data)}
+        visible_ids = {
+            item["id"]
+            for item in visible_response.data.get("results", visible_response.data)
+        }
         self.assertIn(pending_id, visible_ids)
 
     def test_admin_can_filter_tickets_by_author_assignee(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
         response = self.client.get(
             "/api/issues/",
-            {"author": self.author_a.username, "assignee": self.school_assignee.id, "order": "created_oldest"},
+            {
+                "author": self.author_a.username,
+                "assignee": self.school_assignee.id,
+                "order": "created_oldest",
+            },
         )
         self.assertEqual(response.status_code, 200)
         ids = {item["id"] for item in response.data.get("results", response.data)}
@@ -2408,7 +2754,12 @@ class IssueTicketAdminTests(APITestCase):
 
         unassigned_response = self.client.get("/api/issues/", {"assignee": "none"})
         self.assertEqual(unassigned_response.status_code, 200)
-        unassigned_ids = {item["id"] for item in unassigned_response.data.get("results", unassigned_response.data)}
+        unassigned_ids = {
+            item["id"]
+            for item in unassigned_response.data.get(
+                "results", unassigned_response.data
+            )
+        }
         self.assertIn(self.ticket_unassigned.id, unassigned_ids)
         self.assertNotIn(self.ticket_assigned.id, unassigned_ids)
 
@@ -2417,7 +2768,11 @@ class IssueTicketAdminTests(APITestCase):
 
         assign_response = self.client.post(
             f"/api/issues/{self.ticket_unassigned.id}/set_status/",
-            {"status": "in_progress", "assign_to": self.school_assignee.id, "resolution_note": "accepted"},
+            {
+                "status": "in_progress",
+                "assign_to": self.school_assignee.id,
+                "resolution_note": "accepted",
+            },
             format="json",
         )
         self.assertEqual(assign_response.status_code, 200)
@@ -2459,7 +2814,9 @@ class IssueTicketAdminTests(APITestCase):
 
         list_response = self.client.get("/api/issues/", {"scope": "assigned"})
         self.assertEqual(list_response.status_code, 200)
-        list_ids = {item["id"] for item in list_response.data.get("results", list_response.data)}
+        list_ids = {
+            item["id"] for item in list_response.data.get("results", list_response.data)
+        }
         self.assertIn(self.ticket_assigned.id, list_ids)
         self.assertNotIn(self.ticket_unassigned.id, list_ids)
 
@@ -2514,7 +2871,9 @@ class IssueTicketAdminTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
         allowed = self.client.delete(f"/api/issues/{self.ticket_assigned.id}/")
         self.assertEqual(allowed.status_code, 204)
-        self.assertFalse(IssueTicket.objects.filter(id=self.ticket_assigned.id).exists())
+        self.assertFalse(
+            IssueTicket.objects.filter(id=self.ticket_assigned.id).exists()
+        )
 
     def test_bulk_set_status_updates_multiple_tickets_for_admin(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
@@ -2568,17 +2927,27 @@ class IssueTicketAdminTests(APITestCase):
 
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.author_a_token.key}")
         own_response = self.client.get("/api/issues/", {"mine": 1})
-        own_ids = {item["id"] for item in own_response.data.get("results", own_response.data)}
+        own_ids = {
+            item["id"] for item in own_response.data.get("results", own_response.data)
+        }
         self.assertIn(private_ticket.id, own_ids)
 
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.author_b_token.key}")
         other_response = self.client.get("/api/issues/", {"scope": "all"})
-        other_ids = {item["id"] for item in other_response.data.get("results", other_response.data)}
+        other_ids = {
+            item["id"]
+            for item in other_response.data.get("results", other_response.data)
+        }
         self.assertNotIn(private_ticket.id, other_ids)
 
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
-        admin_response = self.client.get("/api/issues/", {"visibility": IssueTicket.Visibility.PRIVATE})
-        admin_ids = {item["id"] for item in admin_response.data.get("results", admin_response.data)}
+        admin_response = self.client.get(
+            "/api/issues/", {"visibility": IssueTicket.Visibility.PRIVATE}
+        )
+        admin_ids = {
+            item["id"]
+            for item in admin_response.data.get("results", admin_response.data)
+        }
         self.assertIn(private_ticket.id, admin_ids)
 
     def test_visibility_filter_returns_expected_subset(self):
@@ -2598,7 +2967,9 @@ class IssueTicketAdminTests(APITestCase):
         )
         items = response.data.get("results", response.data)
         self.assertTrue(items)
-        self.assertTrue(all(item["visibility"] == IssueTicket.Visibility.PRIVATE for item in items))
+        self.assertTrue(
+            all(item["visibility"] == IssueTicket.Visibility.PRIVATE for item in items)
+        )
 
     def test_private_ticket_cannot_be_assigned_to_school_user(self):
         private_ticket = IssueTicket.objects.create(
@@ -2613,11 +2984,16 @@ class IssueTicketAdminTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
         response = self.client.post(
             f"/api/issues/{private_ticket.id}/set_status/",
-            {"status": IssueTicket.Status.IN_PROGRESS, "assign_to": self.school_assignee.id},
+            {
+                "status": IssueTicket.Status.IN_PROGRESS,
+                "assign_to": self.school_assignee.id,
+            },
             format="json",
         )
         self.assertEqual(response.status_code, 400)
-        self.assertIn("Private tickets can only be handled by admins.", str(response.data))
+        self.assertIn(
+            "Private tickets can only be handled by admins.", str(response.data)
+        )
 
     def test_author_cannot_switch_assigned_school_ticket_to_private(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.author_a_token.key}")
@@ -2628,15 +3004,21 @@ class IssueTicketAdminTests(APITestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.ticket_assigned.refresh_from_db()
-        self.assertEqual(self.ticket_assigned.visibility, IssueTicket.Visibility.PRIVATE)
+        self.assertEqual(
+            self.ticket_assigned.visibility, IssueTicket.Visibility.PRIVATE
+        )
         self.assertEqual(self.ticket_assigned.status, IssueTicket.Status.PENDING)
         self.assertIsNone(self.ticket_assigned.assignee_id)
 
 
 class CompetitionPracticeLinkApiTests(APITestCase):
     def setUp(self):
-        self.admin = User.objects.create_user(username="practice_admin", password="Password123", role=User.Role.ADMIN)
-        self.proposer = User.objects.create_user(username="practice_user", password="Password123", role=User.Role.NORMAL)
+        self.admin = User.objects.create_user(
+            username="practice_admin", password="Password123", role=User.Role.ADMIN
+        )
+        self.proposer = User.objects.create_user(
+            username="practice_user", password="Password123", role=User.Role.NORMAL
+        )
         self.admin_token = Token.objects.create(user=self.admin)
         self.proposer_token = Token.objects.create(user=self.proposer)
 
@@ -2666,7 +3048,9 @@ class CompetitionPracticeLinkApiTests(APITestCase):
             official_url="https://example.com/ccpc-qhd",
             event_date_text="2023-10-15",
             organizer="东北大学秦皇岛分校",
-            practice_links=[{"label": "GYM", "url": "https://codeforces.com/gym/104787"}],
+            practice_links=[
+                {"label": "GYM", "url": "https://codeforces.com/gym/104787"}
+            ],
             source_file="03 - CCPC.md",
             source_section="2023.9-2024 赛季 9th",
             display_order=2,
@@ -2685,7 +3069,9 @@ class CompetitionPracticeLinkApiTests(APITestCase):
         items = response.data.get("results", response.data)
         ids = {item["id"] for item in items}
         self.assertEqual(ids, {self.entry.id})
-        self.assertEqual(items[0]["practice_links_text"], "QOJ https://qoj.ac/contest/1797")
+        self.assertEqual(
+            items[0]["practice_links_text"], "QOJ https://qoj.ac/contest/1797"
+        )
 
         taxonomy = self.client.get("/api/competition-practice-links/taxonomy/")
         self.assertEqual(taxonomy.status_code, 200)
@@ -2712,7 +3098,9 @@ class CompetitionPracticeLinkApiTests(APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.data["status"], CompetitionPracticeLinkProposal.Status.PENDING)
+        self.assertEqual(
+            response.data["status"], CompetitionPracticeLinkProposal.Status.PENDING
+        )
         self.assertEqual(len(response.data["proposed_practice_links"]), 2)
 
     def test_admin_can_approve_proposal_and_update_entry(self):
@@ -2744,7 +3132,9 @@ class CompetitionPracticeLinkApiTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         proposal.refresh_from_db()
         self.entry.refresh_from_db()
-        self.assertEqual(proposal.status, CompetitionPracticeLinkProposal.Status.APPROVED)
+        self.assertEqual(
+            proposal.status, CompetitionPracticeLinkProposal.Status.APPROVED
+        )
         self.assertEqual(self.entry.short_name, "网络预选赛(I)")
         self.assertEqual(len(self.entry.practice_links), 2)
         self.assertTrue(
@@ -2757,15 +3147,23 @@ class CompetitionPracticeLinkApiTests(APITestCase):
 
     def test_admin_can_remove_entry(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
-        response = self.client.delete(f"/api/competition-practice-links/{self.entry.id}/remove/")
+        response = self.client.delete(
+            f"/api/competition-practice-links/{self.entry.id}/remove/"
+        )
         self.assertEqual(response.status_code, 204)
-        self.assertFalse(CompetitionPracticeLink.objects.filter(id=self.entry.id).exists())
+        self.assertFalse(
+            CompetitionPracticeLink.objects.filter(id=self.entry.id).exists()
+        )
 
     def test_normal_user_cannot_remove_entry(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.proposer_token.key}")
-        response = self.client.delete(f"/api/competition-practice-links/{self.entry.id}/remove/")
+        response = self.client.delete(
+            f"/api/competition-practice-links/{self.entry.id}/remove/"
+        )
         self.assertEqual(response.status_code, 403)
-        self.assertTrue(CompetitionPracticeLink.objects.filter(id=self.entry.id).exists())
+        self.assertTrue(
+            CompetitionPracticeLink.objects.filter(id=self.entry.id).exists()
+        )
 
     def test_import_command_loads_snapshot_json(self):
         snapshot = [
@@ -2780,26 +3178,40 @@ class CompetitionPracticeLinkApiTests(APITestCase):
                 "event_date": "2025-05-01",
                 "event_date_text": "2025-05-01",
                 "organizer": "Test Org",
-                "practice_links": [{"label": "GYM", "url": "https://codeforces.com/gym/123456"}],
+                "practice_links": [
+                    {"label": "GYM", "url": "https://codeforces.com/gym/123456"}
+                ],
                 "practice_links_note": "",
                 "source_file": "01 - 省赛与邀请赛.md",
                 "source_section": "测试赛季",
                 "display_order": 9,
             }
         ]
-        tmp_file = tempfile.NamedTemporaryFile("w", suffix=".json", encoding="utf-8", delete=False)
+        tmp_file = tempfile.NamedTemporaryFile(
+            "w", suffix=".json", encoding="utf-8", delete=False
+        )
         try:
             json.dump(snapshot, tmp_file, ensure_ascii=False)
             tmp_file.close()
-            call_command("import_competition_practice_links", snapshot=tmp_file.name, replace_missing=True)
-            self.assertTrue(CompetitionPracticeLink.objects.filter(source_key="manual-import-1").exists())
+            call_command(
+                "import_competition_practice_links",
+                snapshot=tmp_file.name,
+                replace_missing=True,
+            )
+            self.assertTrue(
+                CompetitionPracticeLink.objects.filter(
+                    source_key="manual-import-1"
+                ).exists()
+            )
         finally:
             Path(tmp_file.name).unlink(missing_ok=True)
 
 
 class UserManagementRecoveryTests(APITestCase):
     def setUp(self):
-        self.admin = User.objects.create_user(username="recover_admin", password="Password123", role=User.Role.ADMIN)
+        self.admin = User.objects.create_user(
+            username="recover_admin", password="Password123", role=User.Role.ADMIN
+        )
         self.admin_token = Token.objects.create(user=self.admin)
 
         self.super_admin = User.objects.create_user(
@@ -2831,7 +3243,9 @@ class UserManagementRecoveryTests(APITestCase):
             role=User.Role.NORMAL,
         )
         self.normal_token = Token.objects.create(user=self.normal_active)
-        self.category = Category.objects.create(name="Recover Category", slug="recover-category")
+        self.category = Category.objects.create(
+            name="Recover Category", slug="recover-category"
+        )
         self.article = Article.objects.create(
             title="Recover Article",
             summary="summary",
@@ -2855,12 +3269,18 @@ class UserManagementRecoveryTests(APITestCase):
 
     def test_admin_cannot_reactivate_super_admin(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
-        response = self.client.post(f"/api/users/{self.super_admin_target.id}/reactivate/")
+        response = self.client.post(
+            f"/api/users/{self.super_admin_target.id}/reactivate/"
+        )
         self.assertEqual(response.status_code, 403)
 
     def test_super_admin_can_reactivate_super_admin(self):
-        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.super_admin_token.key}")
-        response = self.client.post(f"/api/users/{self.super_admin_target.id}/reactivate/")
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Token {self.super_admin_token.key}"
+        )
+        response = self.client.post(
+            f"/api/users/{self.super_admin_target.id}/reactivate/"
+        )
         self.assertEqual(response.status_code, 200)
         self.super_admin_target.refresh_from_db()
         self.assertTrue(self.super_admin_target.is_active)
@@ -2914,7 +3334,9 @@ class UserManagementRecoveryTests(APITestCase):
             ).exists()
         )
 
-        recreated = User.objects.create_user(username="recover_normal", password="Password123", role=User.Role.NORMAL)
+        recreated = User.objects.create_user(
+            username="recover_normal", password="Password123", role=User.Role.NORMAL
+        )
         self.assertIsNotNone(recreated.id)
 
     def test_admin_cannot_hard_delete_active_user(self):
@@ -2961,7 +3383,11 @@ class UserManagementRecoveryTests(APITestCase):
         response = self.client.post(
             "/api/users/bulk-action/",
             {
-                "ids": [self.admin.id, self.super_admin_target.id, self.normal_active.id],
+                "ids": [
+                    self.admin.id,
+                    self.super_admin_target.id,
+                    self.normal_active.id,
+                ],
                 "action": "soft_delete",
             },
             format="json",
@@ -2987,7 +3413,9 @@ class UserManagementRecoveryTests(APITestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_super_admin_bulk_set_role_succeeds(self):
-        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.super_admin_token.key}")
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Token {self.super_admin_token.key}"
+        )
         response = self.client.post(
             "/api/users/bulk-action/",
             {"ids": [self.normal_active.id], "action": "set_role", "role": "school"},
@@ -3000,9 +3428,15 @@ class UserManagementRecoveryTests(APITestCase):
 
     def test_unban_writes_security_audit_log(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
-        self.client.post(f"/api/users/{self.normal_active.id}/ban/", {"reason": "temp"}, format="json")
+        self.client.post(
+            f"/api/users/{self.normal_active.id}/ban/",
+            {"reason": "temp"},
+            format="json",
+        )
 
-        response = self.client.post(f"/api/users/{self.normal_active.id}/unban/", format="json")
+        response = self.client.post(
+            f"/api/users/{self.normal_active.id}/unban/", format="json"
+        )
         self.assertEqual(response.status_code, 200)
         self.assertTrue(
             SecurityAuditLog.objects.filter(
@@ -3014,7 +3448,11 @@ class UserManagementRecoveryTests(APITestCase):
 
     def test_bulk_unban_writes_security_audit_log(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
-        self.client.post("/api/users/bulk-action/", {"ids": [self.normal_active.id], "action": "ban"}, format="json")
+        self.client.post(
+            "/api/users/bulk-action/",
+            {"ids": [self.normal_active.id], "action": "ban"},
+            format="json",
+        )
 
         response = self.client.post(
             "/api/users/bulk-action/",
@@ -3034,7 +3472,9 @@ class UserManagementRecoveryTests(APITestCase):
 class ArticleSearchTests(APITestCase):
     def setUp(self):
         self.category = Category.objects.create(name="Search", slug="search")
-        self.author = User.objects.create_user(username="author3", password="Password123", role=User.Role.ADMIN)
+        self.author = User.objects.create_user(
+            username="author3", password="Password123", role=User.Role.ADMIN
+        )
         self.article = Article.objects.create(
             title="2. 常见术语",
             summary="术语总览",
@@ -3051,10 +3491,15 @@ class ArticleSearchTests(APITestCase):
         ids = {item["id"] for item in response.data.get("results", response.data)}
         self.assertIn(self.article.id, ids)
 
+
 class AdminOverviewAndEventTests(APITestCase):
     def setUp(self):
-        self.admin = User.objects.create_user(username="admin4", password="Password123", role=User.Role.ADMIN)
-        self.normal = User.objects.create_user(username="normal4", password="Password123", role=User.Role.NORMAL)
+        self.admin = User.objects.create_user(
+            username="admin4", password="Password123", role=User.Role.ADMIN
+        )
+        self.normal = User.objects.create_user(
+            username="normal4", password="Password123", role=User.Role.NORMAL
+        )
         self.admin_token = Token.objects.create(user=self.admin)
         self.normal_token = Token.objects.create(user=self.normal)
 
@@ -3093,7 +3538,9 @@ class AdminOverviewAndEventTests(APITestCase):
             target_id=2,
             payload={"action": "new"},
         )
-        ContributionEvent.objects.filter(id=old_event.id).update(created_at=timezone.now() - timezone.timedelta(days=3))
+        ContributionEvent.objects.filter(id=old_event.id).update(
+            created_at=timezone.now() - timezone.timedelta(days=3)
+        )
 
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
         response = self.client.get(
@@ -3108,7 +3555,9 @@ class AdminOverviewAndEventTests(APITestCase):
         self.assertIn(new_event.id, ids)
         self.assertNotIn(old_event.id, ids)
 
-        export_response = self.client.get("/api/events/export/", {"event_type": "admin"})
+        export_response = self.client.get(
+            "/api/events/export/", {"event_type": "admin"}
+        )
         self.assertEqual(export_response.status_code, 200)
         self.assertIn("text/csv", export_response["Content-Type"])
         content = export_response.content.decode("utf-8")
@@ -3119,9 +3568,15 @@ class AdminOverviewAndEventTests(APITestCase):
 class RevisionFilterTests(APITestCase):
     def setUp(self):
         self.category = Category.objects.create(name="Filter", slug="filter")
-        self.admin = User.objects.create_user(username="admin5", password="Password123", role=User.Role.ADMIN)
-        self.user_a = User.objects.create_user(username="user_a", password="Password123", role=User.Role.NORMAL)
-        self.user_b = User.objects.create_user(username="user_b", password="Password123", role=User.Role.NORMAL)
+        self.admin = User.objects.create_user(
+            username="admin5", password="Password123", role=User.Role.ADMIN
+        )
+        self.user_a = User.objects.create_user(
+            username="user_a", password="Password123", role=User.Role.NORMAL
+        )
+        self.user_b = User.objects.create_user(
+            username="user_b", password="Password123", role=User.Role.NORMAL
+        )
         self.admin_token = Token.objects.create(user=self.admin)
 
         self.article = Article.objects.create(
@@ -3152,7 +3607,9 @@ class RevisionFilterTests(APITestCase):
 
     def test_admin_can_filter_revision_by_proposer(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
-        response = self.client.get("/api/revisions/", {"proposer": self.user_a.id, "status": "pending"})
+        response = self.client.get(
+            "/api/revisions/", {"proposer": self.user_a.id, "status": "pending"}
+        )
         self.assertEqual(response.status_code, 200)
         ids = {item["id"] for item in response.data.get("results", response.data)}
         self.assertEqual(ids, {self.proposal_a.id})
@@ -3160,16 +3617,24 @@ class RevisionFilterTests(APITestCase):
 
 class RevisionBulkReviewTests(APITestCase):
     def setUp(self):
-        self.public_category = Category.objects.create(name="Public Rev", slug="public-rev")
+        self.public_category = Category.objects.create(
+            name="Public Rev", slug="public-rev"
+        )
         self.school_category = Category.objects.create(
             name="School Rev",
             slug="school-rev",
             moderation_scope=Category.ModerationScope.SCHOOL,
         )
 
-        self.admin = User.objects.create_user(username="bulk_rev_admin", password="Password123", role=User.Role.ADMIN)
-        self.school = User.objects.create_user(username="bulk_rev_school", password="Password123", role=User.Role.SCHOOL)
-        self.normal = User.objects.create_user(username="bulk_rev_normal", password="Password123", role=User.Role.NORMAL)
+        self.admin = User.objects.create_user(
+            username="bulk_rev_admin", password="Password123", role=User.Role.ADMIN
+        )
+        self.school = User.objects.create_user(
+            username="bulk_rev_school", password="Password123", role=User.Role.SCHOOL
+        )
+        self.normal = User.objects.create_user(
+            username="bulk_rev_normal", password="Password123", role=User.Role.NORMAL
+        )
         self.admin_token = Token.objects.create(user=self.admin)
         self.school_token = Token.objects.create(user=self.school)
 
@@ -3236,8 +3701,12 @@ class RevisionBulkReviewTests(APITestCase):
 
     def test_admin_bulk_review_can_clear_article_summary(self):
         self.public_proposal.proposed_summary = ""
-        self.public_proposal.proposed_content_md = "new public content with cleared summary"
-        self.public_proposal.save(update_fields=["proposed_summary", "proposed_content_md", "updated_at"])
+        self.public_proposal.proposed_content_md = (
+            "new public content with cleared summary"
+        )
+        self.public_proposal.save(
+            update_fields=["proposed_summary", "proposed_content_md", "updated_at"]
+        )
 
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
         response = self.client.post(
@@ -3257,7 +3726,9 @@ class RevisionBulkReviewTests(APITestCase):
         self.public_article.refresh_from_db()
         self.assertEqual(self.public_proposal.status, RevisionProposal.Status.APPROVED)
         self.assertEqual(self.public_article.summary, "")
-        self.assertEqual(self.public_article.content_md, "new public content with cleared summary")
+        self.assertEqual(
+            self.public_article.content_md, "new public content with cleared summary"
+        )
 
     def test_school_bulk_review_is_forbidden(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.school_token.key}")
@@ -3292,10 +3763,18 @@ class RevisionBulkReviewTests(APITestCase):
 
 class ContentBulkModerationTests(APITestCase):
     def setUp(self):
-        self.category = Category.objects.create(name="Bulk Content", slug="bulk-content")
-        self.admin = User.objects.create_user(username="bulk_content_admin", password="Password123", role=User.Role.ADMIN)
+        self.category = Category.objects.create(
+            name="Bulk Content", slug="bulk-content"
+        )
+        self.admin = User.objects.create_user(
+            username="bulk_content_admin", password="Password123", role=User.Role.ADMIN
+        )
         self.admin_token = Token.objects.create(user=self.admin)
-        self.normal = User.objects.create_user(username="bulk_content_normal", password="Password123", role=User.Role.NORMAL)
+        self.normal = User.objects.create_user(
+            username="bulk_content_normal",
+            password="Password123",
+            role=User.Role.NORMAL,
+        )
         self.normal_token = Token.objects.create(user=self.normal)
 
         self.article_a = Article.objects.create(
@@ -3371,7 +3850,11 @@ class ContentBulkModerationTests(APITestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["success"], 2)
-        self.assertFalse(Article.objects.filter(id__in=[self.article_a.id, self.article_b.id]).exists())
+        self.assertFalse(
+            Article.objects.filter(
+                id__in=[self.article_a.id, self.article_b.id]
+            ).exists()
+        )
 
     def test_admin_can_bulk_hide_comments(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
@@ -3518,9 +4001,13 @@ class ExtensionPageAccessTests(APITestCase):
 
 class AnnouncementFlowTests(APITestCase):
     def setUp(self):
-        self.admin = User.objects.create_user(username="announce_admin", password="Password123", role=User.Role.ADMIN)
+        self.admin = User.objects.create_user(
+            username="announce_admin", password="Password123", role=User.Role.ADMIN
+        )
         self.admin_token = Token.objects.create(user=self.admin)
-        self.user = User.objects.create_user(username="announce_user", password="Password123", role=User.Role.NORMAL)
+        self.user = User.objects.create_user(
+            username="announce_user", password="Password123", role=User.Role.NORMAL
+        )
         self.user_token = Token.objects.create(user=self.user)
         now = timezone.now()
 
@@ -3564,7 +4051,9 @@ class AnnouncementFlowTests(APITestCase):
         ids_before = {item["id"] for item in unread_before.data}
         self.assertIn(self.announcement.id, ids_before)
 
-        ack_response = self.client.post(f"/api/announcements/{self.announcement.id}/acknowledge/")
+        ack_response = self.client.post(
+            f"/api/announcements/{self.announcement.id}/acknowledge/"
+        )
         self.assertEqual(ack_response.status_code, 200)
 
         unread_after = self.client.get("/api/announcements/unread/")
@@ -3572,7 +4061,9 @@ class AnnouncementFlowTests(APITestCase):
         self.assertNotIn(self.announcement.id, ids_after)
 
     def test_published_history_is_public_and_includes_published_records(self):
-        response = self.client.get("/api/announcements/published-history/", {"limit": 20})
+        response = self.client.get(
+            "/api/announcements/published-history/", {"limit": 20}
+        )
         self.assertEqual(response.status_code, 200)
         ids = {item["id"] for item in response.data}
         self.assertIn(self.announcement.id, ids)
@@ -3605,10 +4096,18 @@ class AnnouncementFlowTests(APITestCase):
 class NotificationFlowTests(APITestCase):
     def setUp(self):
         self.category = Category.objects.create(name="Notify", slug="notify")
-        self.admin = User.objects.create_user(username="notify_admin", password="Password123", role=User.Role.ADMIN)
-        self.school = User.objects.create_user(username="notify_school", password="Password123", role=User.Role.SCHOOL)
-        self.author = User.objects.create_user(username="notify_author", password="Password123", role=User.Role.NORMAL)
-        self.responder = User.objects.create_user(username="notify_responder", password="Password123", role=User.Role.NORMAL)
+        self.admin = User.objects.create_user(
+            username="notify_admin", password="Password123", role=User.Role.ADMIN
+        )
+        self.school = User.objects.create_user(
+            username="notify_school", password="Password123", role=User.Role.SCHOOL
+        )
+        self.author = User.objects.create_user(
+            username="notify_author", password="Password123", role=User.Role.NORMAL
+        )
+        self.responder = User.objects.create_user(
+            username="notify_responder", password="Password123", role=User.Role.NORMAL
+        )
 
         self.admin_token = Token.objects.create(user=self.admin)
         self.school_token = Token.objects.create(user=self.school)
@@ -3658,7 +4157,11 @@ class NotificationFlowTests(APITestCase):
         )
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.data["status"], Answer.Status.PENDING)
-        self.assertFalse(UserNotification.objects.filter(user=self.author, target_type="Answer").exists())
+        self.assertFalse(
+            UserNotification.objects.filter(
+                user=self.author, target_type="Answer"
+            ).exists()
+        )
 
     def test_revision_review_notifies_proposer(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
@@ -3704,7 +4207,9 @@ class NotificationFlowTests(APITestCase):
         )
 
     def test_mark_read_and_mark_all_read(self):
-        one = UserNotification.objects.create(user=self.author, title="n1", content="c1")
+        one = UserNotification.objects.create(
+            user=self.author, title="n1", content="c1"
+        )
         UserNotification.objects.create(user=self.author, title="n2", content="c2")
 
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.author_token.key}")
@@ -3759,10 +4264,26 @@ class NotificationFlowTests(APITestCase):
         )
         self.assertEqual(response.status_code, 201)
 
-        self.assertTrue(UserNotification.objects.filter(user=active_user, title__contains="新公告").exists())
-        self.assertFalse(UserNotification.objects.filter(user=inactive_user, title__contains="新公告").exists())
-        self.assertFalse(UserNotification.objects.filter(user=banned_user, title__contains="新公告").exists())
-        self.assertFalse(UserNotification.objects.filter(user=self.admin, title__contains="新公告").exists())
+        self.assertTrue(
+            UserNotification.objects.filter(
+                user=active_user, title__contains="新公告"
+            ).exists()
+        )
+        self.assertFalse(
+            UserNotification.objects.filter(
+                user=inactive_user, title__contains="新公告"
+            ).exists()
+        )
+        self.assertFalse(
+            UserNotification.objects.filter(
+                user=banned_user, title__contains="新公告"
+            ).exists()
+        )
+        self.assertFalse(
+            UserNotification.objects.filter(
+                user=self.admin, title__contains="新公告"
+            ).exists()
+        )
 
 
 class TeamMemberApiTests(APITestCase):
@@ -3891,7 +4412,9 @@ class CompetitionCalendarApiTests(APITestCase):
         )
 
     def test_public_calendar_list_supports_site_filter(self):
-        response = self.client.get("/api/competition-calendar/", {"sites": "codeforces,luogu"})
+        response = self.client.get(
+            "/api/competition-calendar/", {"sites": "codeforces,luogu"}
+        )
         self.assertEqual(response.status_code, 200)
         items = response.data.get("results", response.data)
         source_ids = {item["source_id"] for item in items}
@@ -3947,7 +4470,9 @@ class CompetitionScheduleApiTests(APITestCase):
             is_visible=True,
         )
 
-    def test_school_user_can_patch_schedule_with_blank_fields_and_clear_announcement(self):
+    def test_school_user_can_patch_schedule_with_blank_fields_and_clear_announcement(
+        self,
+    ):
         entry = CompetitionScheduleEntry.objects.create(
             event_date=timezone.localdate() + timedelta(days=7),
             competition_time_range="09:00-17:00",
@@ -4018,7 +4543,9 @@ class CompetitionScheduleApiTests(APITestCase):
         self.assertEqual(entry.qq_group, "")
         self.assertIsNone(entry.announcement)
 
-    def test_school_user_can_patch_schedule_without_announcement_field_when_entry_is_unlinked(self):
+    def test_school_user_can_patch_schedule_without_announcement_field_when_entry_is_unlinked(
+        self,
+    ):
         entry = CompetitionScheduleEntry.objects.create(
             event_date=timezone.localdate() + timedelta(days=10),
             competition_time_range="13:00-18:00",
@@ -4161,7 +4688,10 @@ class AssistantApiTests(APITestCase):
     def assertHasBrattyTone(self, text):
         self.assertIn("师兄", text)
         self.assertTrue(
-            any(marker in text for marker in ("杂鱼", "不会吧", "可别逗我", "就这", "菜", "不让人省心")),
+            any(
+                marker in text
+                for marker in ("杂鱼", "不会吧", "可别逗我", "就这", "菜", "不让人省心")
+            ),
             msg=f"Expected bratty taunt marker in: {text}",
         )
 
@@ -4170,7 +4700,9 @@ class AssistantApiTests(APITestCase):
         self.assertEqual(public_response.status_code, 200)
         self.assertTrue(public_response.data["enabled"])
         self.assertEqual(public_response.data["assistant_name"], "AlgoWiki 助手")
-        self.assertEqual(public_response.data["welcome_message"], "你好，这里是站内助手。")
+        self.assertEqual(
+            public_response.data["welcome_message"], "你好，这里是站内助手。"
+        )
         self.assertNotIn("api_key_encrypted", public_response.data)
 
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
@@ -4245,7 +4777,11 @@ class AssistantApiTests(APITestCase):
             "wiki.views.invoke_assistant_completion",
             return_value={
                 "content": "比赛日历可以在赛事专区查看，入口位于赛事专区的比赛日历表。",
-                "usage": {"prompt_tokens": 11, "completion_tokens": 22, "total_tokens": 33},
+                "usage": {
+                    "prompt_tokens": 11,
+                    "completion_tokens": 22,
+                    "total_tokens": 33,
+                },
                 "model": "deepseek-chat",
             },
         ) as mocked_provider:
@@ -4295,7 +4831,9 @@ class AssistantApiTests(APITestCase):
         self.assertEqual(log.total_tokens, 0)
         self.assertEqual(log.source_count, 0)
 
-    def test_recent_competition_query_uses_builtin_digest_without_calling_provider(self):
+    def test_recent_competition_query_uses_builtin_digest_without_calling_provider(
+        self,
+    ):
         with patch("wiki.views.invoke_assistant_completion") as mocked_provider:
             response = self.client.post(
                 "/api/assistant/chat/",
@@ -4408,7 +4946,9 @@ class AssistantApiTests(APITestCase):
     def test_public_config_preserves_custom_welcome_message(self):
         self.config.welcome_message = "师兄你好，我是小丛雨喵~"
         self.config.assistant_name = "小小丛雨"
-        self.config.save(update_fields=["welcome_message", "assistant_name", "updated_at"])
+        self.config.save(
+            update_fields=["welcome_message", "assistant_name", "updated_at"]
+        )
 
         response = self.client.get("/api/assistant/config/")
 
@@ -4437,7 +4977,12 @@ class CompetitionCalendarSyncCommandTests(APITestCase):
             {CompetitionCalendarEvent.SourceSite.CODEFORCES: lambda: [initial_row]},
             clear=False,
         ):
-            call_command("sync_competition_calendar", sites="codeforces", future_days=30, past_days=30)
+            call_command(
+                "sync_competition_calendar",
+                sites="codeforces",
+                future_days=30,
+                past_days=30,
+            )
 
         created = CompetitionCalendarEvent.objects.get(
             source_site=CompetitionCalendarEvent.SourceSite.CODEFORCES,
@@ -4463,7 +5008,12 @@ class CompetitionCalendarSyncCommandTests(APITestCase):
             {CompetitionCalendarEvent.SourceSite.CODEFORCES: lambda: [updated_row]},
             clear=False,
         ):
-            call_command("sync_competition_calendar", sites="codeforces", future_days=30, past_days=30)
+            call_command(
+                "sync_competition_calendar",
+                sites="codeforces",
+                future_days=30,
+                past_days=30,
+            )
 
         created.refresh_from_db()
         self.assertEqual(created.title, "Demo Contest Updated")
