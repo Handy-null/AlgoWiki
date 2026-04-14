@@ -178,7 +178,10 @@
         </div>
         <article class="trick-item" v-for="item in tricks" :key="item.id">
           <header class="trick-item-head">
-            <h5 class="trick-item-title">{{ item.title || "未命名 trick" }}</h5>
+            <h5
+              class="trick-item-title"
+              v-html="renderInlineMarkdown(item.title || '未命名 trick')"
+            ></h5>
             <span class="trick-status-badge" v-if="showStatus(item)">{{
               statusText(item.status)
             }}</span>
@@ -482,7 +485,7 @@ import {
 import { useRoute } from "vue-router";
 
 import api from "../services/api";
-import { renderMarkdown } from "../services/markdown";
+import { renderInlineMarkdown, renderMarkdown } from "../services/markdown";
 import { useAuthStore } from "../stores/auth";
 import { useUiStore } from "../stores/ui";
 

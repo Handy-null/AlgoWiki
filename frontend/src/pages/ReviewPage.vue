@@ -374,7 +374,7 @@
       </div>
       <article v-for="item in pendingTricks" :key="item.id" class="review-row">
         <div class="review-main">
-          <strong>{{ item.title || "未命名 trick" }}</strong>
+          <strong v-html="renderInlineMarkdown(item.title || '未命名 trick')"></strong>
           <p class="meta">
             提交人：{{ item.author?.username || "-" }} · 提交时间：{{
               formatDateTime(item.created_at)
@@ -646,7 +646,7 @@ import { computed, reactive, ref, watch } from "vue";
 import { RouterLink, useRouter } from "vue-router";
 
 import api from "../services/api";
-import { renderMarkdown } from "../services/markdown";
+import { renderInlineMarkdown, renderMarkdown } from "../services/markdown";
 import { renderUnifiedDiffHtml } from "../services/revisionDiff";
 import { useUiStore } from "../stores/ui";
 

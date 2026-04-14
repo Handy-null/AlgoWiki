@@ -232,3 +232,12 @@ export function renderMarkdown(content) {
   const normalized = normalizeRenderedHtml(rendered);
   return DOMPurify.sanitize(normalized, markdownSanitizeConfig);
 }
+
+export function renderInlineMarkdown(content) {
+  const rendered = md.renderInline(normalizeLatexWhitespace(content));
+  if (typeof window === "undefined") {
+    return rendered;
+  }
+  const normalized = normalizeRenderedHtml(rendered);
+  return DOMPurify.sanitize(normalized, markdownSanitizeConfig);
+}
