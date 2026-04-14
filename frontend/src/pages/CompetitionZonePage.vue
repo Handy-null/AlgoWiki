@@ -28,8 +28,8 @@
         </button>
       </div>
 
-      <section v-if="canManageCompetition" ref="scheduleEditorRef" class="editor-card">
-        <h2>{{ editingScheduleId ? "修改赛事时刻表" : "新增赛事时刻表" }}</h2>
+      <section v-if="canSubmitCompetition" ref="scheduleEditorRef" class="editor-card">
+        <h2>{{ editingScheduleId ? "修改赛事时刻表" : canManageCompetition ? "新增赛事时刻表" : "提交赛事时刻表" }}</h2>
         <div class="form-grid form-grid--schedule">
           <input v-model="scheduleForm.event_date" class="input" type="date" />
           <input v-model.trim="scheduleForm.competition_time_range" class="input" placeholder="比赛时间" />
@@ -45,7 +45,7 @@
         </div>
         <div class="action-row">
           <button type="button" class="btn btn-accent" :disabled="savingSchedule" @click="submitSchedule">
-            {{ savingSchedule ? "提交中..." : editingScheduleId ? "保存修改" : "新增记录" }}
+            {{ savingSchedule ? "提交中..." : editingScheduleId ? "保存修改" : canManageCompetition ? "新增记录" : "提交审核" }}
           </button>
           <button v-if="editingScheduleId" type="button" class="btn" :disabled="savingSchedule" @click="resetScheduleForm">
             取消修改
@@ -142,8 +142,8 @@
       </aside>
 
       <div class="notice-main">
-        <section v-if="canManageCompetition" ref="noticeEditorRef" class="editor-card">
-          <h2>{{ editingNoticeId ? "修改赛事公告" : "发布赛事公告" }}</h2>
+        <section v-if="canSubmitCompetition" ref="noticeEditorRef" class="editor-card">
+          <h2>{{ editingNoticeId ? "修改赛事公告" : canManageCompetition ? "发布赛事公告" : "提交赛事公告" }}</h2>
           <div class="form-grid form-grid--notice">
             <select v-model="noticeForm.series" class="select" @change="normalizeNoticeForm">
               <option v-for="item in seriesOptions" :key="item.key" :value="item.key">{{ item.name }}</option>
@@ -163,13 +163,13 @@
             <input v-model.trim="noticeForm.title" class="input form-span" placeholder="公告标题" />
           </div>
           <textarea v-model="noticeForm.content_md" class="textarea notice-textarea" placeholder="Markdown 公告内容"></textarea>
-          <label class="switch-line">
+          <label v-if="canManageCompetition" class="switch-line">
             <input type="checkbox" v-model="noticeForm.is_visible" />
             <span>对外显示</span>
           </label>
           <div class="action-row">
             <button type="button" class="btn btn-accent" :disabled="savingNotice" @click="submitNotice">
-              {{ savingNotice ? "提交中..." : editingNoticeId ? "保存修改" : "发布公告" }}
+              {{ savingNotice ? "提交中..." : editingNoticeId ? "保存修改" : canManageCompetition ? "发布公告" : "提交审核" }}
             </button>
             <button v-if="editingNoticeId" type="button" class="btn" :disabled="savingNotice" @click="resetNoticeForm">
               取消修改
@@ -269,6 +269,7 @@ const nestedStageOptions = [
 const resolvedZoneSections = computed(() => (competitionZoneNav.value.length ? competitionZoneNav.value : FALLBACK_ZONE_SECTIONS));
 const activeTab = ref("calendar");
 const canManageCompetition = computed(() => auth.isSchoolOrHigher);
+const canSubmitCompetition = computed(() => auth.isAuthenticated);
 const activeSection = computed(() => resolvedZoneSections.value.find((item) => item.key === activeTab.value) || resolvedZoneSections.value[0] || null);
 const activeBuiltinView = computed(() => (activeSection.value?.target_type === "builtin" ? String(activeSection.value.builtin_view || "").trim() : ""));
 const activeCustomPageSlug = computed(() => (activeSection.value?.target_type === "page" ? String(activeSection.value.page_slug || "").trim() : ""));
@@ -470,7 +471,7 @@ function startEditSchedule(row) {
   nextTick(() => scheduleEditorRef.value?.scrollIntoView({ behavior: "smooth", block: "start" }));
 }
 async function submitSchedule() {
-  if (!canManageCompetition.value) return;
+  if (!canSubmitCompetition.value) return;
   const eventDate = normalizeDateInputValue(scheduleForm.event_date);
   if (!eventDate || !String(scheduleForm.competition_type || "").trim() || !String(scheduleForm.location || "").trim()) {
     ui.info("请完整填写日期、比赛名称和地点。");
@@ -487,8 +488,11 @@ async function submitSchedule() {
   savingSchedule.value = true;
   try {
     if (editingScheduleId.value) await api.patch(`/competition-schedules/${editingScheduleId.value}/`, payload);
-    else await api.post("/competition-schedules/", payload);
-    ui.success(editingScheduleId.value ? "赛事时刻表已更新" : "赛事时刻表已新增");
+    else {
+      const { data } = await api.post("/competition-schedules/", payload);
+      ui.success(data?.status === "pending" ? "赛事时刻表已提交，等待管理员审核" : "赛事时刻表已新增");
+    }
+    if (editingScheduleId.value) ui.success("赛事时刻表已更新");
     resetScheduleForm();
     await Promise.all([loadScheduleYears(), loadSchedules()]);
   } catch (error) {
@@ -544,10 +548,14 @@ function normalizeNoticeFilter() {
   if (!stageOptions.value.some((item) => item.key === activeStage.value)) activeStage.value = FILTER_ALL;
 }
 async function loadNoticeOptions() {
-  if (!canManageCompetition.value) return;
+  if (!canSubmitCompetition.value) return;
   const controller = requests.replace("notice-options");
   try {
-    const nextOptions = await fetchAll("/competition-notices/", { include_hidden: 1, order: "oldest" }, controller.signal);
+    const nextOptions = await fetchAll(
+      "/competition-notices/",
+      { include_hidden: canManageCompetition.value ? 1 : 0, order: "oldest" },
+      controller.signal,
+    );
     if (!requests.isCurrent("notice-options", controller)) return;
     noticeOptions.value = nextOptions;
   } catch (error) {
@@ -654,7 +662,7 @@ function startEditNotice(item) {
   nextTick(() => noticeEditorRef.value?.scrollIntoView({ behavior: "smooth", block: "start" }));
 }
 async function submitNotice() {
-  if (!canManageCompetition.value || !String(noticeForm.title || "").trim() || !String(noticeForm.content_md || "").trim()) {
+  if (!canSubmitCompetition.value || !String(noticeForm.title || "").trim() || !String(noticeForm.content_md || "").trim()) {
     ui.info("请填写公告标题和正文内容。");
     return;
   }
@@ -664,14 +672,20 @@ async function submitNotice() {
     series: noticeForm.series,
     year: isSeriesWithYear(noticeForm.series) ? Number(noticeForm.year) : null,
     stage: isSeriesWithYear(noticeForm.series) ? noticeForm.stage : "general",
-    is_visible: Boolean(noticeForm.is_visible),
+    is_visible: canManageCompetition.value ? Boolean(noticeForm.is_visible) : false,
   };
   savingNotice.value = true;
   try {
     const { data } = editingNoticeId.value
       ? await api.patch(`/competition-notices/${editingNoticeId.value}/`, payload)
       : await api.post("/competition-notices/", payload);
-    ui.success(editingNoticeId.value ? "赛事公告已更新" : "赛事公告已发布");
+    ui.success(
+      editingNoticeId.value
+        ? "赛事公告已更新"
+        : data?.status === "pending"
+          ? "赛事公告已提交，等待管理员审核"
+          : "赛事公告已发布",
+    );
     pendingNoticeId.value = data?.id || null;
     resetNoticeForm();
     await Promise.all([loadNoticeTaxonomy(), loadNoticeOptions(), loadNotices(), loadSchedules()]);

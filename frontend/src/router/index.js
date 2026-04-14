@@ -40,6 +40,8 @@ const manageSections = [
 const reviewSections = [
   { path: "/review", name: "review", section: "revisions" },
   { path: "/review/practice", name: "review-practice", section: "practice" },
+  { path: "/review/notices", name: "review-notices", section: "notices" },
+  { path: "/review/schedules", name: "review-schedules", section: "schedules" },
   { path: "/review/tickets", name: "review-tickets", section: "tickets" },
   { path: "/review/comments", name: "review-comments", section: "comments" },
   { path: "/review/tricks", name: "review-tricks", section: "tricks" },

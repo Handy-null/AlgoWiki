@@ -6320,8 +6320,20 @@ class CompetitionNoticeViewSet(viewsets.ModelViewSet):
             explicit_include=include_hidden,
             permission_check=can_manage_competition,
         )
+        if self.action in {"approve", "reject"} and can_manage_competition(user):
+            can_access_hidden = True
         if not can_access_hidden:
-            queryset = queryset.filter(is_visible=True)
+            queryset = queryset.filter(
+                is_visible=True,
+                status=CompetitionNotice.Status.APPROVED,
+            )
+
+        status_filter = self.request.query_params.get("status")
+        if status_filter in dict(CompetitionNotice.Status.choices):
+            if can_manage_competition(user):
+                queryset = queryset.filter(status=status_filter)
+            elif status_filter != CompetitionNotice.Status.APPROVED:
+                queryset = queryset.none()
 
         series = self.request.query_params.get("series")
         if series in dict(CompetitionNotice.Series.choices):
@@ -6352,16 +6364,46 @@ class CompetitionNoticeViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
-            denied = self._ensure_editor(request)
-            if denied:
-                return denied
+            if request.user.is_banned:
+                return Response(
+                    {"detail": "Banned users cannot edit competition content."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
 
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-            notice = serializer.save(created_by=request.user, updated_by=request.user)
+            can_publish_directly = can_manage_competition(request.user)
+            save_kwargs = {
+                "created_by": request.user,
+                "updated_by": request.user,
+            }
+            if can_publish_directly:
+                save_kwargs.update(
+                    {
+                        "status": CompetitionNotice.Status.APPROVED,
+                        "reviewer": request.user,
+                        "review_note": "manager_direct_publish",
+                        "reviewed_at": timezone.now(),
+                    }
+                )
+            else:
+                save_kwargs.update(
+                    {
+                        "status": CompetitionNotice.Status.PENDING,
+                        "is_visible": False,
+                        "reviewer": None,
+                        "review_note": "",
+                        "reviewed_at": None,
+                    }
+                )
+            notice = serializer.save(**save_kwargs)
             log_event(
                 request.user,
-                ContributionEvent.EventType.ADMIN,
+                (
+                    ContributionEvent.EventType.ADMIN
+                    if can_publish_directly
+                    else ContributionEvent.EventType.ANNOUNCEMENT
+                ),
                 notice,
                 {"action": "create_competition_notice"},
             )
@@ -6421,6 +6463,92 @@ class CompetitionNoticeViewSet(viewsets.ModelViewSet):
         except DatabaseError as exc:
             return schema_outdated_response(exc)
 
+    def _apply_review_action(self, notice, reviewer, *, action, review_note=""):
+        if not is_manager(reviewer):
+            return False, status.HTTP_403_FORBIDDEN, "Only admins can review notices."
+        if notice.status != CompetitionNotice.Status.PENDING:
+            return False, status.HTTP_400_BAD_REQUEST, "Notice is already reviewed."
+
+        action = (action or "").strip().lower()
+        review_note = "" if review_note is None else str(review_note)
+        now = timezone.now()
+        if action == "approve":
+            notice.status = CompetitionNotice.Status.APPROVED
+            notice.is_visible = True
+            notice.published_at = now
+            action_name = "approve_competition_notice"
+        elif action == "reject":
+            notice.status = CompetitionNotice.Status.REJECTED
+            notice.is_visible = False
+            action_name = "reject_competition_notice"
+        else:
+            return False, status.HTTP_400_BAD_REQUEST, "Invalid review action."
+
+        notice.reviewer = reviewer
+        notice.review_note = review_note
+        notice.reviewed_at = now
+        notice.updated_by = reviewer
+        notice.save(
+            update_fields=[
+                "status",
+                "is_visible",
+                "published_at",
+                "reviewer",
+                "review_note",
+                "reviewed_at",
+                "updated_by",
+                "updated_at",
+            ]
+        )
+        log_event(reviewer, ContributionEvent.EventType.ADMIN, notice, {"action": action_name})
+        if notice.created_by_id != reviewer.id:
+            create_notification(
+                user=notice.created_by,
+                actor=reviewer,
+                target=notice,
+                title=f"赛事公告已{'通过' if action == 'approve' else '驳回'}：{notice.title}",
+                content=review_note[:180] if review_note else "管理员已处理你的赛事公告提交。",
+                link="/competitions?tab=notice",
+                level=(
+                    UserNotification.Level.WARNING
+                    if action == "reject"
+                    else UserNotification.Level.INFO
+                ),
+            )
+        return True, status.HTTP_200_OK, None
+
+    @action(detail=True, methods=["post"], permission_classes=[AdminOrSuperAdmin])
+    def approve(self, request, pk=None):
+        try:
+            notice = self.get_object()
+            ok, error_status, detail = self._apply_review_action(
+                notice,
+                request.user,
+                action="approve",
+                review_note=request.data.get("review_note", ""),
+            )
+            if not ok:
+                return Response({"detail": detail}, status=error_status)
+            return Response(self.get_serializer(notice).data)
+        except DatabaseError as exc:
+            return schema_outdated_response(exc)
+
+    @action(detail=True, methods=["post"], permission_classes=[AdminOrSuperAdmin])
+    def reject(self, request, pk=None):
+        try:
+            notice = self.get_object()
+            ok, error_status, detail = self._apply_review_action(
+                notice,
+                request.user,
+                action="reject",
+                review_note=request.data.get("review_note", ""),
+            )
+            if not ok:
+                return Response({"detail": detail}, status=error_status)
+            return Response(self.get_serializer(notice).data)
+        except DatabaseError as exc:
+            return schema_outdated_response(exc)
+
     @action(detail=False, methods=["get"], permission_classes=[AllowAny])
     def taxonomy(self, request):
         try:
@@ -6428,7 +6556,10 @@ class CompetitionNoticeViewSet(viewsets.ModelViewSet):
             include_hidden = request.query_params.get("include_hidden") == "1"
             queryset = CompetitionNotice.objects.all()
             if not (can_manage_competition(user) and include_hidden):
-                queryset = queryset.filter(is_visible=True)
+                queryset = queryset.filter(
+                    is_visible=True,
+                    status=CompetitionNotice.Status.APPROVED,
+                )
 
             stage_labels = dict(CompetitionNotice.Stage.choices)
             data = []
@@ -6511,10 +6642,25 @@ class CompetitionScheduleEntryViewSet(viewsets.ModelViewSet):
             explicit_include=include_hidden,
             permission_check=can_manage_competition,
         )
+        if self.action in {"approve", "reject"} and can_manage_competition(user):
+            can_access_hidden = True
         if not can_access_hidden:
             queryset = queryset.filter(
-                Q(announcement__isnull=True) | Q(announcement__is_visible=True)
+                status=CompetitionScheduleEntry.Status.APPROVED
+            ).filter(
+                Q(announcement__isnull=True)
+                | Q(
+                    announcement__is_visible=True,
+                    announcement__status=CompetitionNotice.Status.APPROVED,
+                )
             )
+
+        status_filter = self.request.query_params.get("status")
+        if status_filter in dict(CompetitionScheduleEntry.Status.choices):
+            if can_manage_competition(user):
+                queryset = queryset.filter(status=status_filter)
+            elif status_filter != CompetitionScheduleEntry.Status.APPROVED:
+                queryset = queryset.none()
 
         year = self.request.query_params.get("year")
         if isinstance(year, str) and year.strip():
@@ -6540,16 +6686,45 @@ class CompetitionScheduleEntryViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
-            denied = self._ensure_editor(request)
-            if denied:
-                return denied
+            if request.user.is_banned:
+                return Response(
+                    {"detail": "Banned users cannot edit competition content."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
 
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-            entry = serializer.save(created_by=request.user, updated_by=request.user)
+            can_publish_directly = can_manage_competition(request.user)
+            save_kwargs = {
+                "created_by": request.user,
+                "updated_by": request.user,
+            }
+            if can_publish_directly:
+                save_kwargs.update(
+                    {
+                        "status": CompetitionScheduleEntry.Status.APPROVED,
+                        "reviewer": request.user,
+                        "review_note": "manager_direct_publish",
+                        "reviewed_at": timezone.now(),
+                    }
+                )
+            else:
+                save_kwargs.update(
+                    {
+                        "status": CompetitionScheduleEntry.Status.PENDING,
+                        "reviewer": None,
+                        "review_note": "",
+                        "reviewed_at": None,
+                    }
+                )
+            entry = serializer.save(**save_kwargs)
             log_event(
                 request.user,
-                ContributionEvent.EventType.ADMIN,
+                (
+                    ContributionEvent.EventType.ADMIN
+                    if can_publish_directly
+                    else ContributionEvent.EventType.ISSUE
+                ),
                 entry,
                 {"action": "create_competition_schedule"},
             )
@@ -6609,6 +6784,87 @@ class CompetitionScheduleEntryViewSet(viewsets.ModelViewSet):
         except DatabaseError as exc:
             return schema_outdated_response(exc)
 
+    def _apply_review_action(self, entry, reviewer, *, action, review_note=""):
+        if not is_manager(reviewer):
+            return False, status.HTTP_403_FORBIDDEN, "Only admins can review schedules."
+        if entry.status != CompetitionScheduleEntry.Status.PENDING:
+            return False, status.HTTP_400_BAD_REQUEST, "Schedule entry is already reviewed."
+
+        action = (action or "").strip().lower()
+        review_note = "" if review_note is None else str(review_note)
+        now = timezone.now()
+        if action == "approve":
+            entry.status = CompetitionScheduleEntry.Status.APPROVED
+            action_name = "approve_competition_schedule"
+        elif action == "reject":
+            entry.status = CompetitionScheduleEntry.Status.REJECTED
+            action_name = "reject_competition_schedule"
+        else:
+            return False, status.HTTP_400_BAD_REQUEST, "Invalid review action."
+
+        entry.reviewer = reviewer
+        entry.review_note = review_note
+        entry.reviewed_at = now
+        entry.updated_by = reviewer
+        entry.save(
+            update_fields=[
+                "status",
+                "reviewer",
+                "review_note",
+                "reviewed_at",
+                "updated_by",
+                "updated_at",
+            ]
+        )
+        log_event(reviewer, ContributionEvent.EventType.ADMIN, entry, {"action": action_name})
+        if entry.created_by_id != reviewer.id:
+            create_notification(
+                user=entry.created_by,
+                actor=reviewer,
+                target=entry,
+                title=f"赛事时刻表已{'通过' if action == 'approve' else '驳回'}：{entry.competition_type}",
+                content=review_note[:180] if review_note else "管理员已处理你的赛事时刻表提交。",
+                link="/competitions?tab=schedule",
+                level=(
+                    UserNotification.Level.WARNING
+                    if action == "reject"
+                    else UserNotification.Level.INFO
+                ),
+            )
+        return True, status.HTTP_200_OK, None
+
+    @action(detail=True, methods=["post"], permission_classes=[AdminOrSuperAdmin])
+    def approve(self, request, pk=None):
+        try:
+            entry = self.get_object()
+            ok, error_status, detail = self._apply_review_action(
+                entry,
+                request.user,
+                action="approve",
+                review_note=request.data.get("review_note", ""),
+            )
+            if not ok:
+                return Response({"detail": detail}, status=error_status)
+            return Response(self.get_serializer(entry).data)
+        except DatabaseError as exc:
+            return schema_outdated_response(exc)
+
+    @action(detail=True, methods=["post"], permission_classes=[AdminOrSuperAdmin])
+    def reject(self, request, pk=None):
+        try:
+            entry = self.get_object()
+            ok, error_status, detail = self._apply_review_action(
+                entry,
+                request.user,
+                action="reject",
+                review_note=request.data.get("review_note", ""),
+            )
+            if not ok:
+                return Response({"detail": detail}, status=error_status)
+            return Response(self.get_serializer(entry).data)
+        except DatabaseError as exc:
+            return schema_outdated_response(exc)
+
     @action(detail=False, methods=["get"], permission_classes=[AllowAny])
     def years(self, request):
         try:
@@ -6617,7 +6873,13 @@ class CompetitionScheduleEntryViewSet(viewsets.ModelViewSet):
             queryset = CompetitionScheduleEntry.objects.all()
             if not (can_manage_competition(user) and include_hidden):
                 queryset = queryset.filter(
-                    Q(announcement__isnull=True) | Q(announcement__is_visible=True)
+                    status=CompetitionScheduleEntry.Status.APPROVED
+                ).filter(
+                    Q(announcement__isnull=True)
+                    | Q(
+                        announcement__is_visible=True,
+                        announcement__status=CompetitionNotice.Status.APPROVED,
+                    )
                 )
 
             years = sorted(

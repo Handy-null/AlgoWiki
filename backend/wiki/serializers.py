@@ -1705,6 +1705,7 @@ class FriendlyLinkSerializer(serializers.ModelSerializer):
 class CompetitionNoticeSerializer(serializers.ModelSerializer):
     created_by = UserPublicSerializer(read_only=True)
     updated_by = UserPublicSerializer(read_only=True)
+    reviewer = UserPublicSerializer(read_only=True)
     series_label = serializers.CharField(source="get_series_display", read_only=True)
     stage_label = serializers.CharField(source="get_stage_display", read_only=True)
     can_edit = serializers.SerializerMethodField()
@@ -1721,6 +1722,10 @@ class CompetitionNoticeSerializer(serializers.ModelSerializer):
             "stage",
             "stage_label",
             "is_visible",
+            "status",
+            "reviewer",
+            "review_note",
+            "reviewed_at",
             "published_at",
             "created_by",
             "updated_by",
@@ -1732,6 +1737,10 @@ class CompetitionNoticeSerializer(serializers.ModelSerializer):
             "created_by",
             "updated_by",
             "can_edit",
+            "status",
+            "reviewer",
+            "review_note",
+            "reviewed_at",
             "created_at",
             "updated_at",
         ]
@@ -1784,6 +1793,7 @@ class CompetitionScheduleEntrySerializer(serializers.ModelSerializer):
     )
     created_by = UserPublicSerializer(read_only=True)
     updated_by = UserPublicSerializer(read_only=True)
+    reviewer = UserPublicSerializer(read_only=True)
     can_edit = serializers.SerializerMethodField()
     is_past = serializers.SerializerMethodField()
 
@@ -1803,6 +1813,10 @@ class CompetitionScheduleEntrySerializer(serializers.ModelSerializer):
             "announcement_stage",
             "created_by",
             "updated_by",
+            "status",
+            "reviewer",
+            "review_note",
+            "reviewed_at",
             "can_edit",
             "is_past",
             "created_at",
@@ -1822,6 +1836,10 @@ class CompetitionScheduleEntrySerializer(serializers.ModelSerializer):
             "announcement_stage",
             "can_edit",
             "is_past",
+            "status",
+            "reviewer",
+            "review_note",
+            "reviewed_at",
             "created_at",
             "updated_at",
         ]
@@ -1834,7 +1852,10 @@ class CompetitionScheduleEntrySerializer(serializers.ModelSerializer):
         return bool(obj.event_date and obj.event_date < timezone.localdate())
 
     def validate_announcement(self, value):
-        if value and not value.is_visible:
+        if value and (
+            not value.is_visible
+            or value.status != CompetitionNotice.Status.APPROVED
+        ):
             raise serializers.ValidationError("不能关联已隐藏的赛事公告。")
         return value
 

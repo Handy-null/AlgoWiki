@@ -4655,7 +4655,19 @@ class CompetitionScheduleApiTests(APITestCase):
             password="Password123",
             role=User.Role.SCHOOL,
         )
+        self.admin = User.objects.create_user(
+            username="schedule_admin",
+            password="Password123",
+            role=User.Role.ADMIN,
+        )
+        self.user = User.objects.create_user(
+            username="schedule_user",
+            password="Password123",
+            role=User.Role.NORMAL,
+        )
         self.school_token = Token.objects.create(user=self.school)
+        self.admin_token = Token.objects.create(user=self.admin)
+        self.user_token = Token.objects.create(user=self.user)
         self.notice = CompetitionNotice.objects.create(
             title="CCPC Regional Notice",
             content_md="notice body",
@@ -4666,6 +4678,93 @@ class CompetitionScheduleApiTests(APITestCase):
             updated_by=self.school,
             is_visible=True,
         )
+
+    def test_normal_user_can_submit_notice_for_admin_review(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.user_token.key}")
+        create_response = self.client.post(
+            "/api/competition-notices/",
+            {
+                "title": "User Notice",
+                "content_md": "user submitted notice",
+                "series": CompetitionNotice.Series.CCPC,
+                "year": 2026,
+                "stage": CompetitionNotice.Stage.REGIONAL,
+                "is_visible": True,
+            },
+            format="json",
+        )
+
+        self.assertEqual(create_response.status_code, 201)
+        self.assertEqual(create_response.data["status"], CompetitionNotice.Status.PENDING)
+        self.assertFalse(create_response.data["is_visible"])
+        notice_id = create_response.data["id"]
+
+        list_response = self.client.get("/api/competition-notices/")
+        items = list_response.data.get("results", list_response.data)
+        self.assertNotIn(notice_id, {item["id"] for item in items})
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
+        review_response = self.client.post(
+            f"/api/competition-notices/{notice_id}/approve/",
+            {"review_note": "ok"},
+            format="json",
+        )
+        self.assertEqual(review_response.status_code, 200)
+        self.assertEqual(review_response.data["status"], CompetitionNotice.Status.APPROVED)
+        self.assertTrue(review_response.data["is_visible"])
+
+        self.client.credentials()
+        public_response = self.client.get("/api/competition-notices/")
+        public_items = public_response.data.get("results", public_response.data)
+        self.assertIn(notice_id, {item["id"] for item in public_items})
+
+    def test_normal_user_can_submit_schedule_for_admin_review(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.user_token.key}")
+        create_response = self.client.post(
+            "/api/competition-schedules/",
+            {
+                "event_date": (timezone.localdate() + timedelta(days=14)).isoformat(),
+                "competition_time_range": "09:00-12:00",
+                "competition_type": "User Submitted Contest",
+                "location": "Online",
+                "qq_group": "123456",
+                "announcement": self.notice.id,
+            },
+            format="json",
+        )
+
+        self.assertEqual(create_response.status_code, 201)
+        self.assertEqual(
+            create_response.data["status"], CompetitionScheduleEntry.Status.PENDING
+        )
+        entry_id = create_response.data["id"]
+
+        list_response = self.client.get("/api/competition-schedules/")
+        items = list_response.data.get("results", list_response.data)
+        self.assertNotIn(entry_id, {item["id"] for item in items})
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
+        pending_response = self.client.get(
+            "/api/competition-schedules/",
+            {"include_hidden": 1, "status": CompetitionScheduleEntry.Status.PENDING},
+        )
+        pending_items = pending_response.data.get("results", pending_response.data)
+        self.assertIn(entry_id, {item["id"] for item in pending_items})
+
+        review_response = self.client.post(
+            f"/api/competition-schedules/{entry_id}/approve/",
+            {"review_note": "ok"},
+            format="json",
+        )
+        self.assertEqual(review_response.status_code, 200)
+        self.assertEqual(
+            review_response.data["status"], CompetitionScheduleEntry.Status.APPROVED
+        )
+
+        self.client.credentials()
+        public_response = self.client.get("/api/competition-schedules/")
+        public_items = public_response.data.get("results", public_response.data)
+        self.assertIn(entry_id, {item["id"] for item in public_items})
 
     def test_school_user_can_patch_schedule_with_blank_fields_and_clear_announcement(
         self,

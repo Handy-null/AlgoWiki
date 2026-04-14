@@ -414,6 +414,11 @@ class FriendlyLink(TimeStampedModel):
 
 
 class CompetitionNotice(TimeStampedModel):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+
     class Series(models.TextChoices):
         ICPC = "icpc", "ICPC"
         CCPC = "ccpc", "CCPC"
@@ -447,6 +452,18 @@ class CompetitionNotice(TimeStampedModel):
         blank=True,
     )
     is_visible = models.BooleanField(default=True, db_index=True)
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.APPROVED, db_index=True
+    )
+    reviewer = models.ForeignKey(
+        "User",
+        related_name="reviewed_competition_notices",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    review_note = models.TextField(blank=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
     published_at = models.DateTimeField(default=timezone.now, db_index=True)
 
     class Meta:
@@ -457,6 +474,11 @@ class CompetitionNotice(TimeStampedModel):
 
 
 class CompetitionScheduleEntry(TimeStampedModel):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+
     event_date = models.DateField(db_index=True)
     competition_time_range = models.CharField(max_length=60, blank=True)
     competition_type = models.CharField(max_length=120)
@@ -481,6 +503,18 @@ class CompetitionScheduleEntry(TimeStampedModel):
         null=True,
         blank=True,
     )
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.APPROVED, db_index=True
+    )
+    reviewer = models.ForeignKey(
+        "User",
+        related_name="reviewed_competition_schedules",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    review_note = models.TextField(blank=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["event_date", "id"]

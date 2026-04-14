@@ -163,6 +163,98 @@
       </p>
     </article>
 
+    <article v-else-if="currentSection === 'notices'" class="review-card full">
+      <h2>赛事公告审核</h2>
+      <p class="meta">待审核 {{ counts.notices }} 条</p>
+      <article v-for="item in pendingNotices" :key="item.id" class="review-row">
+        <div class="review-main">
+          <strong>{{ item.title || "未命名公告" }}</strong>
+          <p class="meta">
+            提交人：{{ item.created_by?.username || "-" }} ·
+            {{ item.series_label || item.series || "-" }}
+            <template v-if="item.year"> · {{ item.year }}</template>
+            <template v-if="item.stage_label || item.stage">
+              · {{ item.stage_label || item.stage }}</template
+            >
+            · 提交时间：{{ formatDateTime(item.created_at) }}
+          </p>
+          <div class="markdown trick-markdown" v-html="renderMarkdown(item.content_md || '')"></div>
+          <textarea
+            v-model="item._reviewNote"
+            class="textarea"
+            placeholder="审核备注（可选）"
+          ></textarea>
+        </div>
+        <div class="review-actions">
+          <button
+            class="btn btn-accent"
+            type="button"
+            :disabled="reviewingNoticeId === item.id"
+            @click="reviewCompetitionNotice(item, 'approve')"
+          >
+            通过
+          </button>
+          <button
+            class="btn"
+            type="button"
+            :disabled="reviewingNoticeId === item.id"
+            @click="reviewCompetitionNotice(item, 'reject')"
+          >
+            驳回
+          </button>
+        </div>
+      </article>
+      <p v-if="!pendingNotices.length" class="meta">当前没有待审核赛事公告。</p>
+    </article>
+
+    <article v-else-if="currentSection === 'schedules'" class="review-card full">
+      <h2>赛事时刻表审核</h2>
+      <p class="meta">待审核 {{ counts.schedules }} 条</p>
+      <article v-for="item in pendingSchedules" :key="item.id" class="review-row">
+        <div class="review-main">
+          <strong>{{ item.competition_type || "未命名赛事" }}</strong>
+          <p class="meta">
+            提交人：{{ item.created_by?.username || "-" }} ·
+            {{ formatDate(item.event_date) }} ·
+            {{ item.competition_time_range || "时间未填" }} ·
+            {{ item.location || "地点未填" }}
+          </p>
+          <p class="meta">
+            QQ群或链接：{{ item.qq_group || "-" }}
+            <template v-if="item.announcement_title">
+              · 关联公告：{{ item.announcement_title }}</template
+            >
+          </p>
+          <textarea
+            v-model="item._reviewNote"
+            class="textarea"
+            placeholder="审核备注（可选）"
+          ></textarea>
+        </div>
+        <div class="review-actions">
+          <button
+            class="btn btn-accent"
+            type="button"
+            :disabled="reviewingScheduleId === item.id"
+            @click="reviewCompetitionSchedule(item, 'approve')"
+          >
+            通过
+          </button>
+          <button
+            class="btn"
+            type="button"
+            :disabled="reviewingScheduleId === item.id"
+            @click="reviewCompetitionSchedule(item, 'reject')"
+          >
+            驳回
+          </button>
+        </div>
+      </article>
+      <p v-if="!pendingSchedules.length" class="meta">
+        当前没有待审核赛事时刻表。
+      </p>
+    </article>
+
     <article v-else-if="currentSection === 'tickets'" class="review-card full">
       <h2>工单审核</h2>
       <p class="meta">待处理 {{ counts.tickets }} 条</p>
@@ -674,6 +766,18 @@ const reviewSections = [
     routeName: "review-practice",
   },
   {
+    key: "notices",
+    label: "赛事公告",
+    description: "审核普通用户提交的赛事公告。",
+    routeName: "review-notices",
+  },
+  {
+    key: "schedules",
+    label: "赛事时刻表",
+    description: "审核普通用户提交的赛事日程。",
+    routeName: "review-schedules",
+  },
+  {
     key: "tickets",
     label: "工单",
     description: "处理问答区与站内工单。",
@@ -719,6 +823,8 @@ const reviewSectionMap = new Map(
 const counts = reactive({
   revisions: 0,
   practice: 0,
+  notices: 0,
+  schedules: 0,
   tickets: 0,
   comments: 0,
   tricks: 0,
@@ -731,6 +837,8 @@ const categories = ref([]);
 const assigneeOptions = ref([]);
 const pendingRevisions = ref([]);
 const pendingPracticeProposals = ref([]);
+const pendingNotices = ref([]);
+const pendingSchedules = ref([]);
 const pendingTickets = ref([]);
 const pendingComments = ref([]);
 const pendingTricks = ref([]);
@@ -746,6 +854,8 @@ const selectedPendingAnswerIds = ref([]);
 const bulkRevisionReviewNote = ref("");
 const bulkCommentReviewNote = ref("");
 const reviewingPracticeId = ref(null);
+const reviewingNoticeId = ref(null);
+const reviewingScheduleId = ref(null);
 const reviewingCommentId = ref(null);
 const reviewingTrickId = ref(null);
 const reviewingTrickTermSuggestionId = ref(null);
@@ -860,6 +970,8 @@ async function loadCounts() {
   const [
     revisions,
     practice,
+    notices,
+    schedules,
     tickets,
     comments,
     tricks,
@@ -869,6 +981,8 @@ async function loadCounts() {
   ] = await Promise.all([
     fetchCount("/revisions/", { status: "pending" }),
     fetchCount("/competition-practice-proposals/", { status: "pending" }),
+    fetchCount("/competition-notices/", { include_hidden: 1, status: "pending" }),
+    fetchCount("/competition-schedules/", { include_hidden: 1, status: "pending" }),
     fetchCount("/issues/", { status: "pending" }),
     fetchCount("/comments/", { status: "pending" }),
     fetchCount("/tricks/", { include_all: 1, status: "pending" }),
@@ -878,6 +992,8 @@ async function loadCounts() {
   ]);
   counts.revisions = revisions;
   counts.practice = practice;
+  counts.notices = notices;
+  counts.schedules = schedules;
   counts.tickets = tickets;
   counts.comments = comments;
   counts.tricks = tricks;
@@ -951,6 +1067,36 @@ async function loadPendingPracticeProposals() {
     }));
   } catch (error) {
     ui.error(getErrorText(error, "补题链接申请加载失败"));
+  }
+}
+
+async function loadPendingCompetitionNotices() {
+  try {
+    const { results } = await fetchAllPages("/competition-notices/", {
+      include_hidden: 1,
+      status: "pending",
+    });
+    pendingNotices.value = results.map((item) => ({
+      ...item,
+      _reviewNote: item._reviewNote || "",
+    }));
+  } catch (error) {
+    ui.error(getErrorText(error, "赛事公告审核列表加载失败"));
+  }
+}
+
+async function loadPendingCompetitionSchedules() {
+  try {
+    const { results } = await fetchAllPages("/competition-schedules/", {
+      include_hidden: 1,
+      status: "pending",
+    });
+    pendingSchedules.value = results.map((item) => ({
+      ...item,
+      _reviewNote: item._reviewNote || "",
+    }));
+  } catch (error) {
+    ui.error(getErrorText(error, "赛事时刻表审核列表加载失败"));
   }
 }
 
@@ -1063,6 +1209,12 @@ async function ensureLoaded(section) {
     case "practice":
       await loadPendingPracticeProposals();
       break;
+    case "notices":
+      await loadPendingCompetitionNotices();
+      break;
+    case "schedules":
+      await loadPendingCompetitionSchedules();
+      break;
     case "tickets":
       await Promise.all([loadPendingTickets(), loadAssigneeOptions()]);
       break;
@@ -1112,6 +1264,11 @@ function formatDateTime(value) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function formatDate(value) {
+  if (!value) return "-";
+  return String(value).slice(0, 10);
 }
 
 function formatCount(value) {
@@ -1215,6 +1372,36 @@ async function reviewPractice(item, action) {
     ui.error(getErrorText(error, "补题链接审核失败"));
   } finally {
     reviewingPracticeId.value = null;
+  }
+}
+
+async function reviewCompetitionNotice(item, action) {
+  reviewingNoticeId.value = item.id;
+  try {
+    await api.post(`/competition-notices/${item.id}/${action}/`, {
+      review_note: item._reviewNote || "",
+    });
+    ui.success(action === "approve" ? "赛事公告已通过" : "赛事公告已驳回");
+    await reloadCurrentSection();
+  } catch (error) {
+    ui.error(getErrorText(error, "赛事公告审核失败"));
+  } finally {
+    reviewingNoticeId.value = null;
+  }
+}
+
+async function reviewCompetitionSchedule(item, action) {
+  reviewingScheduleId.value = item.id;
+  try {
+    await api.post(`/competition-schedules/${item.id}/${action}/`, {
+      review_note: item._reviewNote || "",
+    });
+    ui.success(action === "approve" ? "赛事时刻表已通过" : "赛事时刻表已驳回");
+    await reloadCurrentSection();
+  } catch (error) {
+    ui.error(getErrorText(error, "赛事时刻表审核失败"));
+  } finally {
+    reviewingScheduleId.value = null;
   }
 }
 
