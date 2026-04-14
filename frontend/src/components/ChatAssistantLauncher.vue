@@ -897,6 +897,7 @@ onBeforeUnmount(() => {
 .assistant-message {
   display: flex;
   width: 100%;
+  min-width: 0;
 }
 
 .assistant-message--assistant {
@@ -909,6 +910,8 @@ onBeforeUnmount(() => {
 
 .assistant-bubble {
   width: min(100%, 85%);
+  max-width: 100%;
+  min-width: 0;
   padding: 0.8rem 0.95rem;
   border-radius: 1.22rem;
   background: rgba(233, 233, 235, 0.95);
@@ -917,6 +920,8 @@ onBeforeUnmount(() => {
   display: grid;
   gap: 0.72rem;
   word-break: break-word;
+  overflow-wrap: anywhere;
+  overflow: hidden;
   font-size: 0.9rem;
 }
 
@@ -939,8 +944,13 @@ onBeforeUnmount(() => {
 }
 
 .assistant-bubble :deep(p),
-.assistant-bubble :deep(li) {
+.assistant-bubble :deep(li),
+.assistant-bubble :deep(blockquote),
+.assistant-bubble :deep(td),
+.assistant-bubble :deep(th) {
   line-height: 1.48;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .assistant-bubble :deep(h1),
@@ -967,6 +977,39 @@ onBeforeUnmount(() => {
 .assistant-bubble :deep(ol),
 .assistant-bubble :deep(ul) {
   padding-left: 1.15rem;
+}
+
+.assistant-bubble :deep(.markdown) {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.assistant-bubble :deep(a) {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.assistant-bubble :deep(table),
+.assistant-bubble :deep(pre),
+.assistant-bubble :deep(.katex-display),
+.assistant-bubble :deep(img) {
+  max-width: 100%;
+}
+
+.assistant-bubble :deep(table) {
+  display: block;
+  overflow-x: auto;
+}
+
+.assistant-bubble :deep(pre) {
+  min-width: 0;
+}
+
+.assistant-bubble :deep(:not(pre) > code) {
+  white-space: break-spaces;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .assistant-message--user .assistant-bubble :deep(a) {
@@ -1003,6 +1046,9 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
   gap: 0.38rem;
   align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   padding-top: 0.58rem;
   border-top: 1px solid rgba(148, 163, 184, 0.22);
 }
@@ -1018,7 +1064,9 @@ onBeforeUnmount(() => {
 .assistant-source {
   display: inline-flex;
   align-items: center;
+  flex: 0 1 auto;
   max-width: 100%;
+  min-width: 0;
   min-height: 1.78rem;
   padding: 0.24rem 0.6rem;
   border-radius: 999px;
