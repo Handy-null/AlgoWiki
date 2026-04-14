@@ -178,7 +178,10 @@
             <td data-label="年份">{{ row.year }}</td>
             <td data-label="赛事体系">{{ labelOf(seriesOptions, row.series) }}</td>
             <td data-label="赛事类型">{{ labelOf(stageOptions, row.stage) }}</td>
-            <td data-label="简称">{{ row.short_name || "-" }}</td>
+            <td class="practice-short-name-cell" data-label="简称">
+              <div>{{ row.short_name || "-" }}</div>
+              <ContributorsPanel class="practice-row-contributors" :contributors="row.contributors" compact />
+            </td>
             <td class="practice-official-cell" data-label="官方名称">
               <a v-if="row.official_url" :href="row.official_url" target="_blank" rel="noopener noreferrer" class="table-link">
                 {{ row.official_name || row.official_url }}
@@ -229,6 +232,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
+import ContributorsPanel from "./ContributorsPanel.vue";
 import { useRequestControllers } from "../composables/useRequestControllers";
 import api, { isRequestCanceled } from "../services/api";
 import { useAuthStore } from "../stores/auth";
@@ -622,6 +626,14 @@ onMounted(async () => {
 .practice-official-cell {
   min-width: 240px;
   white-space: pre-wrap;
+}
+
+.practice-short-name-cell {
+  min-width: 180px;
+}
+
+.practice-row-contributors {
+  margin-top: 8px;
 }
 
 .practice-links,

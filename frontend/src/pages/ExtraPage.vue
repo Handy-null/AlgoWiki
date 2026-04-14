@@ -179,6 +179,11 @@
             <span>发布者：{{ item.author?.username || "-" }}</span>
             <span>发布时间：{{ formatTime(item.created_at) }}</span>
           </div>
+          <ContributorsPanel
+            class="trick-contributors"
+            :contributors="item.contributors"
+            compact
+          />
           <div class="term-selected" v-if="item.terms?.length">
             <span
               v-for="term in sortTermItems(item.terms)"
@@ -462,6 +467,7 @@ import {
 } from "vue";
 import { useRoute } from "vue-router";
 
+import ContributorsPanel from "../components/ContributorsPanel.vue";
 import api from "../services/api";
 import { renderInlineMarkdown, renderMarkdown } from "../services/markdown";
 import { useAuthStore } from "../stores/auth";
@@ -1432,6 +1438,10 @@ onMounted(async () => {
   font-size: 12px;
   color: var(--muted);
   margin-bottom: 8px;
+}
+
+.trick-contributors {
+  margin-bottom: 10px;
 }
 
 .trick-action-row {

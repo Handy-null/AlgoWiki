@@ -72,7 +72,10 @@
             <tr v-for="row in scheduleRows" :key="row.id" :class="{ 'schedule-row--muted': row.is_past }">
               <td>{{ formatDate(row.event_date) }}</td>
               <td>{{ row.competition_time_range || "-" }}</td>
-              <td class="schedule-table__title">{{ row.competition_type || "-" }}</td>
+              <td class="schedule-table__title">
+                <div class="schedule-table__title-text">{{ row.competition_type || "-" }}</div>
+                <ContributorsPanel class="schedule-table__contributors" :contributors="row.contributors" compact />
+              </td>
               <td>{{ row.location || "-" }}</td>
               <td>{{ row.qq_group || "-" }}</td>
               <td>
@@ -212,6 +215,7 @@
             <template v-if="isSeriesWithYear(activeNotice.series)"> · {{ activeNotice.year }} · {{ stageText(activeNotice.stage) }}</template>
             · {{ formatDateTime(activeNotice.published_at || activeNotice.created_at) }}
           </p>
+          <ContributorsPanel class="notice-detail__contributors" :contributors="activeNotice.contributors" compact />
           <section class="markdown" v-html="renderMarkdown(activeNotice.content_md || '')"></section>
         </article>
       </div>
@@ -233,6 +237,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useRequestControllers } from "../composables/useRequestControllers";
 import { useCompetitionZoneNav } from "../composables/useCompetitionZoneNav";
 import CompetitionPracticePanel from "../components/CompetitionPracticePanel.vue";
+import ContributorsPanel from "../components/ContributorsPanel.vue";
 import api, { isRequestCanceled } from "../services/api";
 import { renderMarkdown } from "../services/markdown";
 import { useAuthStore } from "../stores/auth";
@@ -800,6 +805,19 @@ onMounted(async () => {
   color: var(--text);
   min-width: 220px;
 }
+
+.schedule-table__title-text {
+  margin-bottom: 8px;
+}
+
+.schedule-table__contributors {
+  min-width: 180px;
+}
+
+.notice-detail__contributors {
+  margin: 12px 0 14px;
+}
+
 .schedule-row--muted {
   opacity: 0.72;
 }

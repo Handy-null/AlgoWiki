@@ -2704,6 +2704,43 @@ class TrickEntryFlowTests(APITestCase):
         self.assertNotIn(self.approved.id, ids)
         self.assertNotIn(self.rejected.id, ids)
 
+    def test_trick_list_returns_creator_and_approved_editor_contributors(self):
+        update_event = ContributionEvent.objects.create(
+            user=self.admin,
+            event_type=ContributionEvent.EventType.ADMIN,
+            target_type="TrickEntry",
+            target_id=self.approved.id,
+            payload={"action": "update_trick_entry", "status": TrickEntry.Status.APPROVED},
+        )
+        moderation_event = ContributionEvent.objects.create(
+            user=self.admin,
+            event_type=ContributionEvent.EventType.ADMIN,
+            target_type="TrickEntry",
+            target_id=self.approved.id,
+            payload={"action": "moderate_trick_entry", "status": TrickEntry.Status.APPROVED},
+        )
+        ContributionEvent.objects.filter(id=update_event.id).update(
+            created_at=self.approved.created_at + timedelta(minutes=5)
+        )
+        ContributionEvent.objects.filter(id=moderation_event.id).update(
+            created_at=self.approved.created_at + timedelta(minutes=10)
+        )
+
+        response = self.client.get("/api/tricks/")
+        self.assertEqual(response.status_code, 200)
+        items = response.data.get("results", response.data)
+        payload = next(item for item in items if item["id"] == self.approved.id)
+        contributors = payload["contributors"]
+
+        self.assertEqual(
+            [item["user"]["username"] for item in contributors],
+            [self.user.username, self.admin.username],
+        )
+        self.assertTrue(contributors[0]["is_creator"])
+        self.assertEqual(contributors[0]["approved_revision_count"], 0)
+        self.assertFalse(contributors[1]["is_creator"])
+        self.assertEqual(contributors[1]["approved_revision_count"], 1)
+
     def test_can_filter_tricks_by_term(self):
         self.approved.terms.add(self.term)
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
@@ -3327,6 +3364,111 @@ class CompetitionPracticeLinkApiTests(APITestCase):
         self.assertFalse(
             CompetitionPracticeLink.objects.filter(id=self.entry.id).exists()
         )
+
+    def test_list_returns_creator_and_approved_modifier_contributors(self):
+        entry = CompetitionPracticeLink.objects.create(
+            source_key="manual-contributor-entry",
+            year=2025,
+            series=CompetitionPracticeLink.Series.ICPC,
+            stage=CompetitionPracticeLink.Stage.REGIONAL,
+            short_name="区域赛补题",
+            official_name="2025 ICPC Regional",
+            official_url="https://example.com/icpc-regional",
+            event_date_text="2025-10-01",
+            organizer="AlgoWiki",
+            practice_links=[{"label": "QOJ", "url": "https://qoj.ac/contest/2501"}],
+            practice_links_note="",
+            source_file="manual.md",
+            source_section="contributors",
+            display_order=9,
+            created_by=self.admin,
+            updated_by=self.admin,
+        )
+        proposal = CompetitionPracticeLinkProposal.objects.create(
+            target_entry=entry,
+            proposer=self.proposer,
+            proposed_year=2025,
+            proposed_series=CompetitionPracticeLink.Series.ICPC,
+            proposed_stage=CompetitionPracticeLink.Stage.REGIONAL,
+            proposed_short_name="区域赛补题",
+            proposed_official_name="2025 ICPC Regional Updated",
+            proposed_official_url="https://example.com/icpc-regional",
+            proposed_event_date_text="2025-10-01",
+            proposed_organizer="AlgoWiki",
+            proposed_practice_links=[
+                {"label": "QOJ", "url": "https://qoj.ac/contest/2501"},
+                {"label": "PTA", "url": "https://pintia.cn/problem-sets/2501"},
+            ],
+            proposed_practice_links_note="",
+            reason="增加 PTA",
+            status=CompetitionPracticeLinkProposal.Status.APPROVED,
+            reviewer=self.admin,
+            reviewed_at=timezone.now(),
+        )
+        CompetitionPracticeLinkProposal.objects.filter(id=proposal.id).update(
+            created_at=timezone.now() - timedelta(days=1)
+        )
+
+        response = self.client.get(
+            "/api/competition-practice-links/",
+            {"year": 2025, "search": "区域赛补题"},
+        )
+        self.assertEqual(response.status_code, 200)
+        items = response.data.get("results", response.data)
+        payload = next(item for item in items if item["id"] == entry.id)
+        contributors = payload["contributors"]
+
+        self.assertEqual(
+            [item["user"]["username"] for item in contributors],
+            [self.admin.username, self.proposer.username],
+        )
+        self.assertTrue(contributors[0]["is_creator"])
+        self.assertEqual(contributors[0]["approved_revision_count"], 0)
+        self.assertFalse(contributors[1]["is_creator"])
+        self.assertEqual(contributors[1]["approved_revision_count"], 1)
+
+    def test_new_entry_from_approved_proposal_only_counts_creator_once(self):
+        proposal = CompetitionPracticeLinkProposal.objects.create(
+            proposer=self.proposer,
+            proposed_year=2026,
+            proposed_series=CompetitionPracticeLink.Series.CCPC,
+            proposed_stage=CompetitionPracticeLink.Stage.INVITATIONAL,
+            proposed_short_name="新建补题条目",
+            proposed_official_name="2026 CCPC Invitational",
+            proposed_official_url="https://example.com/ccpc-invite",
+            proposed_event_date_text="2026-08-10",
+            proposed_organizer="AlgoWiki",
+            proposed_practice_links=[{"label": "QOJ", "url": "https://qoj.ac/contest/2601"}],
+            proposed_practice_links_note="",
+            reason="新增补题入口",
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
+        response = self.client.post(
+            f"/api/competition-practice-proposals/{proposal.id}/approve/",
+            {"review_note": "通过"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        proposal.refresh_from_db()
+        entry = proposal.target_entry
+        self.assertIsNotNone(entry)
+
+        list_response = self.client.get(
+            "/api/competition-practice-links/",
+            {"year": 2026, "search": "新建补题条目"},
+        )
+        self.assertEqual(list_response.status_code, 200)
+        items = list_response.data.get("results", list_response.data)
+        payload = next(item for item in items if item["id"] == entry.id)
+        contributors = payload["contributors"]
+
+        self.assertEqual(
+            [item["user"]["username"] for item in contributors],
+            [self.proposer.username],
+        )
+        self.assertTrue(contributors[0]["is_creator"])
+        self.assertEqual(contributors[0]["approved_revision_count"], 0)
 
     def test_normal_user_cannot_remove_entry(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.proposer_token.key}")
@@ -4815,6 +4957,69 @@ class CompetitionScheduleApiTests(APITestCase):
         public_response = self.client.get("/api/competition-schedules/")
         public_items = public_response.data.get("results", public_response.data)
         self.assertIn(entry_id, {item["id"] for item in public_items})
+
+    def test_list_returns_notice_contributors(self):
+        event = ContributionEvent.objects.create(
+            user=self.admin,
+            event_type=ContributionEvent.EventType.ADMIN,
+            target_type="CompetitionNotice",
+            target_id=self.notice.id,
+            payload={"action": "update_competition_notice"},
+        )
+        ContributionEvent.objects.filter(id=event.id).update(
+            created_at=self.notice.created_at + timedelta(minutes=5)
+        )
+
+        response = self.client.get("/api/competition-notices/")
+        self.assertEqual(response.status_code, 200)
+        items = response.data.get("results", response.data)
+        payload = next(item for item in items if item["id"] == self.notice.id)
+        contributors = payload["contributors"]
+
+        self.assertEqual(
+            [item["user"]["username"] for item in contributors],
+            [self.school.username, self.admin.username],
+        )
+        self.assertTrue(contributors[0]["is_creator"])
+        self.assertEqual(contributors[1]["approved_revision_count"], 1)
+
+    def test_list_returns_schedule_contributors(self):
+        entry = CompetitionScheduleEntry.objects.create(
+            event_date=timezone.localdate() + timedelta(days=14),
+            competition_time_range="10:00-16:00",
+            competition_type="CCPC 区域赛",
+            location="Nanjing",
+            qq_group="",
+            announcement=None,
+            created_by=self.school,
+            updated_by=self.admin,
+            status=CompetitionScheduleEntry.Status.APPROVED,
+            reviewer=self.school,
+            reviewed_at=timezone.now(),
+        )
+        event = ContributionEvent.objects.create(
+            user=self.admin,
+            event_type=ContributionEvent.EventType.ADMIN,
+            target_type="CompetitionScheduleEntry",
+            target_id=entry.id,
+            payload={"action": "update_competition_schedule"},
+        )
+        ContributionEvent.objects.filter(id=event.id).update(
+            created_at=entry.created_at + timedelta(minutes=5)
+        )
+
+        response = self.client.get("/api/competition-schedules/", {"year": entry.event_date.year})
+        self.assertEqual(response.status_code, 200)
+        items = response.data.get("results", response.data)
+        payload = next(item for item in items if item["id"] == entry.id)
+        contributors = payload["contributors"]
+
+        self.assertEqual(
+            [item["user"]["username"] for item in contributors],
+            [self.school.username, self.admin.username],
+        )
+        self.assertTrue(contributors[0]["is_creator"])
+        self.assertEqual(contributors[1]["approved_revision_count"], 1)
 
     def test_school_user_can_patch_schedule_with_blank_fields_and_clear_announcement(
         self,

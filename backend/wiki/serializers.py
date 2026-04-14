@@ -1096,6 +1096,142 @@ class ArticleDetailSerializer(ArticleSerializer):
         ).data
 
 
+def _record_contributor(
+    contributor_map, user, contributed_at, *, is_creator=False, approved_revision=False
+):
+    if not user or not contributed_at:
+        return
+
+    payload = contributor_map.get(user.id)
+    if payload is None:
+        payload = {
+            "user": user,
+            "is_creator": False,
+            "approved_revision_count": 0,
+            "first_contributed_at": contributed_at,
+            "last_contributed_at": contributed_at,
+        }
+        contributor_map[user.id] = payload
+    else:
+        if contributed_at < payload["first_contributed_at"]:
+            payload["first_contributed_at"] = contributed_at
+        if contributed_at > payload["last_contributed_at"]:
+            payload["last_contributed_at"] = contributed_at
+
+    if is_creator:
+        payload["is_creator"] = True
+    if approved_revision:
+        payload["approved_revision_count"] += 1
+
+
+def _finalize_contributors(contributor_map, *, context):
+    contributors = sorted(
+        contributor_map.values(),
+        key=lambda item: (
+            item["first_contributed_at"],
+            item["last_contributed_at"],
+            item["user"].username.casefold(),
+            item["user"].id,
+        ),
+    )
+    return ArticleContributorSerializer(contributors, many=True, context=context).data
+
+
+def _collect_serializer_instances(serializer, current_obj):
+    root = getattr(serializer, "root", None) or serializer
+    cache = getattr(root, "_contributor_instance_cache", None)
+    if cache is None:
+        cache = {}
+        setattr(root, "_contributor_instance_cache", cache)
+
+    cache_key = current_obj.__class__
+    if cache_key in cache:
+        return cache[cache_key]
+
+    instance = getattr(root, "instance", None)
+    if instance is None:
+        resolved = [current_obj] if current_obj is not None else []
+    elif hasattr(instance, "object_list"):
+        resolved = [item for item in instance.object_list if item is not None]
+    elif isinstance(instance, (list, tuple)):
+        resolved = [item for item in instance if item is not None]
+    elif hasattr(instance, "__iter__") and not isinstance(instance, (str, bytes, dict)):
+        resolved = [item for item in instance if item is not None]
+    else:
+        resolved = [instance]
+
+    cache[cache_key] = resolved
+    return resolved
+
+
+def _get_contribution_event_cache(serializer, current_obj, *, target_type):
+    root = getattr(serializer, "root", None) or serializer
+    cache = getattr(root, "_contribution_event_cache", None)
+    if cache is None:
+        cache = {}
+        setattr(root, "_contribution_event_cache", cache)
+
+    instances = _collect_serializer_instances(serializer, current_obj)
+    target_ids = tuple(sorted({item.id for item in instances if getattr(item, "id", None)}))
+    cache_key = (target_type, target_ids)
+    if cache_key not in cache:
+        grouped = {}
+        if target_ids:
+            events = (
+                ContributionEvent.objects.filter(target_type=target_type, target_id__in=target_ids)
+                .select_related("user")
+                .order_by("created_at", "id")
+            )
+            for event in events:
+                grouped.setdefault(event.target_id, []).append(event)
+        cache[cache_key] = grouped
+    return cache[cache_key]
+
+
+def _get_practice_proposal_cache(serializer, current_obj):
+    root = getattr(serializer, "root", None) or serializer
+    cache = getattr(root, "_practice_proposal_cache", None)
+    if cache is None:
+        cache = {}
+        setattr(root, "_practice_proposal_cache", cache)
+
+    instances = _collect_serializer_instances(serializer, current_obj)
+    target_ids = tuple(sorted({item.id for item in instances if getattr(item, "id", None)}))
+    if target_ids not in cache:
+        grouped = {}
+        if target_ids:
+            proposals = (
+                CompetitionPracticeLinkProposal.objects.filter(
+                    target_entry_id__in=target_ids,
+                    status=CompetitionPracticeLinkProposal.Status.APPROVED,
+                )
+                .select_related("proposer")
+                .order_by("reviewed_at", "updated_at", "created_at", "id")
+            )
+            for proposal in proposals:
+                grouped.setdefault(proposal.target_entry_id, []).append(proposal)
+        cache[target_ids] = grouped
+    return cache[target_ids]
+
+
+def _is_practice_creation_proposal(entry, proposal):
+    if not entry or not proposal:
+        return False
+    if proposal.target_entry_id != entry.id:
+        return False
+    if proposal.proposer_id != entry.created_by_id:
+        return False
+    if entry.source_file != "user_proposal" or entry.source_section != "user_submission":
+        return False
+
+    created_at = getattr(entry, "created_at", None)
+    reviewed_at = getattr(proposal, "reviewed_at", None)
+    if not created_at or not reviewed_at:
+        return False
+
+    return abs((created_at - reviewed_at).total_seconds()) <= 10
+
+
 class ArticleCommentSerializer(serializers.ModelSerializer):
     author = UserPublicSerializer(read_only=True)
     reviewer = UserPublicSerializer(read_only=True)
@@ -1268,6 +1404,7 @@ class TrickEntrySerializer(serializers.ModelSerializer):
     author = UserPublicSerializer(read_only=True)
     reviewer = UserPublicSerializer(read_only=True)
     terms = serializers.SerializerMethodField(read_only=True)
+    contributors = serializers.SerializerMethodField()
     term_ids = serializers.PrimaryKeyRelatedField(
         source="terms",
         queryset=TrickTerm.objects.filter(is_active=True),
@@ -1295,6 +1432,7 @@ class TrickEntrySerializer(serializers.ModelSerializer):
             "reviewer",
             "review_note",
             "reviewed_at",
+            "contributors",
             "created_at",
             "updated_at",
         ]
@@ -1321,6 +1459,26 @@ class TrickEntrySerializer(serializers.ModelSerializer):
             }
             for term in ordered_terms
         ]
+
+    def get_contributors(self, obj):
+        contributor_map = {}
+        _record_contributor(contributor_map, obj.author, obj.created_at, is_creator=True)
+
+        event_cache = _get_contribution_event_cache(self, obj, target_type=TrickEntry.__name__)
+        for event in event_cache.get(obj.id, []):
+            payload = event.payload if isinstance(event.payload, dict) else {}
+            if payload.get("action") != "update_trick_entry":
+                continue
+            if payload.get("status") != TrickEntry.Status.APPROVED:
+                continue
+            _record_contributor(
+                contributor_map,
+                event.user,
+                event.created_at,
+                approved_revision=True,
+            )
+
+        return _finalize_contributors(contributor_map, context=self.context)
 
     def _normalize_term_name(self, value):
         return " ".join(str(value or "").strip().split())
@@ -1749,6 +1907,7 @@ class CompetitionNoticeSerializer(serializers.ModelSerializer):
     series_label = serializers.CharField(source="get_series_display", read_only=True)
     stage_label = serializers.CharField(source="get_stage_display", read_only=True)
     can_edit = serializers.SerializerMethodField()
+    contributors = serializers.SerializerMethodField()
 
     class Meta:
         model = CompetitionNotice
@@ -1770,6 +1929,7 @@ class CompetitionNoticeSerializer(serializers.ModelSerializer):
             "created_by",
             "updated_by",
             "can_edit",
+            "contributors",
             "created_at",
             "updated_at",
         ]
@@ -1788,6 +1948,44 @@ class CompetitionNoticeSerializer(serializers.ModelSerializer):
     def get_can_edit(self, _obj):
         request = self.context.get("request")
         return can_manage_competition(getattr(request, "user", None))
+
+    def get_contributors(self, obj):
+        contributor_map = {}
+        _record_contributor(
+            contributor_map,
+            obj.created_by,
+            obj.published_at or obj.created_at,
+            is_creator=True,
+        )
+
+        event_cache = _get_contribution_event_cache(self, obj, target_type=CompetitionNotice.__name__)
+        has_direct_update = False
+        for event in event_cache.get(obj.id, []):
+            payload = event.payload if isinstance(event.payload, dict) else {}
+            if payload.get("action") != "update_competition_notice":
+                continue
+            has_direct_update = True
+            _record_contributor(
+                contributor_map,
+                event.user,
+                event.created_at,
+                approved_revision=True,
+            )
+
+        if (
+            not has_direct_update
+            and obj.updated_by_id
+            and obj.updated_by_id != obj.created_by_id
+            and obj.updated_by_id != obj.reviewer_id
+        ):
+            _record_contributor(
+                contributor_map,
+                obj.updated_by,
+                obj.updated_at or obj.created_at,
+                approved_revision=True,
+            )
+
+        return _finalize_contributors(contributor_map, context=self.context)
 
     def validate(self, attrs):
         instance = getattr(self, "instance", None)
@@ -1836,6 +2034,7 @@ class CompetitionScheduleEntrySerializer(serializers.ModelSerializer):
     reviewer = UserPublicSerializer(read_only=True)
     can_edit = serializers.SerializerMethodField()
     is_past = serializers.SerializerMethodField()
+    contributors = serializers.SerializerMethodField()
 
     class Meta:
         model = CompetitionScheduleEntry
@@ -1859,6 +2058,7 @@ class CompetitionScheduleEntrySerializer(serializers.ModelSerializer):
             "reviewed_at",
             "can_edit",
             "is_past",
+            "contributors",
             "created_at",
             "updated_at",
         ]
@@ -1891,6 +2091,41 @@ class CompetitionScheduleEntrySerializer(serializers.ModelSerializer):
     def get_is_past(self, obj):
         return bool(obj.event_date and obj.event_date < timezone.localdate())
 
+    def get_contributors(self, obj):
+        contributor_map = {}
+        _record_contributor(contributor_map, obj.created_by, obj.created_at, is_creator=True)
+
+        event_cache = _get_contribution_event_cache(
+            self, obj, target_type=CompetitionScheduleEntry.__name__
+        )
+        has_direct_update = False
+        for event in event_cache.get(obj.id, []):
+            payload = event.payload if isinstance(event.payload, dict) else {}
+            if payload.get("action") != "update_competition_schedule":
+                continue
+            has_direct_update = True
+            _record_contributor(
+                contributor_map,
+                event.user,
+                event.created_at,
+                approved_revision=True,
+            )
+
+        if (
+            not has_direct_update
+            and obj.updated_by_id
+            and obj.updated_by_id != obj.created_by_id
+            and obj.updated_by_id != obj.reviewer_id
+        ):
+            _record_contributor(
+                contributor_map,
+                obj.updated_by,
+                obj.updated_at or obj.created_at,
+                approved_revision=True,
+            )
+
+        return _finalize_contributors(contributor_map, context=self.context)
+
     def validate_announcement(self, value):
         if value and (
             not value.is_visible
@@ -1906,6 +2141,7 @@ class CompetitionPracticeLinkSerializer(serializers.ModelSerializer):
     series_label = serializers.CharField(source="get_series_display", read_only=True)
     stage_label = serializers.CharField(source="get_stage_display", read_only=True)
     practice_links_text = serializers.SerializerMethodField()
+    contributors = serializers.SerializerMethodField()
 
     class Meta:
         model = CompetitionPracticeLink
@@ -1931,6 +2167,7 @@ class CompetitionPracticeLinkSerializer(serializers.ModelSerializer):
             "display_order",
             "created_by",
             "updated_by",
+            "contributors",
             "created_at",
             "updated_at",
         ]
@@ -1938,6 +2175,23 @@ class CompetitionPracticeLinkSerializer(serializers.ModelSerializer):
 
     def get_practice_links_text(self, obj):
         return practice_links_to_text(obj.practice_links, obj.practice_links_note)
+
+    def get_contributors(self, obj):
+        contributor_map = {}
+        _record_contributor(contributor_map, obj.created_by, obj.created_at, is_creator=True)
+
+        proposal_cache = _get_practice_proposal_cache(self, obj)
+        for proposal in proposal_cache.get(obj.id, []):
+            if _is_practice_creation_proposal(obj, proposal):
+                continue
+            _record_contributor(
+                contributor_map,
+                proposal.proposer,
+                proposal.reviewed_at or proposal.updated_at or proposal.created_at,
+                approved_revision=True,
+            )
+
+        return _finalize_contributors(contributor_map, context=self.context)
 
 
 class CompetitionPracticeLinkProposalSerializer(serializers.ModelSerializer):
