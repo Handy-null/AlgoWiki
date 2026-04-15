@@ -160,8 +160,18 @@
       </div>
     </div>
 
-    <Transition name="drop">
-      <div v-if="showMobileMenu" class="mobile-panel">
+    <Transition name="mobile-backdrop">
+      <button
+        v-if="showMobileMenu"
+        type="button"
+        class="mobile-backdrop"
+        aria-label="关闭菜单"
+        @click="closeMobileMenu"
+      ></button>
+    </Transition>
+
+    <Transition name="mobile-drawer">
+      <div v-if="showMobileMenu" class="mobile-panel" role="dialog" aria-modal="true" aria-label="移动端菜单">
         <div class="mobile-theme-group">
           <span class="mobile-theme-label">切换主题</span>
           <div class="mobile-theme-options">
@@ -457,6 +467,10 @@ function toggleMobileMenu() {
   closeDropdowns();
   closeThemePanel();
   showMobileMenu.value = !showMobileMenu.value;
+}
+
+function closeMobileMenu() {
+  showMobileMenu.value = false;
 }
 
 async function navigateFromMobileMenu(target) {
@@ -765,6 +779,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .topbar {
+  --mobile-panel-top: 72px;
   position: sticky;
   top: 0;
   z-index: 30;
@@ -1227,6 +1242,10 @@ onBeforeUnmount(() => {
   display: none;
 }
 
+.mobile-backdrop {
+  display: none;
+}
+
 .mobile-group {
   display: grid;
   gap: 6px;
@@ -1283,8 +1302,9 @@ onBeforeUnmount(() => {
   }
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1100px) {
   .topbar {
+    --mobile-panel-top: 62px;
     position: sticky;
   }
 
@@ -1336,12 +1356,33 @@ onBeforeUnmount(() => {
   .mobile-panel {
     display: grid;
     gap: 6px;
-    padding: 10px 12px 12px;
+    position: fixed;
+    left: 0;
+    top: var(--mobile-panel-top);
+    width: min(300px, calc(100vw - 56px));
+    max-width: calc(100vw - 56px);
+    height: calc(100vh - var(--mobile-panel-top));
+    padding: 10px 25px 12px;
     background: var(--surface-overlay);
     box-shadow: var(--shadow-sm);
     border-top: 1px solid var(--hairline);
-    max-height: calc(100vh - 62px);
+    border-right: 1px solid var(--hairline);
     overflow: auto;
+    z-index: 34;
+  }
+
+  .mobile-backdrop {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: var(--mobile-panel-top);
+    bottom: 0;
+    border: 0;
+    margin: 0;
+    padding: 0;
+    background: color-mix(in srgb, var(--surface) 55%, transparent);
+    z-index: 33;
   }
 
   .mobile-link {
@@ -1379,6 +1420,10 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 620px) {
+  .topbar {
+    --mobile-panel-top: 58px;
+  }
+
   .topbar-inner {
     height: 58px;
     padding: 0 10px;
@@ -1440,5 +1485,28 @@ onBeforeUnmount(() => {
 .drop-leave-to {
   opacity: 0;
   transform: translateY(-6px);
+}
+
+.mobile-backdrop-enter-active,
+.mobile-backdrop-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.mobile-backdrop-enter-from,
+.mobile-backdrop-leave-to {
+  opacity: 0;
+}
+
+.mobile-drawer-enter-active,
+.mobile-drawer-leave-active {
+  transition:
+    transform 0.22s ease,
+    opacity 0.22s ease;
+}
+
+.mobile-drawer-enter-from,
+.mobile-drawer-leave-to {
+  opacity: 0;
+  transform: translateX(-14px);
 }
 </style>

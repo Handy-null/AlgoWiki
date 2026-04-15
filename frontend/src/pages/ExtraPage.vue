@@ -18,128 +18,151 @@
         />
       </section>
 
-      <section class="trick-submit card" v-if="auth.isAuthenticated">
-        <div class="trick-submit-head">
-          <h4>提交 trick</h4>
-          <span class="trick-submit-hint"
-            >已选词条 {{ selectedTrickTerms.length }} 个 · 待审词条
-            {{ trickForm.pending_term_names.length }} 个</span
+      <section v-if="auth.isAuthenticated" class="trick-submit-toggle">
+        <Transition name="trick-form-reveal" mode="out-in">
+          <button
+            v-if="!showTrickForm"
+            key="trick-share-btn"
+            type="button"
+            class="btn trick-share-btn"
+            @click="showTrickForm = true"
           >
-        </div>
-        <input
-          class="input"
-          v-model="trickForm.title"
-          placeholder="标题（可选，不填会按正文自动生成）"
-        />
-        <div class="term-picker">
-          <div class="term-picker-head">
-            <strong>词条</strong>
-            <span class="meta">支持多选，用于 ACM 检索</span>
-          </div>
-          <input
-            class="input"
-            v-model="trickTermSearch"
-            placeholder="搜索词条（如：前缀和 / 二分答案）"
-          />
-          <div class="term-options">
-            <label
-              v-for="term in filteredTrickTerms"
-              :key="term.id"
-              class="term-option"
-            >
-              <input
-                type="checkbox"
-                :value="term.id"
-                :checked="trickForm.term_ids.includes(term.id)"
-                @change="toggleTrickTerm(term.id)"
-              />
-              <span>{{ term.name }}</span>
-            </label>
-          </div>
-          <div class="term-selected" v-if="selectedTrickTerms.length">
-            <button
-              type="button"
-              v-for="term in selectedTrickTerms"
-              :key="`selected-${term.id}`"
-              class="term-chip term-chip-removable"
-              @click="removeSelectedTrickTerm(term.id)"
-            >
-              {{ term.name }} ×
-            </button>
-          </div>
-          <p v-else class="meta">当前未选择词条。</p>
-          <div class="pending-term-builder">
+            ✎ 分享 trick
+          </button>
+
+          <section v-else key="trick-submit-form" class="trick-submit card">
+            <div class="trick-submit-head">
+              <h4>提交 trick</h4>
+              <div class="trick-submit-head-actions">
+                <span class="trick-submit-hint"
+                  >已选词条 {{ selectedTrickTerms.length }} 个 · 待审词条
+                  {{ trickForm.pending_term_names.length }} 个</span
+                >
+                <button
+                  type="button"
+                  class="btn btn-mini trick-collapse-btn"
+                  @click="showTrickForm = false"
+                >
+                  收起
+                </button>
+              </div>
+            </div>
             <input
               class="input"
-              v-model="trickForm.pending_term_draft"
-              placeholder="预输入待审核词条（审核通过后自动展示）"
-              @keyup.enter.prevent="addPendingTermDraft"
+              v-model="trickForm.title"
+              placeholder="标题（可选，不填会按正文自动生成）"
             />
-            <button
-              class="btn add-tag-btn"
-              type="button"
-              @click="addPendingTermDraft"
+            <div class="term-picker">
+              <div class="term-picker-head">
+                <strong>词条</strong>
+                <span class="meta">支持多选，用于 ACM 检索</span>
+              </div>
+              <input
+                class="input"
+                v-model="trickTermSearch"
+                placeholder="搜索词条（如：前缀和 / 二分答案）"
+              />
+              <div class="term-options">
+                <label
+                  v-for="term in filteredTrickTerms"
+                  :key="term.id"
+                  class="term-option"
+                >
+                  <input
+                    type="checkbox"
+                    :value="term.id"
+                    :checked="trickForm.term_ids.includes(term.id)"
+                    @change="toggleTrickTerm(term.id)"
+                  />
+                  <span>{{ term.name }}</span>
+                </label>
+              </div>
+              <div class="term-selected" v-if="selectedTrickTerms.length">
+                <button
+                  type="button"
+                  v-for="term in selectedTrickTerms"
+                  :key="`selected-${term.id}`"
+                  class="term-chip term-chip-removable"
+                  @click="removeSelectedTrickTerm(term.id)"
+                >
+                  {{ term.name }} ×
+                </button>
+              </div>
+              <p v-else class="meta">当前未选择词条。</p>
+              <div class="pending-term-builder">
+                <input
+                  class="input"
+                  v-model="trickForm.pending_term_draft"
+                  placeholder="预输入待审核词条（审核通过后自动展示）"
+                  @keyup.enter.prevent="addPendingTermDraft"
+                />
+                <button
+                  class="btn add-tag-btn"
+                  type="button"
+                  @click="addPendingTermDraft"
+                >
+                  + 添加
+                </button>
+              </div>
+              <transition-group
+                name="pending-term-fade"
+                tag="div"
+                class="term-selected"
+                v-if="trickForm.pending_term_names.length"
+              >
+                <button
+                  type="button"
+                  v-for="(name, idx) in trickForm.pending_term_names"
+                  :key="`pending-${name}-${idx}`"
+                  class="term-chip term-chip-pending"
+                  @click="removePendingTerm(idx)"
+                >
+                  {{ name }} · 待审 ×
+                </button>
+              </transition-group>
+              <p v-else class="meta">未添加待审核词条，可用“+ 添加”预先录入。</p>
+            </div>
+            <div
+              class="trick-editor-shell"
+              :class="{ 'is-expanded': submitEditorExpanded }"
             >
-              + 添加
-            </button>
-          </div>
-          <transition-group
-            name="pending-term-fade"
-            tag="div"
-            class="term-selected"
-            v-if="trickForm.pending_term_names.length"
-          >
+              <div class="editor-toolbar">
+                <span class="editor-toolbar-label">左侧编写，右侧实时预览</span>
+                <button
+                  type="button"
+                  class="btn btn-mini"
+                  @click="submitEditorExpanded = !submitEditorExpanded"
+                >
+                  {{ submitEditorExpanded ? "收起编写" : "展开编写" }}
+                </button>
+              </div>
+              <div class="trick-editor-grid">
+                <section class="trick-editor-pane">
+                  <header class="trick-editor-pane-head">Markdown 原文</header>
+                  <textarea
+                    class="textarea trick-editor-textarea"
+                    v-model="trickForm.content_md"
+                    placeholder="使用 Markdown 编写 trick 内容"
+                  ></textarea>
+                </section>
+                <section class="trick-editor-pane">
+                  <header class="trick-editor-pane-head">渲染预览</header>
+                  <div
+                    class="markdown trick-editor-preview"
+                    v-html="renderMarkdown(trickForm.content_md || '')"
+                  ></div>
+                </section>
+              </div>
+            </div>
             <button
-              type="button"
-              v-for="(name, idx) in trickForm.pending_term_names"
-              :key="`pending-${name}-${idx}`"
-              class="term-chip term-chip-pending"
-              @click="removePendingTerm(idx)"
+              class="btn btn-accent"
+              :disabled="submittingTrick"
+              @click="submitTrick"
             >
-              {{ name }} · 待审 ×
+              {{ submittingTrick ? "提交中..." : "提交 trick" }}
             </button>
-          </transition-group>
-          <p v-else class="meta">未添加待审核词条，可用“+ 添加”预先录入。</p>
-        </div>
-        <div
-          class="trick-editor-shell"
-          :class="{ 'is-expanded': submitEditorExpanded }"
-        >
-          <div class="editor-toolbar">
-            <span class="editor-toolbar-label">左侧编写，右侧实时预览</span>
-            <button
-              type="button"
-              class="btn btn-mini"
-              @click="submitEditorExpanded = !submitEditorExpanded"
-            >
-              {{ submitEditorExpanded ? "收起编写" : "展开编写" }}
-            </button>
-          </div>
-          <div class="trick-editor-grid">
-            <section class="trick-editor-pane">
-              <header class="trick-editor-pane-head">Markdown 原文</header>
-              <textarea
-                class="textarea trick-editor-textarea"
-                v-model="trickForm.content_md"
-                placeholder="使用 Markdown 编写 trick 内容"
-              ></textarea>
-            </section>
-            <section class="trick-editor-pane">
-              <header class="trick-editor-pane-head">渲染预览</header>
-              <div
-                class="markdown trick-editor-preview"
-                v-html="renderMarkdown(trickForm.content_md || '')"
-              ></div>
-            </section>
-          </div>
-        </div>
-        <button
-          class="btn btn-accent"
-          :disabled="submittingTrick"
-          @click="submitTrick"
-        >
-          {{ submittingTrick ? "提交中..." : "提交 trick" }}
-        </button>
+          </section>
+        </Transition>
       </section>
       <p v-else class="meta">登录后可提交 trick。</p>
 
@@ -497,6 +520,7 @@ const savingEdit = ref(false);
 const savingPage = ref(false);
 const editingTrickId = ref(null);
 const showPageEditor = ref(false);
+const showTrickForm = ref(false);
 const trickTermSearch = ref("");
 const editTrickTermSearch = ref("");
 const submitEditorExpanded = ref(false);
@@ -1181,6 +1205,7 @@ watch(
   () => currentPageSlug.value,
   async () => {
     showPageEditor.value = false;
+    showTrickForm.value = false;
     if (isTricksPanel.value) {
       await loadTrickTerms();
       await loadOwnPendingTermNames();
@@ -1272,10 +1297,21 @@ onMounted(async () => {
 }
 
 .trick-submit {
-  margin-top: 12px;
   padding: 14px;
   display: grid;
   gap: 8px;
+}
+
+.trick-submit-toggle {
+  margin-top: 12px;
+}
+
+.trick-share-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  border-style: dashed;
 }
 
 .trick-submit-head {
@@ -1283,6 +1319,14 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.trick-submit-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .trick-submit-hint {
@@ -1293,6 +1337,10 @@ onMounted(async () => {
   font-size: 12px;
   color: var(--text-soft);
   background: color-mix(in srgb, var(--surface-strong) 90%, white 10%);
+}
+
+.trick-collapse-btn {
+  flex-shrink: 0;
 }
 
 .term-picker {
@@ -1387,6 +1435,17 @@ onMounted(async () => {
 .pending-term-fade-leave-to {
   opacity: 0;
   transform: translateY(6px) scale(0.98);
+}
+
+.trick-form-reveal-enter-active,
+.trick-form-reveal-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.trick-form-reveal-enter-from,
+.trick-form-reveal-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 
 .trick-filters {
