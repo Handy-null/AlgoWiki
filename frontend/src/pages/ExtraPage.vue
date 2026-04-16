@@ -1914,14 +1914,13 @@ onMounted(async () => {
 .trick-modal-card {
   position: relative;
   width: min(960px, 100%);
-  height: min(88vh, 920px);
   max-height: min(88vh, 920px);
   overflow: hidden;
   border-radius: 32px;
   background: color-mix(in srgb, var(--surface) 98%, white 2%);
   box-shadow: 0 28px 90px rgba(15, 23, 42, 0.24);
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .trick-modal-head {
@@ -1932,7 +1931,7 @@ onMounted(async () => {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  padding: 18px 22px 14px;
+  padding: 14px 22px 12px;
   background: color-mix(in srgb, var(--surface) 92%, white 8%);
   backdrop-filter: blur(16px);
   border-bottom: 1px solid color-mix(in srgb, var(--hairline) 88%, transparent);
@@ -1957,9 +1956,10 @@ onMounted(async () => {
 }
 
 .trick-modal-body {
-  padding: 24px 26px 18px;
+  flex: 1 1 auto;
+  padding: 18px 26px 14px;
   display: grid;
-  gap: 18px;
+  gap: 12px;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -1967,7 +1967,7 @@ onMounted(async () => {
 
 .trick-modal-title {
   margin: 0;
-  font-size: clamp(28px, 4vw, 38px);
+  font-size: clamp(24px, 3vw, 34px);
   line-height: 1.18;
   letter-spacing: -0.03em;
   color: var(--text-strong);
@@ -1980,13 +1980,21 @@ onMounted(async () => {
 .trick-modal-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px 18px;
+  gap: 8px 14px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface-soft) 76%, transparent);
   color: var(--text-soft);
   font-size: 14px;
 }
 
+.trick-modal-body > .trick-card-keywords {
+  min-height: 0;
+  gap: 6px;
+}
+
 .trick-modal-manage {
-  margin: -2px 0 2px;
+  margin: 0;
 }
 
 .trick-detail-markdown {
@@ -2004,9 +2012,10 @@ onMounted(async () => {
 }
 
 .trick-modal-foot {
+  flex: 0 0 auto;
   display: flex;
   justify-content: center;
-  padding: 16px 22px 22px;
+  padding: 12px 22px 16px;
   border-top: 1px solid color-mix(in srgb, var(--hairline) 82%, transparent);
   background: linear-gradient(
     180deg,
@@ -2492,7 +2501,6 @@ onMounted(async () => {
 
   .trick-modal-card {
     width: 100%;
-    height: 92vh;
     max-height: 92vh;
     border-radius: 24px;
   }

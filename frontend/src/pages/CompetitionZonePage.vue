@@ -180,7 +180,7 @@
             </select>
             <input v-model.trim="noticeForm.title" class="input form-span" placeholder="公告标题" />
           </div>
-          <textarea v-model="noticeForm.content_md" class="textarea notice-textarea" placeholder="Markdown 公告内容"></textarea>
+          <textarea v-model="noticeForm.content_md" class="textarea notice-textarea" rows="24" placeholder="Markdown 公告内容"></textarea>
           <label v-if="canManageCompetition" class="switch-line">
             <input type="checkbox" v-model="noticeForm.is_visible" />
             <span>对外显示</span>
@@ -313,7 +313,7 @@ const activeSectionDescriptionHtml = computed(() => {
   }
   if (activeBuiltinView.value === "notice") {
     return renderMarkdown(
-      "填写公告前，请先查阅 [赛事公告规范手册](https://www.algowiki.cn/extra/about?doc=announcement-guide) 了解规范",
+      "填写公告前，请先查阅 [赛事公告规范手册](https://www.algowiki.cn/extra/about?doc=announcement-guide) 了解规范，或依照内容文本框的默认模板进行填写",
     );
   }
   if (activeBuiltinView.value === "schedule") {
@@ -345,7 +345,30 @@ const loadingNotices = ref(false);
 const savingNotice = ref(false);
 const editingNoticeId = ref(null);
 const noticeEditorRef = ref(null);
-const noticeForm = reactive({ title: "", content_md: "", series: "icpc", year: new Date().getFullYear(), stage: "regional", is_visible: true });
+const NOTICE_CONTENT_TEMPLATE = `比赛名称：XXXX年 [ICPC/CCPC] XX[省/市] [区域赛/邀请赛/省赛/邀请赛暨省赛]
+
+比赛时间：XXXX 年 XX 月 XX 日
+
+承办方学校：XXXX[大学/学院]
+
+邀请函链接：推荐使用markdown语法：\`[比赛名称 邀请函](邀请函链接)\`
+
+出题组：未说明可填\`无\`
+
+是否有中文：[是/否]
+
+是否有外榜：[是/否]，如果有的话可以附上外榜链接
+
+比赛场地：[机房/体育馆/线上]
+
+午饭：XXXX
+
+热身赛与正式赛是否在同一天：[是/否]
+
+周边推荐旅游场所：XXXX
+
+其他特殊说明：`;
+const noticeForm = reactive({ title: "", content_md: NOTICE_CONTENT_TEMPLATE, series: "icpc", year: new Date().getFullYear(), stage: "regional", is_visible: true });
 
 const activeNotice = computed(() => noticeRows.value.find((item) => item.id === activeNoticeId.value) || null);
 const schedulePageContributors = computed(() =>
@@ -687,7 +710,7 @@ function openNoticeFromSchedule(row) {
 function resetNoticeForm() {
   editingNoticeId.value = null;
   noticeForm.title = "";
-  noticeForm.content_md = "";
+  noticeForm.content_md = NOTICE_CONTENT_TEMPLATE;
   noticeForm.series = seriesOptions.value[0]?.key || "icpc";
   noticeForm.year = new Date().getFullYear();
   noticeForm.stage = "regional";
@@ -818,7 +841,11 @@ onMounted(async () => {
 .notice-row { grid-template-columns: minmax(0, 1fr) auto; }
 .notice-main-btn { border: 0; background: transparent; text-align: left; padding: 0; display: grid; gap: 4px; }
 .notice-row--active { box-shadow: inset 3px 0 0 color-mix(in srgb, var(--accent) 24%, transparent); padding-left: 12px; }
-.notice-textarea { min-height: 180px; }
+.notice-textarea {
+  min-height: 620px;
+  line-height: 1.55;
+  resize: vertical;
+}
 .schedule-table-wrap { overflow-x: auto; }
 .schedule-table {
   width: 100%;
