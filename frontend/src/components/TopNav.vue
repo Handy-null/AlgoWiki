@@ -1,7 +1,8 @@
 ﻿<template>
-  <header class="topbar">
-    <div class="topbar-inner">
-      <button type="button" class="menu-toggle" @click="toggleMobileMenu" aria-label="菜单">
+  <div class="topbar-shell">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <button type="button" class="menu-toggle" @click="toggleMobileMenu" aria-label="菜单">
         <span></span>
         <span></span>
         <span></span>
@@ -237,7 +238,8 @@
         </button>
       </div>
     </Transition>
-  </header>
+    </header>
+  </div>
 </template>
 
 <script setup>
@@ -824,10 +826,17 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.topbar-shell {
+  --topbar-height: 72px;
+  height: var(--topbar-height);
+}
+
 .topbar {
-  --mobile-panel-top: 72px;
-  position: sticky;
+  --mobile-panel-top: var(--topbar-height);
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 30;
   background: var(--nav-bg);
   border-bottom: 1px solid var(--hairline);
@@ -846,7 +855,7 @@ onBeforeUnmount(() => {
 
 .topbar-inner {
   width: 100%;
-  height: 72px;
+  height: var(--topbar-height);
   margin: 0;
   padding: 0 clamp(16px, 2.6vw, 42px);
   display: grid;
@@ -1359,13 +1368,11 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 1100px) {
-  .topbar {
-    --mobile-panel-top: 62px;
-    position: sticky;
+  .topbar-shell {
+    --topbar-height: 62px;
   }
 
   .topbar-inner {
-    height: 62px;
     padding: 0 12px;
     grid-template-columns: auto auto 1fr auto;
     gap: 10px;
@@ -1478,12 +1485,11 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 620px) {
-  .topbar {
-    --mobile-panel-top: 58px;
+  .topbar-shell {
+    --topbar-height: 58px;
   }
 
   .topbar-inner {
-    height: 58px;
     padding: 0 10px;
     grid-template-columns: auto minmax(0, 1fr) auto;
     gap: 8px;
