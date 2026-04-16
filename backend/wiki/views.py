@@ -6869,7 +6869,12 @@ class CompetitionNoticeViewSet(ReviewNoteActionMixin, viewsets.ModelViewSet):
                 actor=reviewer,
                 target=notice,
                 title=f"赛事公告已{'通过' if action == 'approve' else '驳回'}：{notice.title}",
-                content=review_note[:180] if review_note else "管理员已处理你的赛事公告提交。",
+                content=build_review_notification_content(
+                    action=action,
+                    review_note=review_note,
+                    approved_fallback="管理员已处理你的赛事公告提交。",
+                    rejected_fallback="管理员驳回了你的赛事公告提交。",
+                ),
                 link="/competitions?tab=notice",
                 level=(
                     UserNotification.Level.WARNING
@@ -7187,7 +7192,12 @@ class CompetitionScheduleEntryViewSet(ReviewNoteActionMixin, viewsets.ModelViewS
                 actor=reviewer,
                 target=entry,
                 title=f"赛事时刻表已{'通过' if action == 'approve' else '驳回'}：{entry.competition_type}",
-                content=review_note[:180] if review_note else "管理员已处理你的赛事时刻表提交。",
+                content=build_review_notification_content(
+                    action=action,
+                    review_note=review_note,
+                    approved_fallback="管理员已处理你的赛事时刻表提交。",
+                    rejected_fallback="管理员驳回了你的赛事时刻表提交。",
+                ),
                 link="/competitions?tab=schedule",
                 level=(
                     UserNotification.Level.WARNING
@@ -7623,10 +7633,11 @@ class CompetitionPracticeLinkProposalViewSet(
                 actor=reviewer,
                 target=proposal,
                 title=f"补题链接申请已{ '通过' if action == 'approve' else '驳回' }：{proposal.proposed_short_name}",
-                content=(
-                    review_note[:180]
-                    if review_note
-                    else "管理员已处理你的补题链接申请。"
+                content=build_review_notification_content(
+                    action=action,
+                    review_note=review_note,
+                    approved_fallback="管理员已处理你的补题链接申请。",
+                    rejected_fallback="管理员驳回了你的补题链接申请。",
                 ),
                 link="/competition",
                 level=(

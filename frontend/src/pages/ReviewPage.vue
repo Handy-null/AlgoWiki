@@ -168,32 +168,32 @@
             item.practice_links_text || "-"
           }}</pre>
           <p class="meta">说明：{{ item.reason || "无" }}</p>
-          <textarea
-            v-if="isPendingMode"
-            v-model="item._reviewNote"
-            class="textarea"
-            placeholder="审核备注（可选）"
-          ></textarea>
         </div>
         <div class="review-actions">
-          <button
-            v-if="isPendingMode"
-            class="btn btn-accent"
-            type="button"
-            :disabled="reviewingPracticeId === item.id"
-            @click="reviewPractice(item, 'approve')"
-          >
-            通过
-          </button>
-          <button
-            v-if="isPendingMode"
-            class="btn"
-            type="button"
-            :disabled="reviewingPracticeId === item.id"
-            @click="reviewPractice(item, 'reject')"
-          >
-            驳回
-          </button>
+          <template v-if="isPendingMode">
+            <PendingReviewNotePanel
+              v-model="item._reviewNote"
+              placeholder="可选填写审核批注"
+            />
+            <div class="review-action-buttons">
+              <button
+                class="btn btn-accent"
+                type="button"
+                :disabled="reviewingPracticeId === item.id"
+                @click="reviewPractice(item, 'approve')"
+              >
+                通过
+              </button>
+              <button
+                class="btn"
+                type="button"
+                :disabled="reviewingPracticeId === item.id"
+                @click="reviewPractice(item, 'reject')"
+              >
+                驳回
+              </button>
+            </div>
+          </template>
           <ReviewRecordPanel
             v-if="!isPendingMode"
             :reviewer-name="getItemReviewerName(item)"
@@ -225,32 +225,32 @@
             · 提交时间：{{ formatDateTime(item.created_at) }}
           </p>
           <div class="markdown trick-markdown" v-html="renderMarkdown(item.content_md || '')"></div>
-          <textarea
-            v-if="isPendingMode"
-            v-model="item._reviewNote"
-            class="textarea"
-            placeholder="审核备注（可选）"
-          ></textarea>
         </div>
         <div class="review-actions">
-          <button
-            v-if="isPendingMode"
-            class="btn btn-accent"
-            type="button"
-            :disabled="reviewingNoticeId === item.id"
-            @click="reviewCompetitionNotice(item, 'approve')"
-          >
-            通过
-          </button>
-          <button
-            v-if="isPendingMode"
-            class="btn"
-            type="button"
-            :disabled="reviewingNoticeId === item.id"
-            @click="reviewCompetitionNotice(item, 'reject')"
-          >
-            驳回
-          </button>
+          <template v-if="isPendingMode">
+            <PendingReviewNotePanel
+              v-model="item._reviewNote"
+              placeholder="可选填写审核批注"
+            />
+            <div class="review-action-buttons">
+              <button
+                class="btn btn-accent"
+                type="button"
+                :disabled="reviewingNoticeId === item.id"
+                @click="reviewCompetitionNotice(item, 'approve')"
+              >
+                通过
+              </button>
+              <button
+                class="btn"
+                type="button"
+                :disabled="reviewingNoticeId === item.id"
+                @click="reviewCompetitionNotice(item, 'reject')"
+              >
+                驳回
+              </button>
+            </div>
+          </template>
           <ReviewRecordPanel
             v-if="!isPendingMode"
             :reviewer-name="getItemReviewerName(item)"
@@ -284,32 +284,32 @@
               · 关联公告：{{ item.announcement_title }}</template
             >
           </p>
-          <textarea
-            v-if="isPendingMode"
-            v-model="item._reviewNote"
-            class="textarea"
-            placeholder="审核备注（可选）"
-          ></textarea>
         </div>
         <div class="review-actions">
-          <button
-            v-if="isPendingMode"
-            class="btn btn-accent"
-            type="button"
-            :disabled="reviewingScheduleId === item.id"
-            @click="reviewCompetitionSchedule(item, 'approve')"
-          >
-            通过
-          </button>
-          <button
-            v-if="isPendingMode"
-            class="btn"
-            type="button"
-            :disabled="reviewingScheduleId === item.id"
-            @click="reviewCompetitionSchedule(item, 'reject')"
-          >
-            驳回
-          </button>
+          <template v-if="isPendingMode">
+            <PendingReviewNotePanel
+              v-model="item._reviewNote"
+              placeholder="可选填写审核批注"
+            />
+            <div class="review-action-buttons">
+              <button
+                class="btn btn-accent"
+                type="button"
+                :disabled="reviewingScheduleId === item.id"
+                @click="reviewCompetitionSchedule(item, 'approve')"
+              >
+                通过
+              </button>
+              <button
+                class="btn"
+                type="button"
+                :disabled="reviewingScheduleId === item.id"
+                @click="reviewCompetitionSchedule(item, 'reject')"
+              >
+                驳回
+              </button>
+            </div>
+          </template>
           <ReviewRecordPanel
             v-if="!isPendingMode"
             :reviewer-name="getItemReviewerName(item)"
@@ -494,32 +494,32 @@
             }}
           </p>
           <p class="ticket-content">{{ item.content }}</p>
-          <textarea
-            v-if="isPendingMode"
-            v-model="item._reviewNote"
-            class="textarea"
-            placeholder="审核备注（可选）"
-          ></textarea>
         </div>
         <div class="review-actions">
-          <button
-            v-if="isPendingMode"
-            class="btn btn-accent"
-            type="button"
-            :disabled="reviewingCommentId === item.id"
-            @click="reviewComment(item, 'approve')"
-          >
-            通过
-          </button>
-          <button
-            v-if="isPendingMode"
-            class="btn"
-            type="button"
-            :disabled="reviewingCommentId === item.id"
-            @click="reviewComment(item, 'reject')"
-          >
-            驳回
-          </button>
+          <template v-if="isPendingMode">
+            <PendingReviewNotePanel
+              v-model="item._reviewNote"
+              placeholder="可选填写审核批注"
+            />
+            <div class="review-action-buttons">
+              <button
+                class="btn btn-accent"
+                type="button"
+                :disabled="reviewingCommentId === item.id"
+                @click="reviewComment(item, 'approve')"
+              >
+                通过
+              </button>
+              <button
+                class="btn"
+                type="button"
+                :disabled="reviewingCommentId === item.id"
+                @click="reviewComment(item, 'reject')"
+              >
+                驳回
+              </button>
+            </div>
+          </template>
           <ReviewRecordPanel
             v-if="!isPendingMode"
             :reviewer-name="getItemReviewerName(item)"
@@ -578,32 +578,32 @@
             class="markdown trick-markdown"
             v-html="renderMarkdown(item.content_md || '')"
           ></div>
-          <textarea
-            v-if="isPendingMode"
-            v-model="item._reviewNote"
-            class="textarea"
-            placeholder="驳回批注（可选，驳回后会通知用户）"
-          ></textarea>
         </div>
         <div class="review-actions">
-          <button
-            v-if="isPendingMode"
-            class="btn btn-accent"
-            type="button"
-            :disabled="reviewingTrickId === item.id"
-            @click="reviewTrick(item, 'approved')"
-          >
-            通过
-          </button>
-          <button
-            v-if="isPendingMode"
-            class="btn"
-            type="button"
-            :disabled="reviewingTrickId === item.id"
-            @click="reviewTrick(item, 'rejected')"
-          >
-            驳回
-          </button>
+          <template v-if="isPendingMode">
+            <PendingReviewNotePanel
+              v-model="item._reviewNote"
+              placeholder="可选填写审核批注"
+            />
+            <div class="review-action-buttons">
+              <button
+                class="btn btn-accent"
+                type="button"
+                :disabled="reviewingTrickId === item.id"
+                @click="reviewTrick(item, 'approved')"
+              >
+                通过
+              </button>
+              <button
+                class="btn"
+                type="button"
+                :disabled="reviewingTrickId === item.id"
+                @click="reviewTrick(item, 'rejected')"
+              >
+                驳回
+              </button>
+            </div>
+          </template>
           <ReviewRecordPanel
             v-if="!isPendingMode"
             :reviewer-name="getItemReviewerName(item)"
@@ -645,32 +645,32 @@
               item.linked_tricks.map((x) => x.title || `#${x.id}`).join("、")
             }}
           </p>
-          <textarea
-            v-if="isPendingMode"
-            v-model="item._reviewNote"
-            class="textarea"
-            placeholder="审核备注（可选）"
-          ></textarea>
         </div>
         <div class="review-actions">
-          <button
-            v-if="isPendingMode"
-            class="btn btn-accent"
-            type="button"
-            :disabled="reviewingTrickTermSuggestionId === item.id"
-            @click="reviewTrickTermSuggestion(item, 'approved')"
-          >
-            通过
-          </button>
-          <button
-            v-if="isPendingMode"
-            class="btn"
-            type="button"
-            :disabled="reviewingTrickTermSuggestionId === item.id"
-            @click="reviewTrickTermSuggestion(item, 'rejected')"
-          >
-            驳回
-          </button>
+          <template v-if="isPendingMode">
+            <PendingReviewNotePanel
+              v-model="item._reviewNote"
+              placeholder="可选填写审核批注"
+            />
+            <div class="review-action-buttons">
+              <button
+                class="btn btn-accent"
+                type="button"
+                :disabled="reviewingTrickTermSuggestionId === item.id"
+                @click="reviewTrickTermSuggestion(item, 'approved')"
+              >
+                通过
+              </button>
+              <button
+                class="btn"
+                type="button"
+                :disabled="reviewingTrickTermSuggestionId === item.id"
+                @click="reviewTrickTermSuggestion(item, 'rejected')"
+              >
+                驳回
+              </button>
+            </div>
+          </template>
           <ReviewRecordPanel
             v-if="!isPendingMode"
             :reviewer-name="getItemReviewerName(item)"
@@ -770,30 +770,30 @@
             >
           </p>
           <p class="ticket-content">{{ item.content_md }}</p>
-          <textarea
-            v-if="isPendingMode"
-            v-model="item._reviewNote"
-            class="textarea"
-            placeholder="驳回批注（可选，驳回后会通知用户）"
-          ></textarea>
         </div>
         <div class="review-actions">
-          <button
-            v-if="isPendingMode"
-            class="btn btn-accent"
-            type="button"
-            @click="reviewQuestion(item, 'approve')"
-          >
-            通过
-          </button>
-          <button
-            v-if="isPendingMode"
-            class="btn"
-            type="button"
-            @click="reviewQuestion(item, 'reject')"
-          >
-            驳回
-          </button>
+          <template v-if="isPendingMode">
+            <PendingReviewNotePanel
+              v-model="item._reviewNote"
+              placeholder="可选填写审核批注"
+            />
+            <div class="review-action-buttons">
+              <button
+                class="btn btn-accent"
+                type="button"
+                @click="reviewQuestion(item, 'approve')"
+              >
+                通过
+              </button>
+              <button
+                class="btn"
+                type="button"
+                @click="reviewQuestion(item, 'reject')"
+              >
+                驳回
+              </button>
+            </div>
+          </template>
           <ReviewRecordPanel
             v-if="!isPendingMode"
             :reviewer-name="getItemReviewerName(item)"
@@ -873,30 +873,30 @@
             {{ formatDateTime(item.created_at) }}
           </p>
           <p class="ticket-content">{{ item.content_md }}</p>
-          <textarea
-            v-if="isPendingMode"
-            v-model="item._reviewNote"
-            class="textarea"
-            placeholder="驳回批注（可选，驳回后会通知用户）"
-          ></textarea>
         </div>
         <div class="review-actions">
-          <button
-            v-if="isPendingMode"
-            class="btn btn-accent"
-            type="button"
-            @click="reviewAnswer(item, 'approve')"
-          >
-            通过
-          </button>
-          <button
-            v-if="isPendingMode"
-            class="btn"
-            type="button"
-            @click="reviewAnswer(item, 'reject')"
-          >
-            驳回
-          </button>
+          <template v-if="isPendingMode">
+            <PendingReviewNotePanel
+              v-model="item._reviewNote"
+              placeholder="可选填写审核批注"
+            />
+            <div class="review-action-buttons">
+              <button
+                class="btn btn-accent"
+                type="button"
+                @click="reviewAnswer(item, 'approve')"
+              >
+                通过
+              </button>
+              <button
+                class="btn"
+                type="button"
+                @click="reviewAnswer(item, 'reject')"
+              >
+                驳回
+              </button>
+            </div>
+          </template>
           <ReviewRecordPanel
             v-if="!isPendingMode"
             :reviewer-name="getItemReviewerName(item)"
@@ -918,6 +918,7 @@
 import { computed, reactive, ref, watch } from "vue";
 import { RouterLink, useRouter } from "vue-router";
 
+import PendingReviewNotePanel from "../components/review/PendingReviewNotePanel.vue";
 import ReviewRecordPanel from "../components/review/ReviewRecordPanel.vue";
 import api from "../services/api";
 import { renderInlineMarkdown, renderMarkdown } from "../services/markdown";
@@ -2178,11 +2179,25 @@ watch(
   color: var(--text-strong);
 }
 .toolbar,
-.review-actions {
+.toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+}
+.review-actions {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+.review-action-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.review-action-buttons .btn {
+  width: 100%;
+  justify-content: center;
 }
 .check-line {
   display: inline-flex;
@@ -2194,7 +2209,7 @@ watch(
 }
 .review-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 260px;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
   gap: 12px;
   padding: 11px 12px;
   margin-top: 10px;
@@ -2241,6 +2256,9 @@ watch(
 }
 @media (max-width: 640px) {
   .review-tabs {
+    grid-template-columns: 1fr;
+  }
+  .review-action-buttons {
     grid-template-columns: 1fr;
   }
 }
